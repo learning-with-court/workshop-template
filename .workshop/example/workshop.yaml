@@ -1,0 +1,25 @@
+id: example
+title: "Example Workshop"
+status: available
+repo: learning-with-court/workshop-template
+tagline: "A minimal forkable workshop scaffold — replace this with your first real lesson."
+summary: |
+  This example workshop ships with the workshop-template repo. It demonstrates
+  the unified compose layout: a single workshop under workshops/example/ with
+  one lesson. Fork the template, rename this directory, and fill in your content.
+difficulty: beginner
+tags:
+  - example
+  - template
+install: "set up the example workshop"
+youWillBuild:
+  - "A TypeScript module that exports a typed function."
+  - "Verified passing tests using the pre-shipped vitest suite."
+prerequisites:
+  - term: "TypeScript basics"
+    desc: "Familiarity with exporting functions from a TypeScript module."
+phases:
+  - id: A
+    title: Getting started
+    lessons:
+      - example

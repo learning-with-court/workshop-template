@@ -1,0 +1,32 @@
+id: example
+title: "Example Lesson"
+blurb: "Write a trivial exported function — proving the compose delivery model."
+prerequisites: []
+targetFiles:
+  - src/example.ts
+verifyCommand: "pnpm exec vitest run src/example.test.ts || true"
+verify:
+  description: |
+    Runs the behavioral vitest test for example.ts. The test imports `example` from
+    ./example.ts and asserts example() returns the expected string. A passing run
+    prints "Tests  1 passed"; a missing export or wrong return value prints a failure.
+  mustInclude:
+    - "Tests "
+  mustNotInclude:
+    - "Cannot find module"
+# Optional `try:` block — declares a live single-call demo for `pnpm try`.
+# `verify` runs the lesson's tests; `try` runs the deliverable ONCE on a fixture so
+# the learner can see real output. `scripts/try.ts` resolves the active lesson from
+# local state, imports `export` from `src/<module>.ts`, feeds it the fixture (as the
+# first argument), and prints the result. Only declare it for lessons with a live demo.
+try:
+  module: example          # → src/example.ts
+  export: example          # the named export to call
+  fixture: fixtures/sample.json   # relative to .workshop/<ws>/lesson_example/
+  fixtureAs: json          # "json" (parsed object, default) | "text" (raw string)
+onPass:
+  feedback: |
+    You've built and verified a typed exported function. The compose model
+    delivered this lesson's starting tree — the test was pre-shipped, you
+    wrote the implementation, and vitest confirmed the contract.
+    Replace this lesson with your first real lesson.

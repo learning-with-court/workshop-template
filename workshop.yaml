@@ -1,0 +1,36 @@
+# TEMPLATE: fill in every field marked TODO before pushing the registry entry.
+# This file is consumed by:
+#   - learning-with-court-platform manifest fetcher (drives the catalog + Lambda)
+#   - scripts/lint-manifest.ts (validates schema + cross-checks fs)
+#
+# Schema source of truth:
+#   learning-with-court-platform/packages/server/src/manifest/schema.ts
+
+id: template-workshop
+title: "TODO: Workshop title"
+status: coming-soon  # flip to "available" when ready to ship
+repo: learning-with-court/template-workshop
+tagline: "TODO: One-line hook describing what the learner walks away with."
+summary: |
+  TODO: 2–4 sentence paragraph. What does the learner build? What's the
+  end state? Who is this for? Read the mcp-workshop summary for tone.
+difficulty: beginner  # beginner | intermediate | advanced
+duration: "TODO: e.g. 4–6 hours"
+tags:
+  - todo-tag
+install: "set up the template workshop"  # what the user types to install via the setup skill
+subdomains:
+  dev: template-dev.workshop.institute
+  prod: template.workshop.institute
+youWillBuild:
+  - "TODO: bullet 1 — concrete artifact the learner ships."
+  - "TODO: bullet 2."
+  - "TODO: bullet 3."
+prerequisites:
+  - term: "TODO: prereq term"
+    desc: "TODO: one-sentence description of what's expected."
+phases:
+  - id: A
+    title: "TODO: phase title"
+    lessons:
+      - 01-template

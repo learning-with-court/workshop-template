@@ -1,0 +1,80 @@
+# learning-with-court workshop template
+
+This is the template repository for new workshops in the
+[learning-with-court](https://workshop.institute) catalog. Fork it to start
+a new workshop.
+
+## Fork it
+
+Either click **Use this template** at the top of the GitHub page, or:
+
+```bash
+gh repo create learning-with-court/<your-workshop-id> \
+  --template learning-with-court/workshop-template \
+  --public --clone
+
+cd <your-workshop-id>
+pnpm install
+```
+
+## Fill in the template
+
+Every file with `TODO:` markers needs your attention. Start here:
+
+| File | What to fill in |
+|---|---|
+| `workshop.yaml` | id, title, tagline, summary, subdomains, tags, prereqs, phases |
+| `landing.md` | long-form prose for the catalog detail page |
+| `workshop/lesson_01_template/` | rename dir, fill in lesson manifest + content |
+| `workshop/LESSON_TEMPLATE.md` | (reference only — don't edit) |
+| `.claude/skills/lesson-01.md` | per-lesson walker skill |
+| `README.md` | replace this file with your workshop's real README |
+
+Find every TODO with:
+
+```bash
+grep -rn "TODO:" --include="*.md" --include="*.yaml" .
+```
+
+## Add lessons
+
+See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md) for the
+full convention. Short version: copy `workshop/lesson_01_template/`,
+rename to `lesson_NN_<slug>/`, update `lesson.yaml` (id + title +
+verifyCommand + onPass), add the key to `workshop.yaml` `phases`.
+
+## Verify locally
+
+```bash
+pnpm install              # installs lefthook hooks on postinstall
+pnpm lint-manifest        # validates workshop.yaml + cross-checks fs
+pnpm typecheck            # every workspace package
+pnpm test:scripts         # tests the manifest linter itself
+```
+
+The `manifest-lint` GitHub Action runs the same checks on every push.
+Lefthook fires `lint-manifest` on pre-commit when manifests or scripts
+change, and `typecheck` on every commit.
+
+## Register with the platform
+
+Once your workshop manifest is filled in and lessons are real:
+
+1. Push the repo to GitHub
+2. Add an entry to
+   [`learning-with-court-platform/workshops.json`](https://github.com/learning-with-court/platform/blob/main/workshops.json):
+   ```json
+   {
+     "id": "<your-workshop-id>",
+     "repo": "learning-with-court/<your-workshop-id>",
+     "ref": "main",
+     "envs": ["dev"]
+   }
+   ```
+   Start dev-only. Flip to `["dev", "prod"]` when ready to ship.
+3. Open a PR on the platform repo. CI deploys a `LwcWorkshop-<id>-Dev`
+   stack with its own subdomain. The catalog regenerates from the manifest
+   automatically.
+
+Reference implementation:
+[`learning-with-court/mcp-workshop`](https://github.com/learning-with-court/mcp-workshop).

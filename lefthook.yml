@@ -1,0 +1,20 @@
+# Mirrors .github/workflows/manifest-lint.yml so CI surprises die locally.
+# Skip a hook: `LEFTHOOK=0 git commit ...` or `--no-verify`.
+
+pre-commit:
+  parallel: true
+  commands:
+    lint-manifest:
+      # Only fires when a manifest, lesson dir, or lint script changes.
+      glob: "{workshop.yaml,workshop/**/lesson.yaml,workshop/**/package.json,scripts/lint-manifest.ts}"
+      run: pnpm lint-manifest
+
+    typecheck:
+      # Workspace typecheck. Cheap because per-lesson packages are small.
+      run: pnpm typecheck
+
+pre-push:
+  parallel: false
+  commands:
+    test-scripts:
+      run: pnpm test:scripts

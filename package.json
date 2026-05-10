@@ -1,0 +1,30 @@
+{
+  "name": "learning-with-court-workshop-template",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Template repository for new learning-with-court workshops. Fork via 'gh repo create --template'.",
+  "license": "MIT",
+  "author": "Court Schuett",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
+    "lint-manifest": "tsx scripts/lint-manifest.ts",
+    "test:scripts": "vitest run scripts/",
+    "postinstall": "lefthook install"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "js-yaml": "^4.1.0",
+    "lefthook": "^2.1.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "zod": "^3.23.8"
+  }
+}

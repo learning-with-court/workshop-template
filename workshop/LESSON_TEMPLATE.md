@@ -74,3 +74,87 @@ description: Guide through Lesson NN — <title>. Use when the learner asks for 
 
 Body: walkthrough that calls out the targetFiles, points at the README,
 and runs the verify command at the end.
+
+The full walker shape is in `docs/WORKSHOP_SPEC.md` §1. Required H2
+sections: `Visible walkthrough contract`, `Pedagogical priority`,
+`Steps`, `Common debugging`, `What To Say Next`, `Style`. Use
+`.claude/skills/lesson-01.md` as the starting scaffold — copy it,
+rename, replace the TODOs.
+
+**Critical:** never write "invoke this skill" or "use the Skill tool"
+in walker prose. Project-level skill files are read directly via the
+`Read` tool; that read IS the activation. See the comment block at the
+top of the scaffold walker for the rationale.
+
+## Common patterns to copy into your lesson code
+
+These shapes are the workshop's reference defaults. Inline them when the
+lesson should teach the pattern; import from `workshop/shared/` once
+you've extracted them.
+
+### Defensive JSON parse (fence stripping)
+
+Models slip ```` ```json ```` fences into output despite prompt
+instructions. The canonical strip-then-parse shape lives in
+`workshop/lesson_01_template/src/extract.ts` — copy it into any lesson
+that reads model output as JSON. The pattern:
+
+```ts
+const stripped = raw.trim()
+  .replace(/^```(?:json)?\s*/i, "")
+  .replace(/\s*```\s*$/, "")
+  .trim();
+return JSON.parse(stripped);
+```
+
+### Anthropic client init from env
+
+Read `ANTHROPIC_API_KEY` from `process.env`. Presence-check at the top
+of the verify/run script and fail loudly with a "missing — see
+`.env.example`" message. Never accept the key as a CLI arg, env vars
+load cleanly via `tsx --env-file-if-exists=../../.env`.
+
+```ts
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("✘ ANTHROPIC_API_KEY is missing.");
+  console.error("  Copy .env.example to .env and set the value in your editor.");
+  process.exit(1);
+}
+const client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
+```
+
+### Verify script shape
+
+One canonical pass through the lesson's code path, emitting `→ ← ✔`
+blocks (request, response, claim) — one block per assertion. Exit 0 on
+success, non-zero on failure. The walker quotes the full stdout
+verbatim back to the learner; the workshop's `lesson.yaml`
+`verify.mustInclude` / `mustNotInclude` regexes match against this
+stdout. See `workshop/lesson_01_template/src/verify.ts` for the
+scaffold.
+
+### Test shape
+
+Mock the SDK; assert behavior. NEVER hit a real API in tests — that
+makes tests slow, flaky, and dependent on secrets. Use vitest's
+`vi.mock()` to stub the SDK at the module boundary.
+
+```ts
+import { vi, describe, it, expect } from "vitest";
+
+vi.mock("@anthropic-ai/sdk", () => ({
+  default: class MockAnthropic {
+    messages = { create: vi.fn().mockResolvedValue({ content: [{ type: "text", text: "{\"ok\":true}" }] }) };
+  },
+}));
+
+// import the code under test AFTER the mock
+import { runLesson } from "../src/lesson.js";
+
+describe("lesson behavior", () => {
+  it("parses the model's response", async () => {
+    const result = await runLesson();
+    expect(result.ok).toBe(true);
+  });
+});
+```

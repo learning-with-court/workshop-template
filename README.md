@@ -27,7 +27,13 @@ Every file with `TODO:` markers needs your attention. Start here:
 | `landing.md` | long-form prose for the catalog detail page |
 | `workshop/lesson_01_template/` | rename dir, fill in lesson manifest + content |
 | `workshop/LESSON_TEMPLATE.md` | (reference only — don't edit) |
-| `.claude/skills/lesson-01.md` | per-lesson walker skill |
+| `.claude/skills/lesson-01.md` | per-lesson walker skill (read directly via `Read`, NOT the `Skill` tool) |
+| `.claude/skills/workshop-orchestrator.md` | shared pedagogy contract — fill in workshop-name, MCP-server-or-not |
+| `.claude/skills/start-workshop.md` | entry-point skill — fill in package.json name + workshop name |
+| `.claude/hooks/session-start.sh` | SessionStart greeting — fill in workshop shape, optionally enable MCP-auth + env-key detection blocks |
+| `.env.example` | fill in required secret names, OR delete if your workshop uses no secrets |
+| `docs/WORKSHOP_SPEC.md` | (reference — keep as-is, fill in `TODO:` placeholders only) |
+| `docs/WORKSHOP_WALKTHROUGH.md` | (reference — fill in lesson sample list before your first release) |
 | `README.md` | replace this file with your workshop's real README |
 
 Find every TODO with:
@@ -55,6 +61,20 @@ pnpm test:scripts         # tests the manifest linter itself
 The `manifest-lint` GitHub Action runs the same checks on every push.
 Lefthook fires `lint-manifest` on pre-commit when manifests or scripts
 change, and `typecheck` on every commit.
+
+## Refresh the workshop (after fork is live)
+
+Once your workshop is registered with the platform and learners install
+via `lwc setup <id>`, the way to pick up upstream updates is:
+
+```bash
+lwc update <your-workshop-id>
+```
+
+…NOT `git pull` — the clone uses an un-credentialed HTTPS origin by
+design, so `git pull` prompts for credentials and stalls. The CLI mints
+a fresh token, runs the pull, and strips the token back off `origin`.
+Inside Claude Code, `/refresh-workshop` does the same thing.
 
 ## Register with the platform
 

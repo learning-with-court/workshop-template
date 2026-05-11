@@ -17,6 +17,12 @@
     "test:scripts": "vitest run scripts/",
     "postinstall": "lefthook install"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "lefthook"
+    ]
+  },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.0",

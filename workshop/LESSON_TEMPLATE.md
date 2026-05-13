@@ -158,3 +158,25 @@ describe("lesson behavior", () => {
   });
 });
 ```
+
+## First-encounter explainer links
+
+If your workshop touches topics the platform's landing-site explainer pages cover, link to them at **first encounter** in the relevant walker, README section, or SessionStart hook block.
+
+The platform currently hosts:
+
+- `workshop.institute/secrets` — secret handling (API keys, threat model, three flows, leak recovery)
+- `workshop.institute/editor` — picking an editor, finding the workshop dir, hidden files
+- `workshop.institute/getting-started` — orientation for first-time workshop users
+- `workshop.institute/troubleshooting` — catalog of common failure modes + fixes
+- `workshop.institute/cost` — per-call costs + budgeting
+
+**The shape**: a one-line FYI inside a `>` quote block, present-tense, offered not nagged. Once per topic per workshop — subsequent lessons that re-mention the topic don't repeat the link.
+
+```markdown
+> First time setting up a workshop secret? See
+> [workshop.institute/secrets](https://workshop.institute/secrets) for
+> the threat model and the three supported flows side by side.
+```
+
+See `WORKSHOP_SPEC.md` §17 for the full rule + per-workshop first-encounter mapping template.

@@ -387,6 +387,144 @@ The template doesn't ship `block-edits.sh` by default because some workshops are
 
 ---
 
+
+---
+
+## 15. Walker code-reveal chunking
+
+When a lesson's heart is composed of multiple files OR a single file whose body itself is >~40 lines of composed phases, the walker MUST chunk the reveal. Dumping the full composition in one Step 2 produces real cognitive overload; learners surface this on first walks.
+
+### The pattern
+
+**Lead with the heart.** On the initial Step 2 reveal, render only the file (or file section) that carries the lesson's pedagogical priority. Companion files become **earned drill-downs** gated on explicit learner trigger phrases:
+
+- `show me the cache` / `show me the regex judge` — for multi-file lessons where each file is a distinct architectural concern
+- `show me the extract phase` / `show me the judges` / `show me the aggregate phase` — for single-file lessons where the heart function's body composes multiple phases
+
+The drill phrases live in the walker's `## Steps` numbered list as their own conditional steps. The "What To Say Next" rubric covers each drill-trigger → drill response mapping.
+
+**Cap initial reveal at ~50 lines.** If the heart file alone is bigger, render only its signature/interfaces/skeleton on Step 2 — the for-loop body or implementation specifics become phase drills. Phase-comment markers in the source (`// 1. Extract — with cache.`, etc.) are the anchors the walker uses to render the right section verbatim per drill.
+
+### Required walker structure when this rule applies
+
+```markdown
+2. Render the SHELL — interfaces + signature + phase-comment outline.
+   Prose names the N phases. Next-step offers `run verify` PLUS each
+   phase drill.
+
+3-N. (Conditional) When the user says `show me the <phase>`, render
+     JUST that section of the loop body verbatim. Prose ties the phase
+     back to the prior lesson it composes from. Next-step offers
+     remaining drills + run verify.
+
+N+1. Run verify (existing pattern).
+N+2. Run tests (existing pattern).
+```
+
+### Why this matters
+
+The lesson's pedagogical priority is *what the composition does*, not *every line of how it's composed*. Phase-by-phase drills make the composition explicit (each phase ties back to a prior lesson it builds on) instead of asserted (one big block of code followed by "this composes everything").
+
+Reference exemplar: `learning-with-court/evals-workshop/.claude/skills/lesson-06.md`.
+
+---
+
+## 16. Concept-vs-concept voice (no workshop-history framing)
+
+Learner-facing prose — in walker `>` quote blocks, lesson READMEs, and SessionStart hook output — must NOT reference the workshop's own history. The contrast between two design choices (e.g. tool use vs prompt-coerced JSON) is pedagogically valuable; framing it as "an older version of this lesson used X" is internal narrative leaking out.
+
+### The rule
+
+✅ **Concept-vs-concept, present tense.**
+
+> *"You'll see two patterns for getting structured output from a model. This lesson uses tool use. The other pattern is..."*
+
+✗ **Workshop revisionism.**
+
+> *"An older version of this lesson used SYSTEM_PROMPT..."*
+> *"We used to do it this way..."*
+> *"Real failure mode hit tonight..."*
+
+### When the contrast matters
+
+Surface the alternative-pattern explanation **when the learner asks why** ("why this instead of just asking for JSON?"), not as a lead-in. Lead with what the code does. Reach for the contrast as backstory.
+
+### Why this matters
+
+Learners don't care about the workshop's evolution. They care about the production-grade pattern + why it's better than alternatives they might encounter in the wild. The history framing ages out (today's "older version" becomes tomorrow's "even older version"); the concept-vs-concept framing is timeless.
+
+Reference exemplar: `learning-with-court/evals-workshop/workshop/lesson_01_setup/README.md` "Tool use vs 'reply with JSON only'" section.
+
+---
+
+## 17. First-encounter explainer links (optional but recommended)
+
+If the workshop touches topics that the platform's landing-site explainer pages cover (`/secrets`, `/editor`, `/getting-started`, `/troubleshooting`, `/cost`), workshop walkers SHOULD link to them at **first encounter** — the first walker (or first lesson README, or first SessionStart hook surfacing) that introduces each topic.
+
+### The rule
+
+- **Once per topic per workshop.** L1 walker links to `/secrets` at first mention of secret handling. L2-LN walkers do not repeat the link.
+- **Offer, don't nag.** One-line FYI inside a `>` quote block. No urgency. Learner can ignore.
+- **Absolute URLs.** Walkers run in workshop directories; relative links don't resolve.
+- **Map the first encounter at authoring time.** The workshop is sequential — "first" is knowable. No state-tracking, no hook logic.
+
+### Standard FYI-link shape
+
+```markdown
+> First time setting up a workshop secret? See
+> [workshop.institute/secrets](https://workshop.institute/secrets)
+> for the threat model and the three supported flows side by side.
+```
+
+### Per-workshop first-encounter map (TODO for fork operators)
+
+In your forked workshop, document which walker/README/hook is the first encounter for each linkable topic. Then link from that exact spot:
+
+| Topic | Explainer URL | First walker in YOUR workshop |
+|---|---|---|
+| Secret handling | `/secrets` | TODO |
+| Editing files | `/editor` | TODO |
+| Orientation | `/getting-started` | TODO |
+| Troubleshooting | `/troubleshooting` | TODO |
+| Cost | `/cost` | TODO |
+
+Workshops that don't use any of these topics (e.g. a workshop with no secrets, all-read pedagogy) skip the corresponding rows.
+
+Reference exemplar: `learning-with-court/evals-workshop/.claude/hooks/session-start.sh`.
+
+---
+
+## 18. Cost-honesty in learner-facing prose
+
+For workshops that make paid API calls (Anthropic, OpenAI, etc.), learner-facing prose MUST NOT frame the cost as zero. No "free credits cover the workshop", no "[provider] gives you signup credit so it's basically free", no "free key" framing.
+
+### The rule
+
+✅ **Per-call cost framing.**
+
+> *"Each verify call costs about $0.001 on Haiku 4.5. The workshop runs against real API — these are not free."*
+
+✗ **Free-credit framing.**
+
+> *"[Provider] typically gives new accounts some signup credit; check the current amount on the console."*
+> *"Free credits cover the workshop."*
+
+### What stays "free"
+
+Three things genuinely cost zero per call and CAN keep the "free" framing:
+
+- Unit tests (mocked SDK; no API call)
+- Pure-function judges / validators (no API call)
+- Cache hits (cached response replays at zero cost)
+
+These are the pedagogically useful cost contrast — the workshop teaches *when each tier of work costs money and when it doesn't*. Calling the API-driven path "free" undercuts the lesson.
+
+### Why this matters
+
+For workshops about cost-aware production patterns (evals, in particular), saying "it's basically free" teaches the wrong mental model from page one. Real money, modest amount, learner should know. The cost guardrails the workshop teaches (default item caps, structural-first then LLM-second judging, cache reuse) only make pedagogical sense if the learner understands the API calls cost something.
+
+Reference exemplar: `learning-with-court/evals-workshop/workshop/lesson_01_setup/README.md` Step 1 — honest per-call cost framing.
+
 ## Where this came from
 
 This spec is derived from `learning-with-court/mcp-workshop`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.

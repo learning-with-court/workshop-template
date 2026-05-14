@@ -63,6 +63,14 @@ for the full lesson convention.
 
 Need to renumber a lesson? `pnpm rename-lesson 03 04` — renumber lesson 03 to lesson 04 (updates dir, lesson.yaml, package.json, walker, workshop.yaml, prereqs).
 
+Walker boilerplate (visible walkthrough contract, learner-driven rule,
+HARD vs SOFT gate semantics, read-the-state-silently pattern, style)
+lives in [`.claude/skills/_walker-base.md`](.claude/skills/_walker-base.md).
+Your per-lesson walker only needs **Pedagogical priority**, **Steps**,
+**What To Say Next**, and any lesson-specific **Common debugging** tips —
+link to `_walker-base.md` from the top of the walker rather than
+re-stating the shared conventions.
+
 ## Shared workshop data
 
 If two or more lessons read the same data — a sample SQLite DB, a RAG
@@ -78,6 +86,7 @@ data-heavy workshops, edit `scripts/setup-shared.ts` to download or
 generate the seed data — keep it idempotent. See
 [`workshop/shared/README.md`](workshop/shared/README.md) for the full
 pattern.
+
 
 ## Verify locally
 

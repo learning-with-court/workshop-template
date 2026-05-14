@@ -44,10 +44,22 @@ grep -rn "TODO:" --include="*.md" --include="*.yaml" .
 
 ## Add lessons
 
-See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md) for the
-full convention. Short version: copy `workshop/lesson_01_template/`,
-rename to `lesson_NN_<slug>/`, update `lesson.yaml` (id + title +
-verifyCommand + onPass), add the key to `workshop.yaml` `phases`.
+Use the generator:
+
+```bash
+pnpm new-lesson 03 joins-and-aggregates --phase B
+```
+
+It copies `workshop/lesson_01_template/` to `workshop/lesson_03_joins_and_aggregates/`,
+rewrites `package.json` / `lesson.yaml` / `README.md` / the walker skill at
+`.claude/skills/lesson-03.md`, and appends `03-joins-and-aggregates` to the
+phase's `lessons` list in `workshop.yaml`. `--phase` defaults to `A`. The
+script refuses to overwrite an existing lesson dir or walker.
+
+After scaffolding, run `pnpm install` so the new workspace package is
+picked up, then `grep -rn TODO:` inside the new dir + walker to find the
+fields you need to fill in. See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md)
+for the full lesson convention.
 
 ## Verify locally
 

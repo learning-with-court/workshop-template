@@ -61,6 +61,22 @@ picked up, then `grep -rn TODO:` inside the new dir + walker to find the
 fields you need to fill in. See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md)
 for the full lesson convention.
 
+## Shared workshop data
+
+If two or more lessons read the same data — a sample SQLite DB, a RAG
+fixture corpus, golden eval outputs — drop it under `workshop/shared/`
+and provision via `pnpm setup-shared`.
+
+```bash
+pnpm setup-shared         # default: no-op (most workshops don't need this)
+```
+
+Most workshops are content-only and can ignore this slot entirely. For
+data-heavy workshops, edit `scripts/setup-shared.ts` to download or
+generate the seed data — keep it idempotent. See
+[`workshop/shared/README.md`](workshop/shared/README.md) for the full
+pattern.
+
 ## Verify locally
 
 ```bash

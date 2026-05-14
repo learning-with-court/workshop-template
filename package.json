@@ -15,6 +15,7 @@
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "lint-manifest": "tsx scripts/lint-manifest.ts",
     "new-lesson": "tsx scripts/new-lesson.ts",
+    "setup-shared": "tsx scripts/setup-shared.ts",
     "test:scripts": "vitest run scripts/",
     "postinstall": "lefthook install"
   },

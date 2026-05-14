@@ -15,7 +15,6 @@ summary: |
   TODO: 2–4 sentence paragraph. What does the learner build? What's the
   end state? Who is this for? Read the mcp-workshop summary for tone.
 difficulty: beginner  # beginner | intermediate | advanced
-duration: "TODO: e.g. 4–6 hours"
 tags:
   - todo-tag
 install: "set up the template workshop"  # what the user types to install via the setup skill

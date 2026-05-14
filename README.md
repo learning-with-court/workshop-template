@@ -61,6 +61,8 @@ picked up, then `grep -rn TODO:` inside the new dir + walker to find the
 fields you need to fill in. See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md)
 for the full lesson convention.
 
+Need to renumber a lesson? `pnpm rename-lesson 03 04` — renumber lesson 03 to lesson 04 (updates dir, lesson.yaml, package.json, walker, workshop.yaml, prereqs).
+
 ## Shared workshop data
 
 If two or more lessons read the same data — a sample SQLite DB, a RAG

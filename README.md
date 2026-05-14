@@ -84,6 +84,8 @@ pattern.
 ```bash
 pnpm install              # installs lefthook hooks on postinstall
 pnpm lint-manifest        # validates workshop.yaml + cross-checks fs
+pnpm sync-workshop-yaml   # dry-run diff of workshop.yaml vs filesystem
+pnpm sync-workshop-yaml --write   # apply the rebuild
 pnpm typecheck            # every workspace package
 pnpm test:scripts         # tests the manifest linter itself
 ```

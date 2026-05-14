@@ -49,6 +49,22 @@ full convention. Short version: copy `workshop/lesson_01_template/`,
 rename to `lesson_NN_<slug>/`, update `lesson.yaml` (id + title +
 verifyCommand + onPass), add the key to `workshop.yaml` `phases`.
 
+## Shared workshop data
+
+If two or more lessons read the same data — a sample SQLite DB, a RAG
+fixture corpus, golden eval outputs — drop it under `workshop/shared/`
+and provision via `pnpm setup-shared`.
+
+```bash
+pnpm setup-shared         # default: no-op (most workshops don't need this)
+```
+
+Most workshops are content-only and can ignore this slot entirely. For
+data-heavy workshops, edit `scripts/setup-shared.ts` to download or
+generate the seed data — keep it idempotent. See
+[`workshop/shared/README.md`](workshop/shared/README.md) for the full
+pattern.
+
 ## Verify locally
 
 ```bash

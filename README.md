@@ -11,11 +11,21 @@ Either click **Use this template** at the top of the GitHub page, or:
 ```bash
 gh repo create learning-with-court/<your-workshop-id> \
   --template learning-with-court/workshop-template \
-  --public --clone
+  --private --clone
 
 cd <your-workshop-id>
 pnpm install
 ```
+
+**Workshop repos stay private — forever.** Learners install via
+`lwc setup <id>`, which uses the org's shared GitHub App
+(`learning-with-court`) to mint a short-lived installation token,
+runs `git clone` against the private remote, and strips the token off
+`origin` immediately after. Plain `git pull` against the clone prompts
+for credentials by design; use `lwc update <id>` or `/refresh-workshop`
+inside Claude Code for refreshes. There is no "flip to public when
+ready" step — `mcp-workshop` and `evals-workshop` have always been
+private and `lwc setup` has always handled the credential flow for you.
 
 ## Fill in the template
 

@@ -1,0 +1,56 @@
+// TEMPLATE: rename to `canonical.<ext>` and fill in the authoritative
+// reference implementation for this lesson.
+//
+// What this slot is
+// -----------------
+// `canonical.<ext>` is the *authoritative reference implementation* of the
+// thing the learner is being asked to write. It lives next to the target
+// file in `src/` and gets executed by the lesson's test suite alongside
+// the learner's target — both must produce the output declared in
+// `expected.json` (or whatever fixture the lesson uses).
+//
+// Why it exists — the three drift modes it catches
+// ------------------------------------------------
+// Without a canonical, only the *learner's* filled-in target is checked
+// against `expected.json`. That leaves three classes of bug invisible:
+//
+//   1. Stale expected.json. Author edits the canonical query / code but
+//      forgets to regenerate the fixture. Learners pass against a stale
+//      expectation; the README's example no longer matches reality.
+//   2. Dataset drift. Seed data changes (new rows, schema migration,
+//      regenerated fixture corpus) and nothing notices that the canonical
+//      is no longer consistent with `expected.json`.
+//   3. README disagrees with canonical. The README prose says "the
+//      canonical query is X" but `expected.json` was generated from a
+//      different X. The walker tells the learner one thing while the
+//      test checks something else.
+//
+// Running both target AND canonical against the same fixtures and
+// asserting both match `expected.json` makes drift across
+// README / canonical / expected surface immediately.
+//
+// How to wire it
+// --------------
+// 1. Rename this file to `canonical.<ext>` — match the extension of the
+//    learner's target file:
+//      - SQL workshop:    `canonical.sql`
+//      - TS code lesson:  `canonical.ts`
+//      - config lesson:   `canonical.json`
+//    The extension drives how `runCanonical()` in the test suite executes
+//    the file (raw SQL → query the fixture DB, .ts → dynamic import,
+//    .json → JSON.parse, etc.). Workshop-specific; you wire it.
+// 2. Replace this comment block with the real reference implementation.
+// 3. Open `tests/template.test.ts`, find the "canonical matches expected"
+//    test, and replace the TODO `runCanonical()` stub with the actual
+//    executor for your workshop's file format. The test is currently
+//    `test.skip(...)` — flip it to `test(...)` once the executor is wired
+//    AND the canonical exists.
+//
+// Read-pedagogy lessons (no learner-edited target — the lesson IS the
+// canonical) can omit this file. The lesson source itself is the
+// reference; there's nothing to cross-check.
+//
+// Visibility note: the canonical is NOT hidden from learners. The
+// workshop is hands-on, not graded — peeking at the reference is fine,
+// even encouraged when stuck. The point is to learn by doing, with a
+// known-good answer one file away.

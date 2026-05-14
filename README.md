@@ -63,6 +63,19 @@ for the full lesson convention.
 
 Need to renumber a lesson? `pnpm rename-lesson 03 04` — renumber lesson 03 to lesson 04 (updates dir, lesson.yaml, package.json, walker, workshop.yaml, prereqs).
 
+### Canonical reference implementation
+
+Each write-pedagogy lesson ships a `src/canonical.<ext>` (extension matches the
+learner's target — `canonical.sql` / `canonical.ts` / `canonical.json`) holding
+the authoritative reference implementation. The lesson's test suite runs
+**both** the learner's target and the canonical against the same fixtures and
+asserts both produce the declared `expected.json`. This catches stale fixtures,
+dataset drift, and README-vs-implementation disagreement before they reach
+learners. The generator carries `src/canonical.example` into every new lesson;
+read-pedagogy lessons can leave the slot empty. See
+[`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md#canonical-reference-implementation)
+for the wiring details and the three drift modes it catches.
+
 Walker boilerplate (visible walkthrough contract, learner-driven rule,
 HARD vs SOFT gate semantics, read-the-state-silently pattern, style)
 lives in [`.claude/skills/_walker-base.md`](.claude/skills/_walker-base.md).

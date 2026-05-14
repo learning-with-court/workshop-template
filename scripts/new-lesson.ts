@@ -17,6 +17,12 @@
 //   - Rewrites the lesson README H1 to "Lesson <N>: TODO" so the manifest
 //     linter doesn't fail on the title check before the author edits it.
 //   - Rewrites tests/template.test.ts describe block label.
+//   - Carries `src/canonical.example` across as-is. The author renames
+//     it to `canonical.<ext>` (sql/ts/json) once they've decided the
+//     lesson's reference-implementation format and wires the matching
+//     `it.skip("canonical matches expected", ...)` test in
+//     tests/template.test.ts. See workshop/LESSON_TEMPLATE.md
+//     §canonical-reference-implementation for the full convention.
 //   - Copies .claude/skills/lesson-01.md -> lesson-<NN>.md and rewrites
 //     frontmatter `name` + trigger phrases for the new number.
 //   - Appends <NN>-<slug> to workshop.yaml phases[--phase].lessons.
@@ -335,6 +341,10 @@ function main() {
     "  pnpm install",
     "  grep -rn TODO: " + `workshop/${dirName} .claude/skills/lesson-${nn}.md`,
     "  # fill in title/blurb/verifyCommand assertions, walker prose, lesson source",
+    `  # rename workshop/${dirName}/src/canonical.example -> canonical.<ext>`,
+    "  # (sql/ts/json) and wire the skipped \"canonical matches expected\"",
+    `  # test in workshop/${dirName}/tests/template.test.ts. Read-pedagogy`,
+    "  # lessons can leave the slot empty.",
     "",
   ].join("\n");
   console.log(summary);

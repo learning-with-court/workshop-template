@@ -551,7 +551,7 @@ classifier; see `setup-workshop/SKILL.md §2a`):
 
 | Helper | Command | Satisfied when |
 |---|---|---|
-| Anthropic API key | `lwc env get ANTHROPIC_API_KEY 2>/dev/null \|\| true` | non-empty stdout (inspect stdout, never exit code) |
+| Anthropic API key | `grep -q '^ANTHROPIC_API_KEY=' .env && echo "present" \|\| echo "missing"` | stdout is `present` |
 | Claude Code | `which claude 2>/dev/null \|\| true` | non-empty stdout |
 | Workshop directory | `test -f workshop.yaml 2>/dev/null \|\| true` | exit 0 (from install path) |
 | Clerk auth | `lwc auth whoami 2>/dev/null \|\| true` | non-empty stdout |
@@ -562,6 +562,8 @@ On Windows, replace `which claude` with `Get-Command claude`.
 
 ### Hard constraints
 
+- **Walkers MUST NOT invoke commands that print secret values to stdout.**
+  Use presence checks only — file-level grep on `.env` (emits "present"/"missing", never the value), or `lwc env list` for names-only listing. The `lwc env get` command is for shell interpolation in the operator's terminal, never for agent-visible detection. Even with `2>/dev/null`, a stdout pipe of a secret value into the agent's tool surface counts as a leak.
 - **Walkers MUST NOT auto-run lesson `verify` on the learner's behalf.**
   Lesson pacing stays learner-driven (see §10 "Learner-driven rule").
 - **Walkers MUST NOT use time-based heuristics to gate progress.**

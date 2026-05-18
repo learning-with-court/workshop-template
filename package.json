@@ -14,6 +14,10 @@
     "test": "pnpm -r --workspace-concurrency=1 test",
     "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
     "lint-manifest": "tsx scripts/lint-manifest.ts",
+    "new-lesson": "tsx scripts/new-lesson.ts",
+    "rename-lesson": "tsx scripts/rename-lesson.ts",
+    "setup-shared": "tsx scripts/setup-shared.ts",
+    "sync-workshop-yaml": "tsx scripts/sync-workshop-yaml.ts",
     "test:scripts": "vitest run scripts/",
     "postinstall": "lefthook install"
   },

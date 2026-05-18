@@ -11,11 +11,21 @@ Either click **Use this template** at the top of the GitHub page, or:
 ```bash
 gh repo create learning-with-court/<your-workshop-id> \
   --template learning-with-court/workshop-template \
-  --public --clone
+  --private --clone
 
 cd <your-workshop-id>
 pnpm install
 ```
+
+**Workshop repos stay private — forever.** Learners install via
+`lwc setup <id>`, which uses the org's shared GitHub App
+(`learning-with-court`) to mint a short-lived installation token,
+runs `git clone` against the private remote, and strips the token off
+`origin` immediately after. Plain `git pull` against the clone prompts
+for credentials by design; use `lwc update <id>` or `/refresh-workshop`
+inside Claude Code for refreshes. There is no "flip to public when
+ready" step — `mcp-workshop` and `evals-workshop` have always been
+private and `lwc setup` has always handled the credential flow for you.
 
 ## Fill in the template
 
@@ -44,16 +54,70 @@ grep -rn "TODO:" --include="*.md" --include="*.yaml" .
 
 ## Add lessons
 
-See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md) for the
-full convention. Short version: copy `workshop/lesson_01_template/`,
-rename to `lesson_NN_<slug>/`, update `lesson.yaml` (id + title +
-verifyCommand + onPass), add the key to `workshop.yaml` `phases`.
+Use the generator:
+
+```bash
+pnpm new-lesson 03 joins-and-aggregates --phase B
+```
+
+It copies `workshop/lesson_01_template/` to `workshop/lesson_03_joins_and_aggregates/`,
+rewrites `package.json` / `lesson.yaml` / `README.md` / the walker skill at
+`.claude/skills/lesson-03.md`, and appends `03-joins-and-aggregates` to the
+phase's `lessons` list in `workshop.yaml`. `--phase` defaults to `A`. The
+script refuses to overwrite an existing lesson dir or walker.
+
+After scaffolding, run `pnpm install` so the new workspace package is
+picked up, then `grep -rn TODO:` inside the new dir + walker to find the
+fields you need to fill in. See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md)
+for the full lesson convention.
+
+Need to renumber a lesson? `pnpm rename-lesson 03 04` — renumber lesson 03 to lesson 04 (updates dir, lesson.yaml, package.json, walker, workshop.yaml, prereqs).
+
+### Canonical reference implementation
+
+Each write-pedagogy lesson ships a `src/canonical.<ext>` (extension matches the
+learner's target — `canonical.sql` / `canonical.ts` / `canonical.json`) holding
+the authoritative reference implementation. The lesson's test suite runs
+**both** the learner's target and the canonical against the same fixtures and
+asserts both produce the declared `expected.json`. This catches stale fixtures,
+dataset drift, and README-vs-implementation disagreement before they reach
+learners. The generator carries `src/canonical.example` into every new lesson;
+read-pedagogy lessons can leave the slot empty. See
+[`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md#canonical-reference-implementation)
+for the wiring details and the three drift modes it catches.
+
+Walker boilerplate (visible walkthrough contract, learner-driven rule,
+HARD vs SOFT gate semantics, read-the-state-silently pattern, style)
+lives in [`.claude/skills/_walker-base.md`](.claude/skills/_walker-base.md).
+Your per-lesson walker only needs **Pedagogical priority**, **Steps**,
+**What To Say Next**, and any lesson-specific **Common debugging** tips —
+link to `_walker-base.md` from the top of the walker rather than
+re-stating the shared conventions.
+
+## Shared workshop data
+
+If two or more lessons read the same data — a sample SQLite DB, a RAG
+fixture corpus, golden eval outputs — drop it under `workshop/shared/`
+and provision via `pnpm setup-shared`.
+
+```bash
+pnpm setup-shared         # default: no-op (most workshops don't need this)
+```
+
+Most workshops are content-only and can ignore this slot entirely. For
+data-heavy workshops, edit `scripts/setup-shared.ts` to download or
+generate the seed data — keep it idempotent. See
+[`workshop/shared/README.md`](workshop/shared/README.md) for the full
+pattern.
+
 
 ## Verify locally
 
 ```bash
 pnpm install              # installs lefthook hooks on postinstall
 pnpm lint-manifest        # validates workshop.yaml + cross-checks fs
+pnpm sync-workshop-yaml   # dry-run diff of workshop.yaml vs filesystem
+pnpm sync-workshop-yaml --write   # apply the rebuild
 pnpm typecheck            # every workspace package
 pnpm test:scripts         # tests the manifest linter itself
 ```

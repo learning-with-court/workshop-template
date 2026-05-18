@@ -23,7 +23,6 @@ const Workshop = z.object({
   tagline: z.string(),
   summary: z.string(),
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
-  duration: z.string(),
   tags: z.array(z.string()),
   install: z.string(),
   subdomains: z.object({

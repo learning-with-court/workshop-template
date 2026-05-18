@@ -14,6 +14,8 @@ description: Shared conventions referenced by per-lesson walkers. Not invoked di
 > per-lesson walkers focused on **Pedagogical priority**, **Steps**, **What
 > To Say Next**, and any **Common debugging** unique to that lesson.
 
+**Tip:** run `! code .` in your Claude Code session to open this project in VS Code alongside the agent. Useful for watching files change as the agent edits — even when you're not the one typing.
+
 ## Visible walkthrough contract
 
 - **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** Claude Code collapses Bash tool output by default (`+N lines (ctrl+o to expand)`), so the user can't see what happened unless you transcribe it. After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.

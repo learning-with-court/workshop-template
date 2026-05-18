@@ -33,3 +33,14 @@ phases:
     title: "TODO: phase title"
     lessons:
       - 01-template
+
+# Optional: series membership. Omit entirely for standalone workshops.
+# Add this block when the workshop is part of a multi-workshop series
+# that learners should walk in order (e.g. the Claude Certified Architect series).
+# The same values must be mirrored in the `series` field of the workshops.json
+# registry entry so the landing site can group and link series members.
+#
+# series:
+#   id: my-series-id          # kebab-case; shared by all workshops in the series
+#   title: "My Series Title"  # human-readable; same for all workshops in the series
+#   order: 1                  # 1-indexed position within the series

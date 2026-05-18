@@ -57,6 +57,34 @@ their editor (VS Code, etc.)**.
   silently (see below) and guide; only run `verify`/`test` after the
   learner says `run verify` (or `let's run the tests`, `verify it`, `go`).
 
+## Detection-based fast-forward
+
+Walkers MAY shell-check for installed components and environment
+variables to skip setup steps a learner has already handled.
+When detection finds a satisfied requirement, **render one confirmation
+line and proceed** — do not re-explain the setup.
+
+**Canonical detection helpers** (each run as its own Bash call):
+
+| Helper | Command | Satisfied when |
+|---|---|---|
+| Anthropic API key | `lwc env get ANTHROPIC_API_KEY` | exit 0 + non-empty stdout |
+| Claude Code | `which claude` | exit 0 |
+| Workshop directory | `test -f workshop.yaml` | exit 0 (from install path) |
+| Clerk auth | `lwc auth whoami` | exit 0 |
+
+One-line confirmation when a check passes:
+> ✓ `ANTHROPIC_API_KEY` is set. Moving on.
+
+**Hard constraints:**
+
+- Walkers MUST NOT auto-run lesson `verify` on the learner's behalf.
+  Detection collapses *setup* steps only; lesson pacing stays
+  learner-driven (see **Learner-driven rule** below).
+- Walkers MUST NOT use time-based heuristics to gate progress.
+- Detection reads state only — no auto-install of missing components.
+  If a check fails, guide the learner to install/configure normally.
+
 ## HARD vs SOFT gates
 
 Walkers gate progress on certain learner actions before continuing.

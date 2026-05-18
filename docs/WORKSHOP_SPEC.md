@@ -525,6 +525,71 @@ For workshops about cost-aware production patterns (evals, in particular), sayin
 
 Reference exemplar: `learning-with-court/evals-workshop/workshop/lesson_01_setup/README.md` Step 1 — honest per-call cost framing.
 
+## 19. Detection-based fast-forward
+
+Lesson-01 walkers (and `setup-workshop`) SHOULD silently probe the
+learner's environment for already-satisfied setup requirements and
+collapse those steps to a one-line confirmation.
+
+### The rule
+
+**Detection is for skipping requirements, not for pacing.**
+
+✅ **Allowed — skipping setup requirements:**
+
+> ✓ `ANTHROPIC_API_KEY` is set. Moving on.
+> ✓ Claude Code installed (`claude` 1.x.x). Moving on.
+
+✗ **Not allowed — pacing the learner:**
+
+> *Walker decides the learner has seen enough of the setup lesson and advances them.*
+
+### Canonical detection helpers
+
+Run each as its own Bash call (consistent with Claude Code's auto-mode
+classifier; see `setup-workshop/SKILL.md §2a`):
+
+| Helper | Command | Satisfied when |
+|---|---|---|
+| Anthropic API key | `lwc env get ANTHROPIC_API_KEY` | exit 0 + non-empty stdout |
+| Claude Code | `which claude` | exit 0 |
+| Workshop directory | `test -f workshop.yaml` | exit 0 (from install path) |
+| Clerk auth | `lwc auth whoami` | exit 0 |
+
+On Windows, replace `which claude` with `Get-Command claude`.
+
+### Hard constraints
+
+- **Walkers MUST NOT auto-run lesson `verify` on the learner's behalf.**
+  Lesson pacing stays learner-driven (see §10 "Learner-driven rule").
+- **Walkers MUST NOT use time-based heuristics to gate progress.**
+- **Detection reads state only.** No auto-install of missing components.
+  When a check fails, guide the learner through the install/configuration
+  step normally.
+
+### Application point
+
+Lesson-01 walkers are the primary application point because they share
+a common setup floor: Node, package manager, Anthropic API key, Claude
+Code install, Clerk auth. A returning learner who has done even one
+prior workshop will have most of these satisfied and should not be
+walked through the full ladder again.
+
+Add a `### Setup detection (pre-step)` block at the top of your
+lesson-01 walker's `## Steps` section. The block runs the relevant
+checks silently, renders one confirmation line per satisfied requirement,
+and then proceeds to the first lesson step. Nothing else changes in the
+walker's pedagogy.
+
+### Where this rule came from
+
+Codified as part of the `detection-based-fast-forward` feature (May
+2026), motivated by the Claude Certified Architect series where multiple
+workshops share the same setup floor — by workshop #3, a learner has
+installed Claude Code and configured their API key twice already.
+
+---
+
 ## Where this came from
 
 This spec is derived from `learning-with-court/mcp-workshop`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.

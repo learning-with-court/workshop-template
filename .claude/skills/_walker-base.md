@@ -68,10 +68,12 @@ line and proceed** — do not re-explain the setup.
 
 | Helper | Command | Satisfied when |
 |---|---|---|
-| Anthropic API key | `lwc env get ANTHROPIC_API_KEY` | exit 0 + non-empty stdout |
-| Claude Code | `which claude` | exit 0 |
-| Workshop directory | `test -f workshop.yaml` | exit 0 (from install path) |
-| Clerk auth | `lwc auth whoami` | exit 0 |
+| Anthropic API key | `lwc env get ANTHROPIC_API_KEY 2>/dev/null \|\| true` | non-empty stdout (inspect stdout, never exit code) |
+| Claude Code | `which claude 2>/dev/null \|\| true` | non-empty stdout |
+| Workshop directory | `test -f workshop.yaml 2>/dev/null \|\| true` | exit 0 (from install path) |
+| Clerk auth | `lwc auth whoami 2>/dev/null \|\| true` | non-empty stdout |
+
+> **Resilience rule:** Detection probes that may return "not found" as a normal outcome MUST be guarded with `2>/dev/null || true` (or equivalent) so non-zero exit codes never cancel sibling tool calls in a parallel batch. The walker inspects **stdout** to determine satisfaction — never the exit code.
 
 One-line confirmation when a check passes:
 > ✓ `ANTHROPIC_API_KEY` is set. Moving on.

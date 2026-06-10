@@ -2,7 +2,7 @@
 
 This is the **binding contract** every lesson walker skill, lesson README, utility skill, and the root README should meet in a workshop forked from this template. The spec exists because the workshop's value isn't the code — it's the experience of being walked through that code by Claude Code itself. When the contract drifts, the workshop degrades into a reference doc with a thin plugin around it.
 
-**Source of truth:** This spec is lifted from `learning-with-court/mcp-workshop`'s `docs/WORKSHOP_SPEC.md`, the canonical pedagogy bar. Workshop-specific sections are marked with `TODO:` callouts for fork operators to fill in. If you want enforcement (the linter mcp-workshop ships at `scripts/lint-workshop.ts` runs 16 structural rules on every push), copy it from there — this template intentionally doesn't ship a linter.
+**Source of truth:** This spec is lifted from `learning-with-court/workshop-mcp`'s `docs/WORKSHOP_SPEC.md`, the canonical pedagogy bar. Workshop-specific sections are marked with `TODO:` callouts for fork operators to fill in. If you want enforcement (the linter mcp-workshop ships at `scripts/lint-workshop.ts` runs 16 structural rules on every push), copy it from there — this template intentionally doesn't ship a linter.
 
 If you want to skip a section because it doesn't apply, that's a signal to think harder, not to silently omit it. Most rules are workshop-agnostic.
 
@@ -269,7 +269,7 @@ Every `## Next` pointer in lesson NN's README and walker should reference lesson
 
 ## 6. Lint enforcement (optional but recommended)
 
-`learning-with-court/mcp-workshop` ships `scripts/lint-workshop.ts` that CI runs on every push. It enforces 16 structural rules with line-pointed errors:
+`learning-with-court/workshop-mcp` ships `scripts/lint-workshop.ts` that CI runs on every push. It enforces 16 structural rules with line-pointed errors:
 
 1. Every skill has frontmatter with `name` matching the filename, third-person `description`, ≤1024 chars.
 2. Every lesson walker has all required H2 sections.
@@ -425,7 +425,7 @@ N+2. Run tests (existing pattern).
 
 The lesson's pedagogical priority is *what the composition does*, not *every line of how it's composed*. Phase-by-phase drills make the composition explicit (each phase ties back to a prior lesson it builds on) instead of asserted (one big block of code followed by "this composes everything").
 
-Reference exemplar: `learning-with-court/evals-workshop/.claude/skills/lesson-06.md`.
+Reference exemplar: `learning-with-court/workshop-evals/.claude/skills/lesson-06.md`.
 
 ---
 
@@ -453,7 +453,7 @@ Surface the alternative-pattern explanation **when the learner asks why** ("why 
 
 Learners don't care about the workshop's evolution. They care about the production-grade pattern + why it's better than alternatives they might encounter in the wild. The history framing ages out (today's "older version" becomes tomorrow's "even older version"); the concept-vs-concept framing is timeless.
 
-Reference exemplar: `learning-with-court/evals-workshop/workshop/lesson_01_setup/README.md` "Tool use vs 'reply with JSON only'" section.
+Reference exemplar: `learning-with-court/workshop-evals/workshop/lesson_01_setup/README.md` "Tool use vs 'reply with JSON only'" section.
 
 ---
 
@@ -490,7 +490,7 @@ In your forked workshop, document which walker/README/hook is the first encounte
 
 Workshops that don't use any of these topics (e.g. a workshop with no secrets, all-read pedagogy) skip the corresponding rows.
 
-Reference exemplar: `learning-with-court/evals-workshop/.claude/hooks/session-start.sh`.
+Reference exemplar: `learning-with-court/workshop-evals/.claude/hooks/session-start.sh`.
 
 ---
 
@@ -523,7 +523,7 @@ These are the pedagogically useful cost contrast — the workshop teaches *when 
 
 For workshops about cost-aware production patterns (evals, in particular), saying "it's basically free" teaches the wrong mental model from page one. Real money, modest amount, learner should know. The cost guardrails the workshop teaches (default item caps, structural-first then LLM-second judging, cache reuse) only make pedagogical sense if the learner understands the API calls cost something.
 
-Reference exemplar: `learning-with-court/evals-workshop/workshop/lesson_01_setup/README.md` Step 1 — honest per-call cost framing.
+Reference exemplar: `learning-with-court/workshop-evals/workshop/lesson_01_setup/README.md` Step 1 — honest per-call cost framing.
 
 ## 19. Detection-based fast-forward
 
@@ -596,4 +596,4 @@ installed Claude Code and configured their API key twice already.
 
 ## Where this came from
 
-This spec is derived from `learning-with-court/mcp-workshop`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.
+This spec is derived from `learning-with-court/workshop-mcp`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.

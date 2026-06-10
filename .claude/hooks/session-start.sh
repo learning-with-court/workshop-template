@@ -8,7 +8,7 @@
 #
 # This is the TEMPLATE version. Sections marked TODO must be filled in
 # (or deleted) before shipping your workshop. The reference exemplar is
-# learning-with-court/mcp-workshop/.claude/hooks/session-start.sh.
+# learning-with-court/workshop-mcp/.claude/hooks/session-start.sh.
 
 # ────────────────────────────────────────────────────────────────────────
 # OPTIONAL: MCP server auth detection
@@ -195,7 +195,7 @@ If yes (or any affirmative), TODO: describe the entry-point handoff:
 
 TODO: if you want to enforce the learner-driven editing rule mechanically,
 copy \`.claude/hooks/block-edits.sh\` from
-\`learning-with-court/mcp-workshop\` into this workshop and wire it as a
+\`learning-with-court/workshop-mcp\` into this workshop and wire it as a
 \`PreToolUse\` hook in \`.claude/settings.json\`. Then surface the rule
 in this greeting:
 

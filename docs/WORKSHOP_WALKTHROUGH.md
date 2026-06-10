@@ -127,7 +127,7 @@ If you find drift:
 
 1. Open an issue tagged `workshop-drift`.
 2. Quote the exact spec section the lesson violates (e.g., "Lesson N's walker is missing `Say: walk me through changing X` affordances per WORKSHOP_SPEC §1").
-3. Reference the canonical exemplar (`learning-with-court/mcp-workshop`'s Lesson 1 walker / README) for the right shape.
+3. Reference the canonical exemplar (`learning-with-court/workshop-mcp`'s Lesson 1 walker / README) for the right shape.
 
 Don't try to fix everything in one PR. Manifest lint catches structural drift fast; this checklist catches pedagogical drift, which is harder and slower to fix.
 

@@ -5,7 +5,7 @@ For standalone workshops (one repo → one workshop), `workshops.json` looks lik
 ```json
 {
   "id": "mcp-workshop",
-  "repo": "learning-with-court/mcp-workshop",
+  "repo": "learning-with-court/workshop-mcp",
   "ref": "main",
   "envs": ["dev", "prod"]
 }
@@ -27,7 +27,7 @@ find that workshop's `workshop.yaml` and `workshop/` lesson tree.
 ```json
 {
   "id": "cca-claude-code-workshop",
-  "repo": "learning-with-court/claude-certified-architect",
+  "repo": "learning-with-court/workshop-cca",
   "ref": "main",
   "workshopRoot": ".workshop/claude-code",
   "envs": ["dev"],

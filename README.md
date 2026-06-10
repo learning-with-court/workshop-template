@@ -146,7 +146,7 @@ Once your workshop manifest is filled in and lessons are real:
 
 1. Push the repo to GitHub
 2. Add an entry to
-   [`learning-with-court-platform/workshops.json`](https://github.com/learning-with-court/platform/blob/main/workshops.json):
+   [`platform/workshops.json`](https://github.com/learning-with-court/platform/blob/main/workshops.json):
    ```json
    {
      "id": "<your-workshop-id>",
@@ -161,4 +161,4 @@ Once your workshop manifest is filled in and lessons are real:
    automatically.
 
 Reference implementation:
-[`learning-with-court/mcp-workshop`](https://github.com/learning-with-court/mcp-workshop).
+[`learning-with-court/workshop-mcp`](https://github.com/learning-with-court/workshop-mcp).

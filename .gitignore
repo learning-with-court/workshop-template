@@ -6,3 +6,6 @@ dist/
 .DS_Store
 .vitest-cache/
 coverage/
+
+# Auto-generated locally by hooks — not committed
+docs/features/DASHBOARD.md

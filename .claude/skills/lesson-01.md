@@ -20,7 +20,7 @@ description: TEMPLATE — Walks the user through Lesson 1 of this workshop. Repl
 
 > **TODO: replace this entire walker with the real one for Lesson 1.**
 >
-> Reference exemplar: `learning-with-court/mcp-workshop/.claude/skills/lesson-01.md`.
+> Reference exemplar: `learning-with-court/workshop-mcp/.claude/skills/lesson-01.md`.
 > The required H2 sections below are the binding spec from
 > `docs/WORKSHOP_SPEC.md` §1.
 

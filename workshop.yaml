@@ -1,10 +1,10 @@
 # TEMPLATE: fill in every field marked TODO before pushing the registry entry.
 # This file is consumed by:
-#   - learning-with-court-platform manifest fetcher (drives the catalog + Lambda)
+#   - platform manifest fetcher (drives the catalog + Lambda)
 #   - scripts/lint-manifest.ts (validates schema + cross-checks fs)
 #
 # Schema source of truth:
-#   learning-with-court-platform/packages/server/src/manifest/schema.ts
+#   platform/packages/server/src/manifest/schema.ts
 
 id: template-workshop
 title: "TODO: Workshop title"

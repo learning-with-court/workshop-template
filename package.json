@@ -1,5 +1,5 @@
 {
-  "name": "learning-with-court-workshop-template",
+  "name": "workshop-template",
   "version": "0.0.0",
   "private": true,
   "description": "Template repository for new learning-with-court workshops. Fork via 'gh repo create --template'.",

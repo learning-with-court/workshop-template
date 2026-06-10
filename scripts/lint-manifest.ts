@@ -6,7 +6,7 @@ import * as YAML from "js-yaml";
 import { z } from "zod";
 
 // Vendored schemas — keep in sync with
-// learning-with-court-platform/packages/server/src/manifest/schema.ts.
+// platform/packages/server/src/manifest/schema.ts.
 // Cross-repo type sharing isn't worth a published package yet.
 
 const Prereq = z.object({ term: z.string(), desc: z.string() });

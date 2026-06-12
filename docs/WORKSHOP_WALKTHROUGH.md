@@ -8,7 +8,7 @@ Run this checklist:
 - After any retrofit that changes more than ~30% of lessons.
 - Periodically (~quarterly) to catch drift.
 
-The walkthrough takes ~30-45 minutes if everything works, longer if you find issues (which is the point).
+The walkthrough takes longer when you find issues (which is the point).
 
 ---
 

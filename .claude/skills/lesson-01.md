@@ -58,6 +58,10 @@ first, then walk the user through the steps below.
    > **Say `run verify`** when you're ready, or `break down that code`
    > for a chunked walk first.
 
+   Then close the opening with the standing help nudge per **Asking for
+   help is how this works** in `_walker-base.md` — its verbatim final
+   line on every opening. Inherit it; don't hardcode a copy here.
+
 3. **When the user says `run verify`, run it via the Bash tool.** Announce
    the exact command first (e.g. ``I'm going to run: `pnpm --filter
    @workshop/lesson-01-template verify` ``), then call Bash, then:

@@ -59,6 +59,41 @@ their editor (VS Code, etc.)**.
   silently (see below) and guide; only run `verify`/`test` after the
   learner says `run verify` (or `let's run the tests`, `verify it`, `go`).
 
+## Asking for help is how this works (class-wide)
+
+A standing, class-wide rule — it governs EVERY lesson opening and every
+"I'm stuck" moment, no matter which opening style a walker uses. Walkers
+inherit it from here; they do not restate it.
+
+**The standing close.** Every lesson opening ends with this exact line,
+verbatim, as its final line:
+
+> Not sure where to start? Just say so — asking is how this works.
+
+It is uniform across the whole workshop. Whichever opening a walker uses
+— a structured opening protocol, a rendered task/code block then a STOP,
+or a bespoke greeting — the last thing the learner sees in the opening
+is this line. Walkers MUST NOT hardcode their own copy (that drifts); a
+walker whose bespoke greeting would otherwise preclude the close adds a
+one-line deferral pointer to this rule, never a literal copy.
+
+**The coaching move.** "Help", "I'm stuck", "I don't know where to
+start" are first-class moves — the workshops teach learners to ask
+Claude for guidance, and this is them practicing it. Never treat the ask
+as a failure to recover from.
+
+- **Walk them into the FIRST concrete step** — one specific move they
+  can make right now (``Start with the function signature — what should
+  it take and return?``). Not the whole spec, not a numbered plan. One
+  step, then wait.
+- **Never imply they should have known.** No "as the README says", no
+  "like we covered". Meet them where they are.
+- **Two flounders on the same thing → offer guidance proactively.**
+  Don't wait for a third swing or make them ask again. ``Want to walk
+  through the first step together?`` costs nothing.
+
+This is the binding rule in `docs/WORKSHOP_SPEC.md` §20.
+
 ## Detection-based fast-forward
 
 Walkers MAY shell-check for installed components and environment

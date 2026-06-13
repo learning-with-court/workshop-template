@@ -594,6 +594,58 @@ installed Claude Code and configured their API key twice already.
 
 ---
 
+## 20. Asking for help is the skill
+
+Learners MUST never feel stranded — or bad — for not knowing where to
+start. Asking Claude for help and guidance is itself a habit the
+workshops teach. Two binding rules.
+
+### The standing close
+
+Every lesson opening ends with this exact line, verbatim, as its final
+line:
+
+> Not sure where to start? Just say so — asking is how this works.
+
+It lives in **exactly one place** — the shared base layer
+(`_walker-base.md`, the **Asking for help is how this works** rule) —
+and governs every opening style class-wide (a four-line opening
+protocol, a rendered task/code block then a STOP, or a bespoke
+greeting). Walkers do NOT carry their own copy; that drifts. A walker
+whose bespoke greeting would otherwise preclude the close adds a
+one-line **deferral pointer** to the base rule — never a literal copy.
+Uniformity is the point: walkers may rely on the line being there.
+
+### The coaching rule
+
+"Help", "I'm stuck", "I don't know where to start" are first-class
+moves, never failures.
+
+✅ **Walk the learner into the FIRST concrete step.**
+
+> *"Start with the function signature — what should it take and return? The spec section has it if you want to look together."*
+
+✗ **Dump the whole spec, or imply they should have known.**
+
+> *"As the README explains, you need to…"* followed by the full task list.
+
+When a learner flounders twice on the same thing, offer guidance
+proactively — don't wait for a third swing.
+
+Tone bar: warm and matter-of-fact, zero condescension, zero shame. The
+nudge is one line, not a paragraph of reassurance; the coaching is
+where the help actually lands.
+
+### Where this rule came from
+
+Codified as the `help-nudges-pedagogy` feature (June 2026), from a
+direct operator rule: users should get USED to asking Claude for help —
+that habit is itself a thing the workshops teach. It lives in the base
+layer so it's inherited by every walker (and every future forked
+workshop) rather than pasted per-lesson.
+
+---
+
 ## Where this came from
 
 This spec is derived from `learning-with-court/workshop-mcp`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.

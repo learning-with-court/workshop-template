@@ -33,11 +33,11 @@ Every file with `TODO:` markers needs your attention. Start here:
 
 | File | What to fill in |
 |---|---|
-| `workshop.yaml` | id, title, tagline, summary, subdomains, tags, prereqs, phases |
+| `workshop.yaml` | id, title, tagline, summary, tags, prereqs, phases |
 | `landing.md` | long-form prose for the catalog detail page |
-| `workshop/lesson_01_template/` | rename dir, fill in lesson manifest + content |
+| `workshop/lesson_example/` | rename dir to your lesson slug, fill in lesson manifest + content |
 | `workshop/LESSON_TEMPLATE.md` | (reference only — don't edit) |
-| `.claude/skills/lesson-01.md` | per-lesson walker skill (read directly via `Read`, NOT the `Skill` tool) |
+| `.claude/skills/lesson-example.md` | per-lesson walker skill (read directly via `Read`, NOT the `Skill` tool) |
 | `.claude/skills/workshop-orchestrator.md` | shared pedagogy contract — fill in workshop-name, MCP-server-or-not |
 | `.claude/skills/start-workshop.md` | entry-point skill — fill in package.json name + workshop name |
 | `.claude/hooks/session-start.sh` | SessionStart greeting — fill in workshop shape, optionally enable MCP-auth + env-key detection blocks |
@@ -57,21 +57,22 @@ grep -rn "TODO:" --include="*.md" --include="*.yaml" .
 Use the generator:
 
 ```bash
-pnpm new-lesson 03 joins-and-aggregates --phase B
+pnpm new-lesson joins-and-aggregates --phase B
 ```
 
-It copies `workshop/lesson_01_template/` to `workshop/lesson_03_joins_and_aggregates/`,
+It copies `workshop/lesson_example/` to `workshop/lesson_joins-and-aggregates/`,
 rewrites `package.json` / `lesson.yaml` / `README.md` / the walker skill at
-`.claude/skills/lesson-03.md`, and appends `03-joins-and-aggregates` to the
-phase's `lessons` list in `workshop.yaml`. `--phase` defaults to `A`. The
-script refuses to overwrite an existing lesson dir or walker.
+`.claude/skills/lesson-joins-and-aggregates.md`, and appends `joins-and-aggregates`
+to the phase's `lessons` list in `workshop.yaml`. `--phase` defaults to `A`. The
+script refuses to overwrite an existing lesson dir or walker. Lessons are
+identified by slug — there is no lesson number; see `docs/WORKSHOP_STANDARD.md`.
 
 After scaffolding, run `pnpm install` so the new workspace package is
 picked up, then `grep -rn TODO:` inside the new dir + walker to find the
 fields you need to fill in. See [`workshop/LESSON_TEMPLATE.md`](workshop/LESSON_TEMPLATE.md)
 for the full lesson convention.
 
-Need to renumber a lesson? `pnpm rename-lesson 03 04` — renumber lesson 03 to lesson 04 (updates dir, lesson.yaml, package.json, walker, workshop.yaml, prereqs).
+Need to rename a lesson's slug? `pnpm rename-lesson joins aggregates-and-joins` — renames the lesson slug (updates dir, lesson.yaml id, package.json, walker, workshop.yaml, and prerequisites/advanceTo in peer lessons).
 
 ### Canonical reference implementation
 

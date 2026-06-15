@@ -1,31 +1,32 @@
 ---
-name: lesson-01
-description: TEMPLATE — Walks the user through Lesson 1 of this workshop. Replace this description (and the body) with the real walker. Use third-person + 4–8 trigger phrases when authoring — e.g. "start lesson 1", "begin lesson 1", "lesson 1", "do lesson 1", "walk me through lesson 1", "first lesson", plus a topic-specific trigger or two.
+name: lesson-example
+description: TEMPLATE — Walks the user through the example lesson of this workshop. Replace this description (and the body) with the real walker. Use third-person + 4–8 trigger phrases when authoring — e.g. "start the setup lesson", "begin setup", "do the setup lesson", "walk me through setup", "first lesson", plus a topic-specific trigger or two. Match the phrases to your lesson's slug, not a number.
 ---
 
-# Lesson 1 — Template walker
+# Example lesson — Template walker
 
 > **Conventions:** see [`_walker-base.md`](_walker-base.md) for the
 > visible walkthrough contract, learner-driven rule, HARD vs SOFT gates,
 > read-the-state-silently pattern, style, and verify-is-diagnostic
 > framing. This walker only carries the per-lesson content.
 
-> **HOW CLAUDE READS THIS FILE.** This file lives at `.claude/skills/lesson-01.md`.
-> Project-level skill files like this one are NOT registered as invocable
-> Skills — when a walker tells Claude to "invoke the lesson-01 skill" or
-> "use `Skill(lesson-01)`", the call errors. **The activation is the Read.**
+> **HOW CLAUDE READS THIS FILE.** This file lives at `.claude/skills/lesson-<slug>.md`
+> (here, `lesson-example.md`). Project-level skill files like this one are NOT
+> registered as invocable Skills — when a walker tells Claude to "invoke the
+> lesson-example skill" or "use `Skill(lesson-example)`", the call errors.
+> **The activation is the Read.**
 > When the learner says a trigger phrase, the agent uses the `Read` tool
 > on this file and follows the prose top-to-bottom. Never write "invoke
 > this skill" or "use the Skill tool" in walker prose.
 
-> **TODO: replace this entire walker with the real one for Lesson 1.**
+> **TODO: replace this entire walker with the real one for your lesson.**
 >
-> Reference exemplar: `learning-with-court/workshop-mcp/.claude/skills/lesson-01.md`.
+> Reference exemplar: `learning-with-court/workshop-mcp/.claude/skills/lesson-setup.md`.
 > The required H2 sections below are the binding spec from
 > `docs/WORKSHOP_SPEC.md` §1.
 
-You are facilitating Lesson 1. The lesson README at
-`workshop/lesson_01_template/README.md` is the source of truth — read it
+You are facilitating the example lesson. The lesson README at
+`workshop/lesson_example/README.md` is the source of truth — read it
 first, then walk the user through the steps below.
 
 ## Pedagogical priority
@@ -40,7 +41,7 @@ first, then walk the user through the steps below.
 > TODO: replace this stub with the lesson's actual Steps. The pattern from
 > `WORKSHOP_SPEC.md` §1:
 
-1. Read `workshop/lesson_01_template/README.md` and the relevant `src/`
+1. Read `workshop/lesson_example/README.md` and the relevant `src/`
    files so you have both the lesson structure and the actual code in
    mind.
 
@@ -64,7 +65,7 @@ first, then walk the user through the steps below.
 
 3. **When the user says `run verify`, run it via the Bash tool.** Announce
    the exact command first (e.g. ``I'm going to run: `pnpm --filter
-   @workshop/lesson-01-template verify` ``), then call Bash, then:
+   @workshop/lesson-example verify` ``), then call Bash, then:
    1. Quote the full stdout verbatim in a fenced code block.
    2. Tie one important output line to the source path that produced it.
    3. End with the next-step phrase:

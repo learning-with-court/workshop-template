@@ -43,15 +43,15 @@ Example shape (workshop-agnostic):
 
 ## 1. Lesson walker skill file
 
-Path: `.claude/skills/lesson-NN.md` (flat layout — Claude reads this file directly via Read; project-level skill files are not registered as invocable Skills).
+Path: `.claude/skills/lesson-<slug>.md` (flat layout — Claude reads this file directly via Read; project-level skill files are not registered as invocable Skills).
 
-> **CRITICAL.** Never tell the agent to "invoke this skill" or "use the Skill tool" in walker prose. The agent reads the file via Read; that read IS the activation. Telling it to call `Skill(lesson-NN)` produces a runtime error.
+> **CRITICAL.** Never tell the agent to "invoke this skill" or "use the Skill tool" in walker prose. The agent reads the file via Read; that read IS the activation. Telling it to call `Skill(lesson-<slug>)` produces a runtime error.
 
 ### Frontmatter
 
 ```markdown
 ---
-name: lesson-NN
+name: lesson-<slug>
 description: <third-person what + when with 4–8 trigger phrases, per §0>
 ---
 ```
@@ -70,9 +70,9 @@ Copy this template into your walker and only adjust file references:
 ## Visible walkthrough contract
 
 - **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.
-- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-NN verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
+- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
 - **Pause before each Bash run.** After explaining the code (or after a previous command's output), STOP and wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT run the next command automatically. The user needs a beat to read, ask follow-ups, or branch to `break down that code` before anything happens.
-- **Walker MUST NOT edit lesson source files** under `workshop/lesson_NN_*/src/` or `tests/`. Edit experiments are the user's hands-on moment — show them the diff, ask them to apply it in their editor, then offer to rerun verify when they confirm saved. (See §13 for the optional block-edits hook that enforces this mechanically.)
+- **Walker MUST NOT edit lesson source files** under `workshop/lesson_<slug>/src/` or `tests/`. Edit experiments are the user's hands-on moment — show them the diff, ask them to apply it in their editor, then offer to rerun verify when they confirm saved. (See §13 for the optional block-edits hook that enforces this mechanically.)
 - **Walker MUST NOT use the Bash tool to generate or echo any secret.** The verbatim-quote rule has a hard exception here: a Bash invocation that would produce or echo a secret (e.g. `crypto.randomBytes`, `openssl rand`, `cat .env`) must not be run in the first place. Generation always happens in the user's own terminal — show the recipe, tell the user to run it in their terminal, ask them to say when they've done it, and pause. See §8.
 - Before running anything, show the relevant code snippet inline in chat (not "look at the file") and say what output shape to expect.
 - Suggest the user can ask to inspect more source: `Say: show me what's in <lesson-dir>/src/<file>`.
@@ -108,7 +108,7 @@ Numbered list. Each step that requires running a command follows the **Bash + ve
 ```markdown
 4. **When the user says `run verify`, run it via the Bash tool.** Before invoking Bash, write a short line announcing the exact command, e.g.:
 
-   > I'm going to run: `pnpm --filter @workshop/lesson-NN verify`
+   > I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify`
 
    Then call the Bash tool with that exact command.
 
@@ -174,7 +174,7 @@ The "always announce + always quote + always end with next-step" trio is what ma
 
 ## 2. Lesson README
 
-Path: `workshop/lesson_NN_<slug>/README.md`
+Path: `workshop/lesson_<slug>/README.md`
 
 A reader who finds this lesson on GitHub *without ever installing the plugin* should be able to learn from it. The lesson README is the standalone teaching artifact; the walker skill is the live-coaching layer that sits on top of it.
 
@@ -372,7 +372,7 @@ Don't pile all three on every reply — pick the one that matches what just happ
 
 ## 13. Block-edits hook (optional)
 
-If your workshop has hands-on lesson source files (`workshop/lesson_NN_*/src/` or `tests/`) where the LEARNER edits and the AGENT does not, copy the block-edits enforcement pattern from `mcp-workshop/.claude/hooks/block-edits.sh` and wire it into `.claude/settings.json`'s `PreToolUse` hook. The hook blocks `Edit`/`Write`/`MultiEdit` on those paths regardless of auto mode, with a `touch .workshop-autopilot-active` bypass for cases where the user explicitly wants the agent to apply edits.
+If your workshop has hands-on lesson source files (`workshop/lesson_<slug>/src/` or `tests/`) where the LEARNER edits and the AGENT does not, copy the block-edits enforcement pattern from `mcp-workshop/.claude/hooks/block-edits.sh` and wire it into `.claude/settings.json`'s `PreToolUse` hook. The hook blocks `Edit`/`Write`/`MultiEdit` on those paths regardless of auto mode, with a `touch .workshop-autopilot-active` bypass for cases where the user explicitly wants the agent to apply edits.
 
 The template doesn't ship `block-edits.sh` by default because some workshops are read-only walks (no learner edits). Workshops with hands-on edits should add it; the spec section here is the canonical reference.
 
@@ -580,7 +580,7 @@ prior workshop will have most of these satisfied and should not be
 walked through the full ladder again.
 
 Add a `### Setup detection (pre-step)` block at the top of your
-lesson-01 walker's `## Steps` section. The block runs the relevant
+first lesson's walker (the `## Steps` section). The block runs the relevant
 checks silently, renders one confirmation line per satisfied requirement,
 and then proceeds to the first lesson step. Nothing else changes in the
 walker's pedagogy.

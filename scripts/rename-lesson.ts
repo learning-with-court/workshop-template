@@ -1,35 +1,35 @@
 // scripts/rename-lesson.ts
 //
-// Renumber an existing lesson package. Sibling to scripts/new-lesson.ts.
+// Rename an existing lesson's slug. Sibling to scripts/new-lesson.ts.
+//
+// Lessons are identified by slug (kebab-case) — there is no lesson number.
+// See docs/WORKSHOP_STANDARD.md for the full identity contract.
 //
 // Usage:
-//   pnpm rename-lesson <old-NN> <new-NN>
+//   pnpm rename-lesson <old-slug> <new-slug>
 //
 // Example:
-//   pnpm rename-lesson 03 04
+//   pnpm rename-lesson joins aggregates-and-joins
 //
 // What it does (in this order — all edits buffered in memory, then written,
 // directory rename happens LAST so an interrupt mid-run can't corrupt state):
-//   - Finds `workshop/lesson_<old-NN>_<slug>/`. Errors if not found, or if
-//     `workshop/lesson_<new-NN>_*` already exists (refuses to auto-swap).
-//   - Rewrites the lesson's `lesson.yaml` integer `id`.
-//   - Rewrites the lesson's `package.json` name to `@workshop/lesson-<new-NN>-<slug>`.
-//   - Renames `.claude/skills/lesson-<old-NN>.md` -> `.claude/skills/lesson-<new-NN>.md`,
-//     rewrites frontmatter `name:` and trigger phrases that contain the old
-//     number (e.g. "lesson 3" -> "lesson 4", "Lesson 3" -> "Lesson 4",
-//     "lesson-03" -> "lesson-04").
-//   - Rewrites `workshop.yaml`: replaces the `<old-NN>-<slug>` key in
-//     `phases[].lessons[]` with `<new-NN>-<slug>`, preserving the phase
-//     position.
-//   - Rewrites `prerequisites` in every OTHER lesson's `lesson.yaml` that
-//     references the old integer id, swapping it to the new id.
+//   - Finds `workshop/lesson_<old-slug>/`. Errors if not found, or if
+//     `workshop/lesson_<new-slug>/` already exists (refuses to auto-swap).
+//   - Rewrites the lesson's `lesson.yaml` `id` to the new slug.
+//   - Rewrites the lesson's `package.json` name to `@workshop/lesson-<new-slug>`.
+//   - Renames `.claude/skills/lesson-<old-slug>.md` -> `lesson-<new-slug>.md`,
+//     rewrites frontmatter `name:` and the obvious slug references.
+//   - Rewrites `workshop.yaml`: replaces the `<old-slug>` key in
+//     `phases[].lessons[]` with `<new-slug>`, preserving the phase position.
+//   - Rewrites `prerequisites` / `onPass.advanceTo` in every OTHER lesson's
+//     `lesson.yaml` that references the old slug, swapping it to the new slug.
 //   - Renames the lesson directory LAST.
 //   - Prints a summary of every path touched.
 //
 // Intentional non-goals:
 //   - No auto-swap when the target slot is occupied. That's a different
 //     command and would need a temp-slot dance.
-//   - No content rewriting of walker prose beyond the mechanical number swaps.
+//   - No content rewriting of walker prose beyond the mechanical slug swaps.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -38,7 +38,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 
-type Args = { oldNN: string; newNN: string };
+// Canonical lesson slug. Keep in sync with scripts/lint-manifest.ts.
+const SLUG_RE = /^[a-z][a-z0-9-]*$/;
+
+type Args = { oldSlug: string; newSlug: string };
 
 function parseArgs(argv: string[]): Args {
   const positional: string[] = [];
@@ -47,33 +50,28 @@ function parseArgs(argv: string[]): Args {
     positional.push(a);
   }
   if (positional.length < 2) printUsageAndExit(1);
-  const [oldRaw, newRaw] = positional;
-  if (!/^\d{1,2}$/.test(oldRaw!)) {
-    throw new Error(`<old-NN> must be 1–2 digits, got "${oldRaw}"`);
+  const [oldSlug, newSlug] = positional;
+  if (!SLUG_RE.test(oldSlug!)) {
+    throw new Error(`<old-slug> must be slug-form (lowercase letter first, then lowercase alphanumeric + hyphens), got "${oldSlug}"`);
   }
-  if (!/^\d{1,2}$/.test(newRaw!)) {
-    throw new Error(`<new-NN> must be 1–2 digits, got "${newRaw}"`);
+  if (!SLUG_RE.test(newSlug!)) {
+    throw new Error(`<new-slug> must be slug-form (lowercase letter first, then lowercase alphanumeric + hyphens), got "${newSlug}"`);
   }
-  const oldNN = oldRaw!.padStart(2, "0");
-  const newNN = newRaw!.padStart(2, "0");
-  if (oldNN === "00" || newNN === "00") {
-    throw new Error(`lesson numbers must be >= 01`);
+  if (oldSlug === newSlug) {
+    throw new Error(`<old-slug> and <new-slug> are the same (${oldSlug}) — nothing to do`);
   }
-  if (oldNN === newNN) {
-    throw new Error(`<old-NN> and <new-NN> are the same (${oldNN}) — nothing to do`);
-  }
-  return { oldNN, newNN };
+  return { oldSlug: oldSlug!, newSlug: newSlug! };
 }
 
 function printUsageAndExit(code: number): never {
   const msg = [
-    "Usage: pnpm rename-lesson <old-NN> <new-NN>",
+    "Usage: pnpm rename-lesson <old-slug> <new-slug>",
     "",
-    "  <old-NN>  current two-digit lesson number, e.g. 03",
-    "  <new-NN>  desired two-digit lesson number, e.g. 04",
+    "  <old-slug>  current lesson slug, e.g. joins",
+    "  <new-slug>  desired lesson slug, e.g. aggregates-and-joins",
     "",
     "Example:",
-    "  pnpm rename-lesson 03 04",
+    "  pnpm rename-lesson joins aggregates-and-joins",
   ].join("\n");
   (code === 0 ? console.log : console.error)(msg);
   process.exit(code);
@@ -83,23 +81,8 @@ function rel(p: string): string {
   return path.relative(REPO_ROOT, p);
 }
 
-function findLessonDir(nn: string): { dir: string; slugUnderscore: string; slug: string } | null {
-  const workshopDir = path.join(REPO_ROOT, "workshop");
-  if (!fs.existsSync(workshopDir)) return null;
-  const prefix = `lesson_${nn}_`;
-  const entries = fs.readdirSync(workshopDir, { withFileTypes: true });
-  for (const e of entries) {
-    if (!e.isDirectory()) continue;
-    if (!e.name.startsWith(prefix)) continue;
-    const slugUnderscore = e.name.slice(prefix.length);
-    if (!slugUnderscore) continue;
-    return {
-      dir: path.join(workshopDir, e.name),
-      slugUnderscore,
-      slug: slugUnderscore.replace(/_/g, "-"),
-    };
-  }
-  return null;
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 interface PlannedWrite {
@@ -146,7 +129,6 @@ function rewriteWorkshopYamlLessonKey(
     if (m[2] === oldKey) {
       lines[i] = `${m[1]}${newKey}${m[3]}`;
       matchedAt = i;
-      // Don't break — guard against accidental duplicates by warning later.
       break;
     }
   }
@@ -159,37 +141,35 @@ function rewriteWorkshopYamlLessonKey(
 }
 
 function main() {
-  const { oldNN, newNN } = parseArgs(process.argv.slice(2));
-  const oldInt = parseInt(oldNN, 10);
-  const newInt = parseInt(newNN, 10);
+  const { oldSlug, newSlug } = parseArgs(process.argv.slice(2));
+
+  const oldDirName = `lesson_${oldSlug}`;
+  const newDirName = `lesson_${newSlug}`;
+  const oldDir = path.join(REPO_ROOT, "workshop", oldDirName);
+  const newDir = path.join(REPO_ROOT, "workshop", newDirName);
 
   // --- Locate source --------------------------------------------------------
-  const found = findLessonDir(oldNN);
-  if (!found) {
+  if (!fs.existsSync(oldDir)) {
     throw new Error(
-      `no lesson directory matching workshop/lesson_${oldNN}_*/ — nothing to rename`,
+      `no lesson directory at workshop/${oldDirName}/ — nothing to rename`,
     );
   }
-  const { dir: oldDir, slugUnderscore, slug } = found;
 
   // --- Refuse if target slot is occupied -----------------------------------
-  const conflict = findLessonDir(newNN);
-  if (conflict) {
+  if (fs.existsSync(newDir)) {
     throw new Error(
-      `target slot occupied: ${rel(conflict.dir)} already exists. ` +
+      `target slot occupied: workshop/${newDirName}/ already exists. ` +
         `Move it elsewhere first (this command does not auto-swap).`,
     );
   }
 
-  const newDirName = `lesson_${newNN}_${slugUnderscore}`;
-  const newDir = path.join(REPO_ROOT, "workshop", newDirName);
-  const oldPkgName = `@workshop/lesson-${oldNN}-${slug}`;
-  const newPkgName = `@workshop/lesson-${newNN}-${slug}`;
-  const oldKey = `${oldNN}-${slug}`;
-  const newKey = `${newNN}-${slug}`;
+  const oldPkgName = `@workshop/lesson-${oldSlug}`;
+  const newPkgName = `@workshop/lesson-${newSlug}`;
+  const oldKey = oldSlug;
+  const newKey = newSlug;
 
-  const oldSkill = path.join(REPO_ROOT, ".claude", "skills", `lesson-${oldNN}.md`);
-  const newSkill = path.join(REPO_ROOT, ".claude", "skills", `lesson-${newNN}.md`);
+  const oldSkill = path.join(REPO_ROOT, ".claude", "skills", `lesson-${oldSlug}.md`);
+  const newSkill = path.join(REPO_ROOT, ".claude", "skills", `lesson-${newSlug}.md`);
   const workshopYaml = path.join(REPO_ROOT, "workshop.yaml");
 
   // --- Pre-flight checks ----------------------------------------------------
@@ -214,10 +194,10 @@ function main() {
   }
   {
     const text = fs.readFileSync(lessonYamlPath, "utf8");
-    let updated = text.replace(/^id:\s*\d+\s*$/m, `id: ${newInt}`);
+    let updated = text.replace(/^id:\s*\S+\s*$/m, `id: ${newSlug}`);
     if (updated === text) {
       throw new Error(
-        `${rel(lessonYamlPath)}: could not find \`id: <int>\` line to rewrite`,
+        `${rel(lessonYamlPath)}: could not find \`id: <slug>\` line to rewrite`,
       );
     }
     // Also swap the verifyCommand filter — the package name is changing,
@@ -240,10 +220,10 @@ function main() {
       });
     } else if (pkg.name !== newPkgName) {
       // Not a strict match — author may have customized. Best-effort: still
-      // try to swap the numeric segment.
+      // try to swap the slug segment.
       const swapped = String(pkg.name).replace(
-        new RegExp(`(@workshop/lesson-)${oldNN}(-)`),
-        `$1${newNN}$2`,
+        new RegExp(`(@workshop/lesson-)${escapeRe(oldSlug)}($|[^a-z0-9-])`),
+        `$1${newSlug}$2`,
       );
       if (swapped !== pkg.name) {
         pkg.name = swapped;
@@ -256,7 +236,7 @@ function main() {
     }
   }
 
-  // 2b. README.md — swap the `pnpm --filter @workshop/lesson-<old>-<slug>` references.
+  // 2b. README.md — swap the `pnpm --filter @workshop/lesson-<old>` references.
   const readmePath = path.join(oldDir, "README.md");
   if (fs.existsSync(readmePath)) {
     const text = fs.readFileSync(readmePath, "utf8");
@@ -270,10 +250,10 @@ function main() {
   {
     const text = fs.readFileSync(oldSkill, "utf8");
     let out = text;
-    out = out.replace(/^name:\s*lesson-\d+\s*$/m, `name: lesson-${newNN}`);
-    out = out.replace(new RegExp(`\\bLesson ${oldInt}\\b`, "g"), `Lesson ${newInt}`);
-    out = out.replace(new RegExp(`\\blesson ${oldInt}\\b`, "g"), `lesson ${newInt}`);
-    out = out.replace(new RegExp(`\\blesson-${oldNN}\\b`, "g"), `lesson-${newNN}`);
+    out = out.replace(/^name:\s*lesson-\S+\s*$/m, `name: lesson-${newSlug}`);
+    out = out.replace(new RegExp(`\\blesson_${escapeRe(oldSlug)}\\b`, "g"), `lesson_${newSlug}`);
+    out = out.replace(new RegExp(`\\blesson-${escapeRe(oldSlug)}\\b`, "g"), `lesson-${newSlug}`);
+    out = out.replaceAll(oldPkgName, newPkgName);
     writes.push({ path: oldSkill, contents: out, label: "walker contents" });
     renames.push({ from: oldSkill, to: newSkill, label: "walker filename" });
   }
@@ -285,23 +265,23 @@ function main() {
     writes.push({ path: workshopYaml, contents: updated, label: `workshop.yaml ${oldKey} -> ${newKey}` });
   }
 
-  // 5. prerequisites in *other* lesson.yaml files
+  // 5. prerequisites + advanceTo in *other* lesson.yaml files
   const workshopDir = path.join(REPO_ROOT, "workshop");
   const peerEntries = fs.readdirSync(workshopDir, { withFileTypes: true });
   for (const e of peerEntries) {
     if (!e.isDirectory()) continue;
-    if (!/^lesson_\d{2}_/.test(e.name)) continue;
+    if (!e.name.startsWith("lesson_")) continue;
     const peerYaml = path.join(workshopDir, e.name, "lesson.yaml");
     if (!fs.existsSync(peerYaml)) continue;
     if (path.resolve(peerYaml) === path.resolve(lessonYamlPath)) continue;
 
     const text = fs.readFileSync(peerYaml, "utf8");
-    const updated = rewritePrerequisites(text, oldInt, newInt);
+    const updated = rewriteSlugRefs(text, oldSlug, newSlug);
     if (updated !== text) {
       writes.push({
         path: peerYaml,
         contents: updated,
-        label: `${e.name}/lesson.yaml prerequisites`,
+        label: `${e.name}/lesson.yaml prerequisites/advanceTo`,
       });
     }
   }
@@ -320,7 +300,7 @@ function main() {
   // --- Summary --------------------------------------------------------------
   const summaryLines = [
     "",
-    `renamed lesson ${oldNN}-${slug} -> ${newNN}-${slug}`,
+    `renamed lesson ${oldSlug} -> ${newSlug}`,
     "",
   ];
   for (const w of writes) {
@@ -338,27 +318,36 @@ function main() {
 }
 
 /**
- * Rewrite a single-int reference inside a YAML `prerequisites:` list.
- * Supports both inline (`prerequisites: [1, 2]`) and block-style
- * (`prerequisites:\n  - 1\n  - 2`) lists. Only touches the prerequisites
- * key — never blindly substitutes integers elsewhere in the file (the
- * lesson's own `id:` is handled separately, and we must not collide with
- * unrelated numeric fields).
+ * Rewrite a slug reference inside a YAML `prerequisites:` list and the
+ * `onPass.advanceTo:` scalar. Supports both inline (`prerequisites: [a, b]`)
+ * and block-style (`prerequisites:\n  - a\n  - b`) lists. Only touches those
+ * keys — never blindly substitutes the slug elsewhere in the file (the
+ * lesson's own `id:` is handled separately).
  */
-function rewritePrerequisites(text: string, oldInt: number, newInt: number): string {
+function rewriteSlugRefs(text: string, oldSlug: string, newSlug: string): string {
   const lines = text.split("\n");
   let i = 0;
   let changed = false;
   while (i < lines.length) {
     const line = lines[i]!;
-    // Inline form: prerequisites: [1, 2, 3]
+
+    // advanceTo: <slug>
+    const adv = line.match(/^(\s*advanceTo:\s*)(\S+)(\s*)$/);
+    if (adv && adv[2] === oldSlug) {
+      lines[i] = `${adv[1]}${newSlug}${adv[3]}`;
+      changed = true;
+      i++;
+      continue;
+    }
+
+    // Inline form: prerequisites: [a, b, c]
     const inline = line.match(/^(\s*prerequisites:\s*)\[([^\]]*)\](\s*)$/);
     if (inline) {
       const items = inline[2]!
         .split(",")
         .map((s) => s.trim())
         .filter((s) => s.length > 0);
-      const remapped = items.map((s) => (s === String(oldInt) ? String(newInt) : s));
+      const remapped = items.map((s) => (s === oldSlug ? newSlug : s));
       if (remapped.join(",") !== items.join(",")) {
         lines[i] = `${inline[1]}[${remapped.join(", ")}]${inline[3]}`;
         changed = true;
@@ -368,14 +357,13 @@ function rewritePrerequisites(text: string, oldInt: number, newInt: number): str
     }
     // Block form
     if (/^\s*prerequisites:\s*$/.test(line)) {
-      // Determine the indent of subsequent `- N` items.
       let j = i + 1;
       while (j < lines.length) {
         const item = lines[j]!;
-        const m = item.match(/^(\s*-\s+)(\d+)(\s*)$/);
+        const m = item.match(/^(\s*-\s+)(\S+)(\s*)$/);
         if (m) {
-          if (parseInt(m[2]!, 10) === oldInt) {
-            lines[j] = `${m[1]}${newInt}${m[3]}`;
+          if (m[2] === oldSlug) {
+            lines[j] = `${m[1]}${newSlug}${m[3]}`;
             changed = true;
           }
           j++;

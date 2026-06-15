@@ -6,7 +6,7 @@ leave the directory empty and `pnpm setup-shared` will stay a no-op.
 ## What this directory is for
 
 Anything that multiple lessons read from and that doesn't belong inside
-a single `lesson_NN_*/` package:
+a single `lesson_<slug>/` package:
 
 - **Sample databases** — a SQLite file lessons query against
 - **Fixture corpora** — documents a RAG workshop indexes and retrieves over
@@ -40,10 +40,10 @@ Two patterns:
 
 ## Lessons read from here
 
-From within `workshop/lesson_NN_*/`, use the relative path `../shared/`:
+From within `workshop/lesson_<slug>/`, use the relative path `../shared/`:
 
 ```ts
-// workshop/lesson_03_query/src/query.ts
+// workshop/lesson_query/src/query.ts
 import Database from "better-sqlite3";
 const db = new Database("../shared/sample.db", { readonly: true });
 ```

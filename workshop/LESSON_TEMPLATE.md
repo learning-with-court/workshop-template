@@ -1,51 +1,60 @@
 # How to add a lesson
 
-Each lesson is its own pnpm workspace package under `workshop/lesson_NN_<slug>/`.
+Each lesson is its own pnpm workspace package under `workshop/lesson_<slug>/`.
+
+> **Fastest path:** `pnpm new-lesson <slug> --phase A` scaffolds everything
+> below from `workshop/lesson_example/` and registers it in `workshop.yaml`.
+> The manual shape is documented here for reference. Lessons are identified by
+> **slug** (kebab-case) — there is no lesson number. See
+> [`docs/WORKSHOP_STANDARD.md`](../docs/WORKSHOP_STANDARD.md).
 
 ## Required files
 
 ```
-workshop/lesson_NN_<slug>/
+workshop/lesson_<slug>/
   lesson.yaml          # manifest entry — see fields below
-  package.json         # @workshop/lesson-NN-<slug>
+  package.json         # @workshop/lesson-<slug>
   tsconfig.json        # extends ../../tsconfig.base.json
   README.md            # H1 must match lesson.yaml `title`
   src/                 # lesson code
   tests/               # vitest tests
-.claude/skills/lesson-NN.md   # walker skill — runs in the cloned project repo
+.claude/skills/lesson-<slug>.md   # walker skill — runs in the cloned project repo
 ```
 
-The directory name format is **strict**: `lesson_NN_<slug>` where:
-- `NN` is the zero-padded lesson id (e.g. `01`, `12`)
-- `<slug>` uses `_` separators (becomes `-` in the manifest key: `lesson_03_my_topic` → `03-my-topic`)
+The directory name format is **strict**: `lesson_<slug>` where:
+- `<slug>` matches the canonical regex `^[a-z][a-z0-9-]*$` (lowercase letter
+  first, then lowercase letters / digits / single hyphens). No underscores,
+  no leading digit.
+- The slug keeps its hyphen form in the directory name: slug `my-topic` →
+  dir `lesson_my-topic` → manifest key `my-topic`.
 
 ## lesson.yaml fields
 
 | Field | Required | Notes |
 |---|---|---|
-| `id` | yes | integer matching the `NN` in the directory name |
+| `id` | yes | the lesson slug (string) — matches the dir's `<slug>` |
 | `title` | yes | shown in catalog; must appear in README h1 |
 | `blurb` | yes | one-sentence hook |
-| `prerequisites` | yes | array of prior lesson ids (e.g. `[1, 2]`) |
+| `prerequisites` | yes | array of prior lesson slugs (e.g. `[setup, columns]`) |
 | `targetFiles` | yes | array of paths the lesson modifies; empty array OK for setup-only |
 | `verifyCommand` | yes | exact shell command to run the verify script |
 | `verify.description` | yes | human-readable explanation |
 | `verify.mustInclude` | yes | array of regex strings; verify output must match all |
 | `verify.mustNotInclude` | no | array of regex strings; verify output must match none |
-| `onPass.advanceTo` | no | next lesson id |
+| `onPass.advanceTo` | no | next lesson slug |
 | `onPass.feedback` | yes | 2–3 sentence handoff into the next lesson |
 
 ## workshop.yaml registration
 
-After creating the lesson dir, add the key to `workshop.yaml`:
+After creating the lesson dir, add the slug to `workshop.yaml`:
 
 ```yaml
 phases:
   - id: A
     title: phase title
     lessons:
-      - 01-template
-      - 02-your-new-lesson    # <-- add here
+      - example
+      - your-new-lesson    # <-- add here
 ```
 
 ## Verification
@@ -54,21 +63,21 @@ phases:
 pnpm install              # picks up the new workspace package
 pnpm lint-manifest        # cross-checks workshop.yaml against the filesystem
 pnpm typecheck            # all packages must typecheck
-pnpm --filter @workshop/lesson-NN-<slug> verify   # the verify script itself
+pnpm --filter @workshop/lesson-<slug> verify   # the verify script itself
 ```
 
 The `manifest-lint` GitHub Action runs the same checks on every push.
 
 ## Walker skill
 
-`.claude/skills/lesson-NN.md` is the per-lesson Claude Code skill that
+`.claude/skills/lesson-<slug>.md` is the per-lesson Claude Code skill that
 guides the learner through the lesson when they invoke it from the cloned
 project repo. Frontmatter:
 
 ```markdown
 ---
-name: lesson-NN
-description: Guide through Lesson NN — <title>. Use when the learner asks for help on this lesson.
+name: lesson-<slug>
+description: Guide through <title>. Use when the learner asks for help on this lesson.
 ---
 ```
 
@@ -78,7 +87,7 @@ and runs the verify command at the end.
 The full walker shape is in `docs/WORKSHOP_SPEC.md` §1. Required H2
 sections: `Visible walkthrough contract`, `Pedagogical priority`,
 `Steps`, `Common debugging`, `What To Say Next`, `Style`. Use
-`.claude/skills/lesson-01.md` as the starting scaffold — copy it,
+`.claude/skills/lesson-example.md` as the starting scaffold — copy it,
 rename, replace the TODOs.
 
 **Critical:** never write "invoke this skill" or "use the Skill tool"
@@ -124,9 +133,9 @@ which the canonical check surfaces immediately:
 
 The template ships:
 
-- `workshop/lesson_01_template/src/canonical.example` — the placeholder.
+- `workshop/lesson_example/src/canonical.example` — the placeholder.
   Rename to `canonical.<ext>` and fill in the reference implementation.
-- `workshop/lesson_01_template/tests/template.test.ts` — contains an
+- `workshop/lesson_example/tests/template.test.ts` — contains an
   `it.skip("canonical matches expected", …)` block with a TODO
   `runCanonical()` stub. Flip it to `it(…)` once you've implemented the
   executor for your workshop's file format.
@@ -161,7 +170,7 @@ you've extracted them.
 
 Models slip ```` ```json ```` fences into output despite prompt
 instructions. The canonical strip-then-parse shape lives in
-`workshop/lesson_01_template/src/extract.ts` — copy it into any lesson
+`workshop/lesson_example/src/extract.ts` — copy it into any lesson
 that reads model output as JSON. The pattern:
 
 ```ts
@@ -195,7 +204,7 @@ blocks (request, response, claim) — one block per assertion. Exit 0 on
 success, non-zero on failure. The walker quotes the full stdout
 verbatim back to the learner; the workshop's `lesson.yaml`
 `verify.mustInclude` / `mustNotInclude` regexes match against this
-stdout. See `workshop/lesson_01_template/src/verify.ts` for the
+stdout. See `workshop/lesson_example/src/verify.ts` for the
 scaffold.
 
 ### Test shape

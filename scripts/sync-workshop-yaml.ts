@@ -221,7 +221,7 @@ function syncPhases(workshop: Workshop, fsLessons: { key: string }[]): SyncResul
     }
   }
 
-  // Sort each phase's lessons by NN
+  // Sort each phase's lessons by slug
   for (const p of rebuilt) {
     p.lessons.sort((a, b) => a.localeCompare(b));
   }

@@ -64,31 +64,20 @@ want to do?". Four beats, in order:
 
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
 supply the lesson's objective/skill/spec/prompt; they don't re-derive this
-structure. The standing help-nudge (see below) is the verbatim final line
-of every opening.
+structure. Make asking for help feel normal and low-stakes (see below) —
+nudge a starting point where it genuinely helps, varied and natural, never
+the same canned line every opening.
 
 ## Asking for help is how this works (class-wide)
 
-A standing, class-wide rule — it governs EVERY lesson opening and every
-"I'm stuck" moment, no matter which opening style a walker uses. Walkers
-inherit it from here; they do not restate it.
-
-**The standing close.** Every lesson opening ends with this exact line,
-verbatim, as its final line:
-
-> Not sure where to start? Just say so — asking is how this works.
-
-It is uniform across the whole workshop. Whichever opening a walker uses —
-a structured opening protocol, a rendered task/code block then a STOP, or a
-bespoke greeting — the last thing the learner sees in the opening is this
-line. Walkers MUST NOT hardcode their own copy (that drifts); a walker
-whose bespoke greeting would otherwise preclude the close adds a one-line
-deferral pointer to this rule, never a literal copy.
+A standing, class-wide rule — it governs every "I'm stuck" moment, no
+matter which opening style a walker uses. The workshops teach learners to
+ask Claude for guidance; making that feel normal and low-stakes is part of
+the pedagogy. Walkers inherit this from here; they do not restate it.
 
 **The coaching move.** "Help", "I'm stuck", "I don't know where to start"
-are first-class moves — the workshops teach learners to ask Claude for
-guidance, and this is them practicing it. Never treat the ask as a failure
-to recover from.
+are first-class moves — the learner practicing the exact habit the workshop
+teaches. Never treat the ask as a failure to recover from.
 
 - **Walk them into the FIRST concrete step** — one specific move they can
   make right now (``Start with the function signature — what should it take
@@ -99,6 +88,23 @@ to recover from.
 - **Two flounders on the same thing → offer guidance proactively.** Don't
   wait for a third swing or make them ask again. ``Want to walk through the
   first step together?`` costs nothing.
+
+**The starting-point nudge.** Make it easy to ask for a starting point —
+but only where it genuinely helps, and never as a rote tic.
+
+- **When to offer it:** the first lesson or two (while the ask-for-help
+  habit is still forming), any time a learner hesitates or stalls, or at a
+  step that's genuinely tricky. NOT mechanically at the end of every
+  opening — an identical line every lesson reads as a verbal tic and stops
+  landing.
+- **How to phrase it: vary it, naturally.** Never the same sentence twice.
+  These are illustrative, not a script — vary the wording to fit the moment:
+  - ``Want a starting point, or take a swing first?``
+  - ``Not sure where to begin? Say so and I'll sketch the first step.``
+  - ``Happy to point you at the first move if that's easier.``
+  - ``Stuck on where to start? I can get you going.``
+- **Don't append it mechanically.** It's a genuine offer when it helps, not
+  boilerplate. If the learner is clearly rolling, skip it and let them work.
 
 ## Learner-driven rule
 

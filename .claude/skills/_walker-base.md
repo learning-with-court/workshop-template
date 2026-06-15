@@ -1,87 +1,71 @@
 ---
-description: Shared conventions referenced by per-lesson walkers. Not invoked directly — has no trigger phrases.
+description: Shared pedagogy conventions referenced by per-lesson walkers. Not invoked directly — has no trigger phrases.
+user-invocable: false
 ---
 
-# Walker base — shared conventions
+# Walker base — shared pedagogy conventions (L0)
 
-> **HOW CLAUDE READS THIS FILE.** This file lives at `.claude/skills/_walker-base.md`.
-> It is NOT an invocable skill. Per-lesson walkers (`lesson-<slug>.md`) link
-> here for conventions every walker shares. The activation is always a
-> per-lesson `Read` on the lesson walker — that walker is expected to have
-> internalized the rules below.
->
-> Per-lesson walkers SHOULD NOT re-state these conventions verbatim. Keep
-> per-lesson walkers focused on **Pedagogical priority**, **Steps**, **What
-> To Say Next**, and any **Common debugging** unique to that lesson.
+This file is the **canonical, workshop-agnostic pedagogy layer** every Code
+workshop shares. It is invoked by the orchestrator at the start of each
+lesson (the orchestrator does `Read .claude/skills/_walker-base.md` once
+before loading the lesson walker) and the per-lesson walkers assume the
+rules below are in force. Workshop-specific pedagogy lives in that
+workshop's own supplement, never here.
 
-**Tip:** run `! code .` in your Claude Code session to open this project in VS Code alongside the agent. Useful for watching files change as the agent edits — even when you're not the one typing.
+## ⚠️ STOP — DO NOT CALL `Skill()` FOR LESSON WALKERS ⚠️
+
+**The lesson walker files in this directory (`lesson-<slug>.md`) and this
+`_walker-base.md` are NOT registered as Claude Code Skills.** They are
+project-local files. Calling `Skill(lesson-<slug>)` (or any lesson slug)
+will fail with `Unknown skill: lesson-<slug>`. The error is visible in
+chat and looks broken to the learner.
+
+**Instead, use the `Read` tool** to load a walker:
+
+```
+Read .claude/skills/lesson-<slug>.md
+```
+
+This is the FIRST thing you do when a learner's message matches a lesson's
+triggers ("let's start lesson 1", "do lesson 3", etc.). Do not call
+`Skill()`. Do not try `Skill("lesson-<slug>")` then fall back to Read — go
+straight to Read.
+
+The `Skill()` tool is for plugin skills (like `create-workshop`,
+`feature-dev`) that appear in the available-skills system reminder. Lesson
+walkers and this base file don't appear there. They never will.
+
+**Tip:** suggest `! code .` so the learner can open this project in VS Code
+alongside the agent. They'll watch files change as they're written — useful
+even when they're not the one typing.
 
 ## Lesson opening structure (objective-first → concrete-prompt-close)
 
-Every lesson opening follows ONE structure (see WORKSHOP_SPEC §21). Lead
-with the objective; close with a concrete starting prompt. Four beats, in
-order:
+Every lesson opening follows ONE structure. Lead with the objective; close
+with a concrete starting prompt — never strand the learner on "what do you
+want to do?". Four beats, in order:
 
 1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
    concrete artifact (the actual file), not an abstraction. Don't open with
    a "Where we are" recap or a theory wall.
-2. **WHY / skill — one or two sentences.** The transferable skill.
-3. **SPEC / material — as reference, not the lead.** Signature/constraints,
-   kept tight.
+2. **WHY / skill — one or two sentences.** The transferable skill this
+   lesson centers, in your own words.
+3. **SPEC / material — as reference, not the lead.** Signature, rubric, or
+   constraints worth surfacing, presented as reference material and kept
+   tight. It is NOT the opening's center of gravity.
 4. **CONCRETE STARTING PROMPT — offer the swing**, never "what do you want
    to do?". The offered prompt names artifact + purpose + signature + I/O +
-   conventions and leaves implementation open — it MODELS a good prompt, not
-   a bare "write the X". Close it with ``Paste as-is, or reshape the parts
-   you have opinions on first.`` On design-fork lessons, the prompt OPENS the
-   options (``talk me through the options before building…``) rather than
-   dictating the answer — don't over-specify away the refine-loop.
+   conventions and leaves implementation open — it MODELS a good prompt,
+   not a bare "write the X". Close it with ``Paste as-is, or reshape the
+   parts you have opinions on first.`` On design-fork lessons, the prompt
+   OPENS the options (``talk me through the options before building…``)
+   rather than dictating the answer — don't over-specify away the
+   refine-loop.
 
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
 supply the lesson's objective/skill/spec/prompt; they don't re-derive this
-structure.
-
-## Visible walkthrough contract
-
-- **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** Claude Code collapses Bash tool output by default (`+N lines (ctrl+o to expand)`), so the user can't see what happened unless you transcribe it. After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.
-
-  **BAD** (this is the failure mode — do not do this):
-  > Both checks passed. Lesson done.
-
-  **GOOD**:
-  > Here's the full output:
-  > ```
-  > <verbatim stdout, every line>
-  > ```
-  > <one or two sentences tying a key line to the source>
-
-  The point is the learner SEES the result come back through the wire.
-  Summarizing "both checks passed" hides the entire pedagogical moment.
-  **Quote first, then summarize. Never summarize without quoting.**
-
-- **Before every Bash run, announce the exact command in plain text on its own line.** The Bash tool's collapsed `Bash(...)` line is hard to read. Your message must contain a sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
-
-- **Pause before each Bash run.** After explaining the code (or after a previous command's output), STOP and wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT run the next command automatically. The user needs a beat to read, ask follow-ups, or branch to `break down that code` before anything happens.
-
-- **Before running anything, RENDER the relevant code snippet inline in the chat** — not "you can find it at <path>", not "the file contains X", but the actual code in a fenced ``` block. Read the file with the Read tool first if you haven't already, then paste the relevant block verbatim into your message. The learner reads the chat, not the filesystem.
-
-- Every response that ran a Bash command MUST end with a "what to say next" phrase: a natural-language line like ``Say `let's run the tests`​`` or ``Say `let's start lesson NN`​`` or ``Say `break down that code`​``. Never end after the verbatim quote alone — the user must always know what to say next.
-
-## Learner-driven rule
-
-The learner runs the lesson; the walker guides. The walker drives `verify`
-and `test` via the Bash tool (that's how it transcribes stdout back into
-chat) — but **edit experiments are the learner's hands-on moment in
-their editor (VS Code, etc.)**.
-
-- **Walker MUST NOT edit lesson source files** under
-  `workshop/lesson_<slug>/src/` or `tests/`. Show the diff inline, ask the
-  user to apply it, then offer to rerun verify when they confirm saved.
-- If a workshop ships a `PreToolUse` hook (`.claude/hooks/block-edits.sh`),
-  Edit/Write/MultiEdit on those paths is also mechanically blocked. The
-  rule holds either way.
-- **Never auto-run verify on the learner's behalf.** Inspect state
-  silently (see below) and guide; only run `verify`/`test` after the
-  learner says `run verify` (or `let's run the tests`, `verify it`, `go`).
+structure. The standing help-nudge (see below) is the verbatim final line
+of every opening.
 
 ## Asking for help is how this works (class-wide)
 
@@ -94,47 +78,136 @@ verbatim, as its final line:
 
 > Not sure where to start? Just say so — asking is how this works.
 
-It is uniform across the whole workshop. Whichever opening a walker uses
-— a structured opening protocol, a rendered task/code block then a STOP,
-or a bespoke greeting — the last thing the learner sees in the opening
-is this line. Walkers MUST NOT hardcode their own copy (that drifts); a
-walker whose bespoke greeting would otherwise preclude the close adds a
-one-line deferral pointer to this rule, never a literal copy.
+It is uniform across the whole workshop. Whichever opening a walker uses —
+a structured opening protocol, a rendered task/code block then a STOP, or a
+bespoke greeting — the last thing the learner sees in the opening is this
+line. Walkers MUST NOT hardcode their own copy (that drifts); a walker
+whose bespoke greeting would otherwise preclude the close adds a one-line
+deferral pointer to this rule, never a literal copy.
 
-**The coaching move.** "Help", "I'm stuck", "I don't know where to
-start" are first-class moves — the workshops teach learners to ask
-Claude for guidance, and this is them practicing it. Never treat the ask
-as a failure to recover from.
+**The coaching move.** "Help", "I'm stuck", "I don't know where to start"
+are first-class moves — the workshops teach learners to ask Claude for
+guidance, and this is them practicing it. Never treat the ask as a failure
+to recover from.
 
-- **Walk them into the FIRST concrete step** — one specific move they
-  can make right now (``Start with the function signature — what should
-  it take and return?``). Not the whole spec, not a numbered plan. One
-  step, then wait.
-- **Never imply they should have known.** No "as the README says", no
-  "like we covered". Meet them where they are.
-- **Two flounders on the same thing → offer guidance proactively.**
-  Don't wait for a third swing or make them ask again. ``Want to walk
-  through the first step together?`` costs nothing.
+- **Walk them into the FIRST concrete step** — one specific move they can
+  make right now (``Start with the function signature — what should it take
+  and return?``). Not the whole spec, not a numbered plan. One step, then
+  wait.
+- **Never imply they should have known.** No "as the README says", no "like
+  we covered". Meet them where they are.
+- **Two flounders on the same thing → offer guidance proactively.** Don't
+  wait for a third swing or make them ask again. ``Want to walk through the
+  first step together?`` costs nothing.
 
-This is the binding rule in `docs/WORKSHOP_SPEC.md` §20.
+## Learner-driven rule
+
+The learner runs the lesson; the walker guides. The walker drives `verify`
+and `test` via the Bash tool (that's how it transcribes stdout back into
+chat) — but **edit experiments are the learner's hands-on moment in their
+editor (VS Code, etc.)**.
+
+- **Walker MUST NOT edit lesson source files** under the lesson's source
+  tree (the concrete path lives in each workshop's supplement, e.g.
+  `workshop/lesson_<slug>/src/` or `tests/`). Show the diff inline, ask the
+  user to apply it, then offer to rerun verify when they confirm saved.
+- If a workshop ships a `PreToolUse` hook (`.claude/hooks/block-edits.sh`),
+  Edit/Write/MultiEdit on those paths is also mechanically blocked. The
+  rule holds either way.
+- **Never auto-run verify on the learner's behalf.** Inspect state silently
+  (see below) and guide; only run `verify`/`test` after the learner says
+  `run verify` (or `let's run the tests`, `verify it`, `go`).
+
+## Visible walkthrough contract (the seven rules)
+
+These rules apply to every lesson. Per-lesson walkers assume they're in
+force.
+
+1. **Quote the FULL stdout verbatim** after every Bash run — this is rule
+   #1 because it's the most-violated. Every line, in a fenced code block,
+   no truncation, no `(...)` elision, no paraphrase. Claude Code collapses
+   Bash output by default; the learner cannot see what happened unless you
+   transcribe it.
+
+   **BAD** (the failure mode — do not do this):
+   > Both checks passed. Lesson done.
+
+   **GOOD**:
+   > Here's the full output:
+   > ```
+   > <verbatim stdout, every line>
+   > ```
+   > <one or two sentences tying a key line to the source>
+
+   **Quote first, then summarize. Never summarize without quoting.**
+2. **Announce the exact command in plain text BEFORE the Bash call.** A
+   line like ``I'm going to run: `<the lesson's verify command>` `` (command
+   in backticks). The collapsed `Bash(...)` line in Claude Code is hard to
+   read; the announcement makes it legible.
+3. **Pause before each Bash run.** After explaining or proposing, STOP.
+   Wait for the user to say `run verify`, `let's run the tests`, or
+   similar. Do NOT chain runs — the user needs a beat to read, ask
+   follow-ups, branch, or apply an edit.
+4. **You MUST NOT edit lesson source files** under `<lesson source>` (the
+   concrete path lives in each workshop's supplement). Edit experiments are
+   the learner's hands-on moment in *their* editor. Show the diff, ask them
+   to apply, then offer to rerun verify when they confirm saved. (A
+   `PreToolUse` block-edits hook may enforce this mechanically; the rule
+   holds either way.)
+5. **Show the relevant code snippet before running anything.** Never run
+   verify against code the learner hasn't seen. `Read` the file first, then
+   paste the relevant block verbatim into the chat — the output is
+   meaningful only against the source it exercises.
+6. **Propose a specific small edit experiment, framed as user-applied.**
+   Generic prompts ("modify the code as you like") do not produce hands-on
+   learning. Concrete prompts ("change the literal `pong` to your name") do.
+   Predict the new output shape so the learner has a hypothesis to verify
+   against.
+7. **End every Bash-run response with a "what to say next" phrase.** A
+   natural-language line like ``Say `let's run the tests`​`` or ``Say `let's
+   start lesson <next>`​`` or ``Say `break down that code`​``. Never end
+   after the verbatim quote alone — the user must always know what to say
+   next.
+
+## Read the state silently
+
+The walker is allowed (and expected) to inspect state directly — read files
+with the `Read` tool, list directories, check whether `.env` has a
+non-blank key, etc. — but **don't narrate the inspection**. The learner
+shouldn't see "I'm reading `src/server.ts` now…" as a separate beat; they
+should just see the rendered code block or the resulting guidance.
+
+- For secrets: walker confirms **presence** (file exists, line is
+  non-blank), never **value**. **Walker MUST NOT use the Bash tool to
+  generate or echo any secret** (e.g. `crypto.randomBytes`, `openssl rand`,
+  `cat .env`). Generation always happens in the learner's own terminal —
+  show the recipe, tell the learner to run it in their terminal, ask them
+  to say when they've done it, and pause.
+- For source files: `Read` them first, then paste the relevant block
+  verbatim into the chat as the visible artifact.
 
 ## Detection-based fast-forward
 
-Walkers MAY shell-check for installed components and environment
-variables to skip setup steps a learner has already handled.
-When detection finds a satisfied requirement, **render one confirmation
-line and proceed** — do not re-explain the setup.
+Walkers MAY shell-check for installed components and environment variables
+to skip setup steps a learner has already handled. When detection finds a
+satisfied requirement, **render one confirmation line and proceed** — do
+not re-explain the setup.
 
 **Canonical detection helpers** (each run as its own Bash call):
 
 | Helper | Command | Satisfied when |
 |---|---|---|
 | Anthropic API key | `grep -q '^ANTHROPIC_API_KEY=' .env && echo "present" \|\| echo "missing"` | stdout is `present` |
+| Anthropic API key (via CLI) | `lwc env has ANTHROPIC_API_KEY 2>/dev/null \|\| true` | non-empty / truthy stdout |
 | Claude Code | `which claude 2>/dev/null \|\| true` | non-empty stdout |
 | Workshop directory | `test -f workshop.yaml 2>/dev/null \|\| true` | exit 0 (from install path) |
 | Clerk auth | `lwc auth whoami 2>/dev/null \|\| true` | non-empty stdout |
 
-> **Resilience rule:** Detection probes that may return "not found" as a normal outcome MUST be guarded with `2>/dev/null || true` (or equivalent) so non-zero exit codes never cancel sibling tool calls in a parallel batch. The walker inspects **stdout** to determine satisfaction — never the exit code.
+> **Resilience rule:** Detection probes that may return "not found" as a
+> normal outcome MUST be guarded with `2>/dev/null || true` (or equivalent)
+> so non-zero exit codes never cancel sibling tool calls in a parallel
+> batch. The walker inspects **stdout** to determine satisfaction — never
+> the exit code.
 
 One-line confirmation when a check passes:
 > ✓ `ANTHROPIC_API_KEY` is set. Moving on.
@@ -142,13 +215,18 @@ One-line confirmation when a check passes:
 **Hard constraints:**
 
 - **Walkers MUST NOT invoke commands that print secret values to stdout.**
-  Use presence checks only — file-level grep on `.env` (emits "present"/"missing", never the value), or `lwc env list` for names-only listing. The `lwc env get` command is for shell interpolation in the operator's terminal, never for agent-visible detection. Even with `2>/dev/null`, a stdout pipe of a secret value into the agent's tool surface counts as a leak.
+  Use presence checks only — file-level grep on `.env` (emits
+  "present"/"missing", never the value), or `lwc env has <NAME>` /
+  `lwc env list` for a names-only / boolean presence answer. There is NO
+  agent-visible command that prints a secret's value; even with
+  `2>/dev/null`, piping a secret value into the agent's tool surface counts
+  as a leak.
 - Walkers MUST NOT auto-run lesson `verify` on the learner's behalf.
   Detection collapses *setup* steps only; lesson pacing stays
-  learner-driven (see **Learner-driven rule** below).
+  learner-driven (see **Learner-driven rule** above).
 - Walkers MUST NOT use time-based heuristics to gate progress.
-- Detection reads state only — no auto-install of missing components.
-  If a check fails, guide the learner to install/configure normally.
+- Detection reads state only — no auto-install of missing components. If a
+  check fails, guide the learner to install/configure normally.
 
 ## HARD vs SOFT gates
 
@@ -158,71 +236,75 @@ Walkers gate progress on certain learner actions before continuing.
   walker shows a diff and says "apply this in your editor, then say
   `done`." The walker MUST pause; it cannot run verify, cannot move on,
   cannot summarize past the gate until the learner confirms.
-- **SOFT gate** — a suggested next step the learner can skip. Example:
-  "you can `break down that code` if you want a chunked walk first."
-  The walker waits for input but accepts moving on if the learner just
-  says `run verify`.
+- **SOFT gate** — a suggested next step the learner can skip. Example: "you
+  can `break down that code` if you want a chunked walk first." The walker
+  waits for input but accepts moving on if the learner just says `run
+  verify`.
 
-When in doubt, prefer HARD gates around any state the walker can't
-observe (a file edit in the learner's editor, a secret pasted into
-`.env`) and SOFT gates around pacing-only suggestions.
+When in doubt, prefer HARD gates around any state the walker can't observe
+(a file edit in the learner's editor, a secret pasted into `.env`) and SOFT
+gates around pacing-only suggestions.
 
-## Read the state silently
+## Verify is diagnostic, not graded
 
-The walker is allowed (and expected) to inspect state directly — read
-files with the `Read` tool, list directories, check whether `.env` has a
-non-blank key, etc. — but **don't narrate the inspection**. The learner
-shouldn't see "I'm reading `src/server.ts` now…" as a separate beat;
-they should just see the rendered code block or the resulting guidance.
+`verify` exposes state — the query/command that ran, the actual result, the
+expected result, and any errors — so the walker can judge correctness in
+context. It does NOT adjudicate whether the learner "passed." **The walker
+is the grader, not a regex.**
 
-- For secrets: walker confirms **presence** (file exists, line is
-  non-blank), never **value**. **Walker MUST NOT use the Bash tool to
-  generate or echo any secret** (e.g. `crypto.randomBytes`, `openssl
-  rand`, `cat .env`). Generation always happens in the learner's own
-  terminal — show the recipe, tell the learner to run it in their
-  terminal, ask them to say when they've done it, and pause.
-- For source files: `Read` them first, then paste the relevant block
-  verbatim into the chat as the visible artifact.
+You — the model walking the lesson — are the teacher. You read the verify
+output, compare actual vs expected, and:
 
-## Verify is diagnostic
+- **If they match:** confirm and move on.
+- **If they don't match:** explain in plain English what's different (a
+  missing field? wrong count? items present that shouldn't be? items
+  missing that should?). Point at the specific construct or line the
+  learner is likely missing or applying incorrectly. Invite them to adjust
+  and rerun. Quote the full stdout; tie at least one line to a specific
+  line of source. Do NOT silently re-run.
+- **If there's a syntax/runtime error:** surface the error from verify's
+  output and walk them through what it's complaining about.
 
-`verify` exposes state — the query that ran, the actual result, the
-expected result, and any errors — so the walker can judge correctness
-in context. **The walker is the grader, not a regex.**
+Never tell the learner "your answer is wrong." Tell them what *specifically*
+differs and what construct closes the gap. The output is typically a
+sequence of structured blocks (request, full response, claim); use those as
+your tie-back anchors.
 
-- Quote the full stdout. Tie at least one line in it to a specific line
-  of source. If a stage failed, quote the failing assertion and ask the
-  learner what they edited; do NOT silently re-run.
-- The output is typically a sequence of `→ ← ✔` blocks (request, full
-  response, claim). Use those triples as your tie-back anchors.
+## Don't quiz the learner
+
+**Do not ask comprehension questions.** No "Quick check — can you
+describe…", no "Try to articulate why…", no Q&A prompts to test
+understanding. The workshop is hands-on, not a quiz. Learning happens
+through doing the edit experiment, watching the output flip, and tying it
+back to source — not by being interrogated. If the learner wants to discuss
+something, they'll ask. Default to forward motion.
 
 ## Style
 
 - **Don't lecture.** The lesson README is the source of truth and the
-  learner can read it. Your job is to pace the learner and tie output
-  back to source.
+  learner can read it. Your job is to pace the learner and tie output back
+  to source.
 - **Don't print env vars or secrets back to the conversation.**
-- **No internal-history voice.** Don't narrate workshop construction
-  ("we built this so…", "the PreToolUse hook is here because…") in
-  user-facing copy. Frame in concept-vs-concept terms (tools vs
-  resources, model-invoked vs user-invoked) when contrast matters.
-- **ALWAYS quote the full stdout verbatim after a Bash run** — that's
-  the whole reason this walker uses Bash.
+- **No internal-history voice.** Don't narrate workshop construction ("we
+  built this so…", "the PreToolUse hook is here because…") in user-facing
+  copy. Frame in concept-vs-concept terms (tools vs resources,
+  model-invoked vs user-invoked) when contrast matters.
+- **ALWAYS quote the full stdout verbatim after a Bash run** — that's the
+  whole reason this walker uses Bash.
 - **ALWAYS announce the command in plain text BEFORE the Bash call**
   (``I'm going to run: `<cmd>` ``).
-- **ALWAYS end a Bash-run response with a literal next-step phrase the
-  user can say back.**
+- **ALWAYS end a Bash-run response with a literal next-step phrase the user
+  can say back.**
 
 ### User-facing language rules
 
 - Do NOT use the word "walker" in user-facing prose (inside `>` quote
   blocks or any line the user reads). "Walker" is internal terminology.
-  User-facing copy says things like "I'll run verify and quote the
-  output" or omits the actor entirely ("Run verify:").
+  User-facing copy says things like "I'll run verify and quote the output"
+  or omits the actor entirely ("Run verify:").
 - Do NOT explain internal design ("by design", "the PreToolUse hook",
-  "intentionally") in user-facing copy. Those are walker-only
-  instructions. The user-facing version says "I won't edit lesson source
-  for you — that experiment is yours" or just "you'll make the edit in
-  your editor."
+  "intentionally") in user-facing copy. Those are walker-only instructions.
+  The user-facing version says "I won't edit lesson source for you — that
+  experiment is yours" or just "you'll make the edit in your editor."
 - Walker-only instructions (prose outside `>` quote blocks) MAY use
   "walker", "PreToolUse", and other internal terms freely.

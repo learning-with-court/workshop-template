@@ -646,6 +646,112 @@ workshop) rather than pasted per-lesson.
 
 ---
 
+## 21. Lesson-opening structure (objective-first → concrete-prompt-close)
+
+Every lesson opening MUST follow one binding structure. The failure mode it
+fixes: content-rich, direction-poor openings — a learner reads a wall of
+good content (skill + spec + theory) and still has to infer the objective
+and the next action, closing on a vague "describe what you want… what do you
+want to do?". This is the highest-frequency readability issue on real-learner
+walks.
+
+### The four-beat structure (in order)
+
+1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
+   concrete artifact — not an abstraction, not a "Where we are" recap. The
+   learner must know WHAT they're building before reading anything else.
+2. **WHY / skill — one or two sentences.** The transferable skill, not a
+   theory wall.
+3. **SPEC / material — as reference, not the lead.** Signature, rubric, or
+   constraints, kept tight.
+4. **CONCRETE STARTING PROMPT — offer the swing** (see §22). NOT "what do you
+   want to do?".
+   + the standing help-nudge close (§20), verbatim final line.
+
+Heavier lessons (multi-file, design-fork) warrant a FULLER offered prompt,
+not less scaffold.
+
+### DRY home
+
+This structure lives ONCE in the shared base layer (`_walker-base.md`).
+Per-lesson walkers supply the lesson-specific objective/skill/spec/prompt;
+they do NOT re-derive the structure.
+
+---
+
+## 22. Offered starting prompts must MODEL good prompting
+
+The prompt a walker OFFERS at the close of a lesson opening (§21 beat 4) must
+be exemplary, not a bare one-liner. "Write the X" is the wrong exemplar.
+
+✅ **Names artifact + purpose + signature + I/O + conventions; leaves
+implementation open.** ✗ **Bare one-liner ("write the harness").**
+
+**Guardrail — don't over-specify design-fork lessons.** On lessons whose
+teaching IS a design decision, the offered prompt OPENS the options
+(``let's talk through the options before building…``) rather than dictating
+the answer — over-specifying kills the refine-loop. Close the offer with
+``Paste as-is, or reshape the parts you have opinions on first.``
+
+---
+
+## 23. Plan mode — coach plan-critique, encourage pushback
+
+Once a workshop introduces plan mode, every design-heavy lesson encourages it
+as a CONVERSATION, and the deeper teach is the learner's habit and confidence
+to push back on a plan that's merely "fine".
+
+- **Recommend plan mode UP FRONT** on design lessons — not a buried aside.
+- **The plan is a DRAFT, not a verdict.** Frame it as open to improvement,
+  not a thing to approve.
+- **Coach design-critique as a NOTICING-PROMPT** — surface the genuine fork,
+  make the learner LOOK, let them decide. Don't hand them the answer.
+- **AFFIRM pushback** as good practice; **two flounders → offer guidance.**
+- **Seed "talk me through the options"** framing into design-lesson offered
+  prompts (§22).
+
+DRY home: `_walker-base.md`.
+
+---
+
+## 24. Coach the `@`-tag on edit-an-existing-file lessons
+
+When a lesson asks the learner to MODIFY a file that already exists, the
+walker coaches the learner to `@`-tag it in their prompt (``@path/to/file —
+add …``) so the model reads the current file instead of guessing. New-file
+lessons need no `@`-tag. A learner who already `@`-tags is ahead of it —
+affirm, don't re-coach. DRY home: `_walker-base.md`.
+
+---
+
+## 25. CLAUDE.md encodes interaction conventions
+
+`CLAUDE.md` is always-loaded context, so it's the DRY home for *how to
+collaborate*, not just project facts. The starter `CLAUDE.md` your L1 offers
+SHOULD include a short "how to work with me" block:
+
+- When there are decisions to make, ask ONE question at a time.
+- For each decision, give pros/cons and a recommendation.
+- Surface only genuine forks; recommend a default for the rest.
+
+Because the file is always loaded, this makes "decisions-with-recommendations
++ one genuine fork at a time" the default for the whole workshop — no
+per-walker repetition. Keep it ~3 concise bullets, additive to the project
+bullets.
+
+---
+
+## 26. Standardize the suggested advance phrase to `next`
+
+The phrase a walker SUGGESTS to advance is uniform across all lessons:
+``Say `next` to move on.`` — not `lesson 2`, not a bespoke per-lesson
+variant. Intent-mapping stays permissive (still advance on `next` / `done` /
+`ready` / `continue` / `lesson N`); only the SUGGESTED phrase is standardized.
+Walkers MUST NOT hardcode bespoke advance-suggestions. DRY home: the base
+layer's closing protocol.
+
+---
+
 ## Where this came from
 
 This spec is derived from `learning-with-court/workshop-mcp`'s `docs/WORKSHOP_SPEC.md` — a 486-line document refined across 13 lessons of real-learner walks. The mcp-workshop version is the canonical reference; this template version is what a fork operator needs at workshop-design time. If you find a rule here that doesn't make sense in your workshop's context, check the mcp-workshop spec for the long-form rationale before deciding to deviate.

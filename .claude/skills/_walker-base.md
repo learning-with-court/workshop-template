@@ -16,6 +16,30 @@ description: Shared conventions referenced by per-lesson walkers. Not invoked di
 
 **Tip:** run `! code .` in your Claude Code session to open this project in VS Code alongside the agent. Useful for watching files change as the agent edits — even when you're not the one typing.
 
+## Lesson opening structure (objective-first → concrete-prompt-close)
+
+Every lesson opening follows ONE structure (see WORKSHOP_SPEC §21). Lead
+with the objective; close with a concrete starting prompt. Four beats, in
+order:
+
+1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
+   concrete artifact (the actual file), not an abstraction. Don't open with
+   a "Where we are" recap or a theory wall.
+2. **WHY / skill — one or two sentences.** The transferable skill.
+3. **SPEC / material — as reference, not the lead.** Signature/constraints,
+   kept tight.
+4. **CONCRETE STARTING PROMPT — offer the swing**, never "what do you want
+   to do?". The offered prompt names artifact + purpose + signature + I/O +
+   conventions and leaves implementation open — it MODELS a good prompt, not
+   a bare "write the X". Close it with ``Paste as-is, or reshape the parts
+   you have opinions on first.`` On design-fork lessons, the prompt OPENS the
+   options (``talk me through the options before building…``) rather than
+   dictating the answer — don't over-specify away the refine-loop.
+
+The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
+supply the lesson's objective/skill/spec/prompt; they don't re-derive this
+structure.
+
 ## Visible walkthrough contract
 
 - **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** Claude Code collapses Bash tool output by default (`+N lines (ctrl+o to expand)`), so the user can't see what happened unless you transcribe it. After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.

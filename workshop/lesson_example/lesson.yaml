@@ -1,12 +1,12 @@
 # TEMPLATE: fork this lesson dir + this file for every new lesson.
 # Required fields documented in workshop/LESSON_TEMPLATE.md.
 
-id: 1
+id: example
 title: Template Lesson
 blurb: "TODO: one-sentence hook describing what the learner does in this lesson."
 prerequisites: []
 targetFiles: []
-verifyCommand: "echo 'TODO: replace with pnpm --filter @workshop/lesson-NN-name verify'"
+verifyCommand: "echo 'TODO: replace with pnpm --filter @workshop/lesson-<slug> verify'"
 verify:
   description: |
     TODO: describe what the verify script asserts. The lint script reads

@@ -1,0 +1,16 @@
+{
+  "surface": "code",
+  "version": "base-v1",
+  "verbatim": [
+    ".feature-workflow.yml",
+    "tsconfig.base.json",
+    "scripts/tsconfig.json",
+    "scripts/lint-manifest.ts",
+    "scripts/new-lesson.ts",
+    "scripts/rename-lesson.ts",
+    "scripts/sync-workshop-yaml.ts",
+    "scripts/setup-shared.ts",
+    "scripts/validate-base.mjs",
+    ".github/workflows/validate-base.yml"
+  ]
+}

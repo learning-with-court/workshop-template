@@ -5,7 +5,7 @@ description: Shared conventions referenced by per-lesson walkers. Not invoked di
 # Walker base — shared conventions
 
 > **HOW CLAUDE READS THIS FILE.** This file lives at `.claude/skills/_walker-base.md`.
-> It is NOT an invocable skill. Per-lesson walkers (`lesson-NN.md`) link
+> It is NOT an invocable skill. Per-lesson walkers (`lesson-<slug>.md`) link
 > here for conventions every walker shares. The activation is always a
 > per-lesson `Read` on the lesson walker — that walker is expected to have
 > internalized the rules below.
@@ -58,7 +58,7 @@ structure.
   Summarizing "both checks passed" hides the entire pedagogical moment.
   **Quote first, then summarize. Never summarize without quoting.**
 
-- **Before every Bash run, announce the exact command in plain text on its own line.** The Bash tool's collapsed `Bash(...)` line is hard to read. Your message must contain a sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-NN-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
+- **Before every Bash run, announce the exact command in plain text on its own line.** The Bash tool's collapsed `Bash(...)` line is hard to read. Your message must contain a sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
 
 - **Pause before each Bash run.** After explaining the code (or after a previous command's output), STOP and wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT run the next command automatically. The user needs a beat to read, ask follow-ups, or branch to `break down that code` before anything happens.
 
@@ -74,7 +74,7 @@ chat) — but **edit experiments are the learner's hands-on moment in
 their editor (VS Code, etc.)**.
 
 - **Walker MUST NOT edit lesson source files** under
-  `workshop/lesson_NN_*/src/` or `tests/`. Show the diff inline, ask the
+  `workshop/lesson_<slug>/src/` or `tests/`. Show the diff inline, ask the
   user to apply it, then offer to rerun verify when they confirm saved.
 - If a workshop ships a `PreToolUse` hook (`.claude/hooks/block-edits.sh`),
   Edit/Write/MultiEdit on those paths is also mechanically blocked. The

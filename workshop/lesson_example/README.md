@@ -1,4 +1,4 @@
-# Lesson 1: Template Lesson
+# Template Lesson
 
 > TODO: replace this entire file with the real lesson README.
 >
@@ -17,7 +17,7 @@ TODO: numbered or bulleted walkthrough.
 ## Verify
 
 ```bash
-pnpm --filter @workshop/lesson-01-template verify
+pnpm --filter @workshop/lesson-example verify
 ```
 
 TODO: describe what a passing run looks like.

@@ -46,7 +46,8 @@ The workshop is split across two channels — **skills** carry pedagogy. Where p
 Each lesson follows the same shape. Per-lesson skills fill in the specifics; this is the rhythm they share.
 
 ```
-1. ENTER       — user says "start lesson N" → load lesson-<slug>.md
+1. ENTER       — user says "start lesson N" → `Read .claude/skills/_walker-base.md`
+                 once (the shared L0 pedagogy), then load lesson-<slug>.md
 2. ORIENT      — show what's in the lesson source, what this lesson teaches
 3. PROPOSE     — describe the edit or experiment the learner should do
 4. PAUSE       — wait for user to apply the edit and say "verify"

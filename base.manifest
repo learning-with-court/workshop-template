@@ -1,7 +1,8 @@
 {
   "surface": "code",
-  "version": "base-v1",
+  "version": "base-v2",
   "verbatim": [
+    ".claude/skills/_walker-base.md",
     ".feature-workflow.yml",
     "tsconfig.base.json",
     "scripts/tsconfig.json",

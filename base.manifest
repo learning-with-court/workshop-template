@@ -1,0 +1,11 @@
+{
+  "surface": "code",
+  "version": "base-v1",
+  "verbatim": [
+    ".feature-workflow.yml",
+    "tsconfig.base.json",
+    "scripts/tsconfig.json",
+    "scripts/validate-base.mjs",
+    ".github/workflows/validate-base.yml"
+  ]
+}

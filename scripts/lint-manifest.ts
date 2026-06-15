@@ -25,10 +25,6 @@ const Workshop = z.object({
   difficulty: z.enum(["beginner", "intermediate", "advanced"]),
   tags: z.array(z.string()),
   install: z.string(),
-  subdomains: z.object({
-    dev: z.string().min(1),
-    prod: z.string().min(1),
-  }),
   youWillBuild: z.array(z.string()),
   prerequisites: z.array(Prereq),
   phases: z.array(Phase),
@@ -38,16 +34,25 @@ const Verify = z.object({
   mustInclude: z.array(z.string()).min(1),
   mustNotInclude: z.array(z.string()).optional(),
 });
+// Canonical lesson slug: lowercase letter first, then lowercase
+// alphanumerics + single hyphens. See docs/WORKSHOP_STANDARD.md.
+const Slug = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-z][a-z0-9-]*$/,
+    "must be slug-form (lowercase letter first, then lowercase alphanumeric + hyphens)",
+  );
 const Lesson = z.object({
-  id: z.number().int().positive(),
+  id: Slug,
   title: z.string(),
   blurb: z.string(),
-  prerequisites: z.array(z.number().int().positive()),
+  prerequisites: z.array(Slug),
   targetFiles: z.array(z.string()),
   verifyCommand: z.string(),
   verify: Verify,
   onPass: z.object({
-    advanceTo: z.number().int().positive().optional(),
+    advanceTo: Slug.optional(),
     feedback: z.string(),
   }),
 });
@@ -81,7 +86,7 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
 
   // 3. for every phase-referenced lesson key, the lesson dir + lesson.yaml exist
   const lessonKeys = workshop.phases.flatMap((p) => p.lessons);
-  const declaredIds = new Set<number>();
+  const declaredIds = new Set<string>();
   for (const key of lessonKeys) {
     const dir = lessonDirForKey(key);
     const lessonRoot = path.join(root, "workshop", dir);
@@ -131,10 +136,10 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
       root,
       ".claude",
       "skills",
-      `lesson-${String(lesson.id).padStart(2, "0")}.md`,
+      `lesson-${lesson.id}.md`,
     );
     if (!fs.existsSync(skillPath)) {
-      errors.push(`walker skill missing: .claude/skills/lesson-${String(lesson.id).padStart(2, "0")}.md`);
+      errors.push(`walker skill missing: .claude/skills/lesson-${lesson.id}.md`);
     }
 
     // README.md h1 matches lesson title (loose: starts with "# Lesson N" or contains title)
@@ -151,10 +156,9 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
 }
 
 function lessonDirForKey(key: string): string {
-  // "01-setup" -> "lesson_01_setup"
-  const m = key.match(/^(\d+)-(.+)$/);
-  if (!m) return key;
-  return `lesson_${m[1]}_${m[2]!.replace(/-/g, "_")}`;
+  // slug-form: "setup" -> "lesson_setup", "group-by" -> "lesson_group-by".
+  // Only the `lesson_` prefix is added; the slug keeps its hyphen form.
+  return `lesson_${key}`;
 }
 
 // CLI entry

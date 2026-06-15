@@ -1,0 +1,20 @@
+name: validate-base
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+jobs:
+  validate-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Check synced base files have not drifted
+        run: |
+          if [ ! -f base.lock ]; then
+            echo "No base.lock — repo is not yet on the shared base. Skipping."
+            exit 0
+          fi
+          node scripts/validate-base.mjs

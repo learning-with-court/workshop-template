@@ -600,21 +600,27 @@ Learners MUST never feel stranded — or bad — for not knowing where to
 start. Asking Claude for help and guidance is itself a habit the
 workshops teach. Two binding rules.
 
-### The standing close
+### The starting-point nudge
 
-Every lesson opening ends with this exact line, verbatim, as its final
-line:
+Make it easy to ask for a starting point — but offer it only where it
+genuinely helps (the first lesson or two, when a learner hesitates, at a
+tricky step), NOT mechanically at the end of every opening. An identical
+line every lesson reads as a verbal tic and stops landing.
 
-> Not sure where to start? Just say so — asking is how this works.
+When you do offer it, **vary the phrasing — never the same sentence
+twice.** Illustrative, not a script:
 
-It lives in **exactly one place** — the shared base layer
-(`_walker-base.md`, the **Asking for help is how this works** rule) —
-and governs every opening style class-wide (a four-line opening
-protocol, a rendered task/code block then a STOP, or a bespoke
-greeting). Walkers do NOT carry their own copy; that drifts. A walker
-whose bespoke greeting would otherwise preclude the close adds a
-one-line **deferral pointer** to the base rule — never a literal copy.
-Uniformity is the point: walkers may rely on the line being there.
+> *"Want a starting point, or take a swing first?"* · *"Not sure where to
+> begin? Say so and I'll sketch the first step."* · *"Happy to point you
+> at the first move if that's easier."*
+
+The rule lives in **exactly one place** — the shared base layer
+(`_walker-base.md`, the **Asking for help is how this works** rule) — and
+governs every opening style class-wide (a four-line opening protocol, a
+rendered task/code block then a STOP, or a bespoke greeting). Walkers do
+NOT carry their own canned copy; that drifts and turns the nudge into
+boilerplate. They inherit the principle and vary the wording to fit the
+moment.
 
 ### The coaching rule
 
@@ -666,7 +672,8 @@ walks.
    constraints, kept tight.
 4. **CONCRETE STARTING PROMPT — offer the swing** (see §22). NOT "what do you
    want to do?".
-   + the standing help-nudge close (§20), verbatim final line.
+   + a starting-point nudge (§20) where it genuinely helps — varied and
+     natural, not a canned line on every opening.
 
 Heavier lessons (multi-file, design-fork) warrant a FULLER offered prompt,
 not less scaffold.

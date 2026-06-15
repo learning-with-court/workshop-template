@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v2",
+  "version": "base-v3",
   "verbatim": [
     ".claude/skills/_walker-base.md",
     ".feature-workflow.yml",

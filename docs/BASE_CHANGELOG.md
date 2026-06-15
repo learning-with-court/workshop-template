@@ -4,6 +4,28 @@ The shared base is the set of files in `base.manifest`, synced into Code
 workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 `base.lock`.
 
+## base-v3 — 2026-06-15
+Two polish changes to the shared base.
+
+- **Toned down the help nudge** in the canonical `_walker-base.md`. The old
+  rule mandated ending EVERY lesson opening with one verbatim line (`Not
+  sure where to start? Just say so — asking is how this works.`), which read
+  as a rote tic on a real walk — identical every lesson. The rule is now a
+  **starting-point nudge offered only where it genuinely helps** (the first
+  lesson or two, when a learner hesitates, at a tricky step), phrased
+  **varied and naturally — never the same sentence twice**, with 3–4
+  illustrative (not scripted) phrasings the guide varies. The coaching move
+  (treat "help"/"I'm stuck" as first-class; walk into the FIRST concrete
+  step; never imply they should've known; two flounders → offer proactively)
+  is kept intact. `docs/WORKSHOP_SPEC.md` §20/§21 updated to match.
+- **Scaffolder verify import bug:** investigated whether the base scaffolder
+  (`scripts/new-lesson.ts`) or lesson template (`workshop/lesson_example/`)
+  generates a verify that does a raw `await import(<filesystem-path>)`
+  (fragile in ESM). **It does not** — the template `verify.ts` is a static
+  console scaffold and the only `await import` in the tree is a
+  commented-out relative-specifier example. No base change made here; any
+  raw-import bug lives in a member's existing lessons, handled separately.
+
 ## base-v2 — 2026-06-14
 The **L0 pedagogy skill** joins the shared base: the canonical, workshop-
 agnostic `_walker-base.md`.

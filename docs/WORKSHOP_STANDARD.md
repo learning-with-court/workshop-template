@@ -81,6 +81,43 @@ The legacy template used a numeric scheme. The mapping, before → after:
 - **`base.manifest` + `scripts/validate-base.mjs`** — the shared-base
   mechanism that keeps this linter (and the other base files) identical
   across all workshop repos, so the schema can't silently drift per repo.
+- **`scripts/validate-scaffolding.mjs`** — enforces the Runtime scaffolding
+  standard below (progress server present + pre-approved + clean hook path).
+  Run with `node scripts/validate-scaffolding.mjs`.
+
+## Runtime scaffolding (progress server)
+
+Every workshop tracks learner progress server-side through the `lwc` CLI
+acting as a stdio MCP proxy. To wire that in — and to avoid the failure mode
+where the agent has no progress tools and reaches for the global Cowork lwc
+connector ("these lwc tools are for Cowork mode") — every workshop must ship:
+
+1. **A progress MCP server in `.mcp.json` at the repo root:**
+   ```json
+   { "mcpServers": { "lwc-<id>": { "command": "lwc" } } }
+   ```
+   Bare `lwc` runs the stdio MCP proxy (serving `workshop_advance` /
+   `workshop_state` / `workshop_reset` / `workshop_update`), resolving the
+   active workshop from the cwd. The `lwc-` name prefix also marks the project
+   as a workshop so the Cowork-flow plugin skills stay silent. The template
+   ships `lwc-WORKSHOP_ID`; `build-workshop` substitutes the real id.
+2. **Pre-approval in committed `.claude/settings.json`:**
+   ```json
+   { "enabledMcpjsonServers": ["lwc-<id>"] }
+   ```
+   so a fresh clone never shows the MCP trust prompt for workshop
+   infrastructure. (Must be the committed `settings.json`, not the gitignored
+   `settings.local.json`.)
+3. **A clean session-start hook** (if the workshop ships one): walker skills
+   load from `.claude/skills/<lesson-walker>.md`, never
+   `.workshop/<workshop>/.claude/skills/`; the hook defers the lesson opening
+   to `_walker-base.md` + the per-lesson walker rather than prescribing one.
+
+**Chain-suite repos (CCA):** `.mcp.json` is a per-position varying artifact, so
+the server is seeded across the chain via a `from:"baseline"` chain-edit overlay
+(see `scripts/chain-edits/README.md`), and any lesson that teaches authoring
+`.mcp.json` must reframe to "add to the existing file." For independent-build
+workshops it is a flat committed `.mcp.json`.
 
 ## Authoring scripts
 

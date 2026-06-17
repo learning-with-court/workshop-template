@@ -1,4 +1,5 @@
 {
+  "enabledMcpjsonServers": ["lwc-WORKSHOP_ID"],
   "hooks": {
     "SessionStart": [
       {

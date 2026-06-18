@@ -43,15 +43,15 @@ Example shape (workshop-agnostic):
 
 ## 1. Lesson walker skill file
 
-Path: `.claude/skills/lesson-NN.md` (flat layout — Claude reads this file directly via Read; project-level skill files are not registered as invocable Skills).
+Path: `.claude/skills/lesson-<slug>.md` (flat layout — Claude reads this file directly via Read; project-level skill files are not registered as invocable Skills).
 
-> **CRITICAL.** Never tell the agent to "invoke this skill" or "use the Skill tool" in walker prose. The agent reads the file via Read; that read IS the activation. Telling it to call `Skill(lesson-NN)` produces a runtime error.
+> **CRITICAL.** Never tell the agent to "invoke this skill" or "use the Skill tool" in walker prose. The agent reads the file via Read; that read IS the activation. Telling it to call `Skill(lesson-<slug>)` produces a runtime error.
 
 ### Frontmatter
 
 ```markdown
 ---
-name: lesson-NN
+name: lesson-<slug>
 description: <third-person what + when with 4–8 trigger phrases, per §0>
 ---
 ```
@@ -70,9 +70,9 @@ Copy this template into your walker and only adjust file references:
 ## Visible walkthrough contract
 
 - **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.
-- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-NN verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
+- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
 - **Pause before each Bash run.** After explaining the code (or after a previous command's output), STOP and wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT run the next command automatically. The user needs a beat to read, ask follow-ups, or branch to `break down that code` before anything happens.
-- **Walker MUST NOT edit lesson source files** under `workshop/lesson_NN_*/src/` or `tests/`. Edit experiments are the user's hands-on moment — show them the diff, ask them to apply it in their editor, then offer to rerun verify when they confirm saved. (See §13 for the optional block-edits hook that enforces this mechanically.)
+- **Walker MUST NOT edit lesson source files** under `workshop/lesson_<slug>/src/` or `tests/`. Edit experiments are the user's hands-on moment — show them the diff, ask them to apply it in their editor, then offer to rerun verify when they confirm saved. (See §13 for the optional block-edits hook that enforces this mechanically.)
 - **Walker MUST NOT use the Bash tool to generate or echo any secret.** The verbatim-quote rule has a hard exception here: a Bash invocation that would produce or echo a secret (e.g. `crypto.randomBytes`, `openssl rand`, `cat .env`) must not be run in the first place. Generation always happens in the user's own terminal — show the recipe, tell the user to run it in their terminal, ask them to say when they've done it, and pause. See §8.
 - Before running anything, show the relevant code snippet inline in chat (not "look at the file") and say what output shape to expect.
 - Suggest the user can ask to inspect more source: `Say: show me what's in <lesson-dir>/src/<file>`.
@@ -108,7 +108,7 @@ Numbered list. Each step that requires running a command follows the **Bash + ve
 ```markdown
 4. **When the user says `run verify`, run it via the Bash tool.** Before invoking Bash, write a short line announcing the exact command, e.g.:
 
-   > I'm going to run: `pnpm --filter @workshop/lesson-NN verify`
+   > I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify`
 
    Then call the Bash tool with that exact command.
 
@@ -174,7 +174,7 @@ The "always announce + always quote + always end with next-step" trio is what ma
 
 ## 2. Lesson README
 
-Path: `workshop/lesson_NN_<slug>/README.md`
+Path: `workshop/lesson_<slug>/README.md`
 
 A reader who finds this lesson on GitHub *without ever installing the plugin* should be able to learn from it. The lesson README is the standalone teaching artifact; the walker skill is the live-coaching layer that sits on top of it.
 
@@ -372,7 +372,7 @@ Don't pile all three on every reply — pick the one that matches what just happ
 
 ## 13. Block-edits hook (optional)
 
-If your workshop has hands-on lesson source files (`workshop/lesson_NN_*/src/` or `tests/`) where the LEARNER edits and the AGENT does not, copy the block-edits enforcement pattern from `mcp-workshop/.claude/hooks/block-edits.sh` and wire it into `.claude/settings.json`'s `PreToolUse` hook. The hook blocks `Edit`/`Write`/`MultiEdit` on those paths regardless of auto mode, with a `touch .workshop-autopilot-active` bypass for cases where the user explicitly wants the agent to apply edits.
+If your workshop has hands-on lesson source files (`workshop/lesson_<slug>/src/` or `tests/`) where the LEARNER edits and the AGENT does not, copy the block-edits enforcement pattern from `mcp-workshop/.claude/hooks/block-edits.sh` and wire it into `.claude/settings.json`'s `PreToolUse` hook. The hook blocks `Edit`/`Write`/`MultiEdit` on those paths regardless of auto mode, with a `touch .workshop-autopilot-active` bypass for cases where the user explicitly wants the agent to apply edits.
 
 The template doesn't ship `block-edits.sh` by default because some workshops are read-only walks (no learner edits). Workshops with hands-on edits should add it; the spec section here is the canonical reference.
 
@@ -580,7 +580,7 @@ prior workshop will have most of these satisfied and should not be
 walked through the full ladder again.
 
 Add a `### Setup detection (pre-step)` block at the top of your
-lesson-01 walker's `## Steps` section. The block runs the relevant
+first lesson's walker (the `## Steps` section). The block runs the relevant
 checks silently, renders one confirmation line per satisfied requirement,
 and then proceeds to the first lesson step. Nothing else changes in the
 walker's pedagogy.
@@ -600,21 +600,27 @@ Learners MUST never feel stranded — or bad — for not knowing where to
 start. Asking Claude for help and guidance is itself a habit the
 workshops teach. Two binding rules.
 
-### The standing close
+### The starting-point nudge
 
-Every lesson opening ends with this exact line, verbatim, as its final
-line:
+Make it easy to ask for a starting point — but offer it only where it
+genuinely helps (the first lesson or two, when a learner hesitates, at a
+tricky step), NOT mechanically at the end of every opening. An identical
+line every lesson reads as a verbal tic and stops landing.
 
-> Not sure where to start? Just say so — asking is how this works.
+When you do offer it, **vary the phrasing — never the same sentence
+twice.** Illustrative, not a script:
 
-It lives in **exactly one place** — the shared base layer
-(`_walker-base.md`, the **Asking for help is how this works** rule) —
-and governs every opening style class-wide (a four-line opening
-protocol, a rendered task/code block then a STOP, or a bespoke
-greeting). Walkers do NOT carry their own copy; that drifts. A walker
-whose bespoke greeting would otherwise preclude the close adds a
-one-line **deferral pointer** to the base rule — never a literal copy.
-Uniformity is the point: walkers may rely on the line being there.
+> *"Want a starting point, or take a swing first?"* · *"Not sure where to
+> begin? Say so and I'll sketch the first step."* · *"Happy to point you
+> at the first move if that's easier."*
+
+The rule lives in **exactly one place** — the shared base layer
+(`_walker-base.md`, the **Asking for help is how this works** rule) — and
+governs every opening style class-wide (a four-line opening protocol, a
+rendered task/code block then a STOP, or a bespoke greeting). Walkers do
+NOT carry their own canned copy; that drifts and turns the nudge into
+boilerplate. They inherit the principle and vary the wording to fit the
+moment.
 
 ### The coaching rule
 
@@ -643,6 +649,113 @@ direct operator rule: users should get USED to asking Claude for help —
 that habit is itself a thing the workshops teach. It lives in the base
 layer so it's inherited by every walker (and every future forked
 workshop) rather than pasted per-lesson.
+
+---
+
+## 21. Lesson-opening structure (objective-first → concrete-prompt-close)
+
+Every lesson opening MUST follow one binding structure. The failure mode it
+fixes: content-rich, direction-poor openings — a learner reads a wall of
+good content (skill + spec + theory) and still has to infer the objective
+and the next action, closing on a vague "describe what you want… what do you
+want to do?". This is the highest-frequency readability issue on real-learner
+walks.
+
+### The four-beat structure (in order)
+
+1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
+   concrete artifact — not an abstraction, not a "Where we are" recap. The
+   learner must know WHAT they're building before reading anything else.
+2. **WHY / skill — one or two sentences.** The transferable skill, not a
+   theory wall.
+3. **SPEC / material — as reference, not the lead.** Signature, rubric, or
+   constraints, kept tight.
+4. **CONCRETE STARTING PROMPT — offer the swing** (see §22). NOT "what do you
+   want to do?".
+   + a starting-point nudge (§20) where it genuinely helps — varied and
+     natural, not a canned line on every opening.
+
+Heavier lessons (multi-file, design-fork) warrant a FULLER offered prompt,
+not less scaffold.
+
+### DRY home
+
+This structure lives ONCE in the shared base layer (`_walker-base.md`).
+Per-lesson walkers supply the lesson-specific objective/skill/spec/prompt;
+they do NOT re-derive the structure.
+
+---
+
+## 22. Offered starting prompts must MODEL good prompting
+
+The prompt a walker OFFERS at the close of a lesson opening (§21 beat 4) must
+be exemplary, not a bare one-liner. "Write the X" is the wrong exemplar.
+
+✅ **Names artifact + purpose + signature + I/O + conventions; leaves
+implementation open.** ✗ **Bare one-liner ("write the harness").**
+
+**Guardrail — don't over-specify design-fork lessons.** On lessons whose
+teaching IS a design decision, the offered prompt OPENS the options
+(``let's talk through the options before building…``) rather than dictating
+the answer — over-specifying kills the refine-loop. Close the offer with
+``Paste as-is, or reshape the parts you have opinions on first.``
+
+---
+
+## 23. Plan mode — coach plan-critique, encourage pushback
+
+Once a workshop introduces plan mode, every design-heavy lesson encourages it
+as a CONVERSATION, and the deeper teach is the learner's habit and confidence
+to push back on a plan that's merely "fine".
+
+- **Recommend plan mode UP FRONT** on design lessons — not a buried aside.
+- **The plan is a DRAFT, not a verdict.** Frame it as open to improvement,
+  not a thing to approve.
+- **Coach design-critique as a NOTICING-PROMPT** — surface the genuine fork,
+  make the learner LOOK, let them decide. Don't hand them the answer.
+- **AFFIRM pushback** as good practice; **two flounders → offer guidance.**
+- **Seed "talk me through the options"** framing into design-lesson offered
+  prompts (§22).
+
+DRY home: `_walker-base.md`.
+
+---
+
+## 24. Coach the `@`-tag on edit-an-existing-file lessons
+
+When a lesson asks the learner to MODIFY a file that already exists, the
+walker coaches the learner to `@`-tag it in their prompt (``@path/to/file —
+add …``) so the model reads the current file instead of guessing. New-file
+lessons need no `@`-tag. A learner who already `@`-tags is ahead of it —
+affirm, don't re-coach. DRY home: `_walker-base.md`.
+
+---
+
+## 25. CLAUDE.md encodes interaction conventions
+
+`CLAUDE.md` is always-loaded context, so it's the DRY home for *how to
+collaborate*, not just project facts. The starter `CLAUDE.md` your L1 offers
+SHOULD include a short "how to work with me" block:
+
+- When there are decisions to make, ask ONE question at a time.
+- For each decision, give pros/cons and a recommendation.
+- Surface only genuine forks; recommend a default for the rest.
+
+Because the file is always loaded, this makes "decisions-with-recommendations
++ one genuine fork at a time" the default for the whole workshop — no
+per-walker repetition. Keep it ~3 concise bullets, additive to the project
+bullets.
+
+---
+
+## 26. Standardize the suggested advance phrase to `next`
+
+The phrase a walker SUGGESTS to advance is uniform across all lessons:
+``Say `next` to move on.`` — not `lesson 2`, not a bespoke per-lesson
+variant. Intent-mapping stays permissive (still advance on `next` / `done` /
+`ready` / `continue` / `lesson N`); only the SUGGESTED phrase is standardized.
+Walkers MUST NOT hardcode bespoke advance-suggestions. DRY home: the base
+layer's closing protocol.
 
 ---
 

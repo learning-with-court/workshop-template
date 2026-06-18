@@ -7,16 +7,24 @@
 //   pnpm sync-workshop-yaml --write   # apply rebuild to workshop.yaml
 //   pnpm sync-workshop-yaml --check   # diff-only; exit non-zero if drift
 //
+// Lessons are identified by slug (kebab-case) — there is no lesson number.
+// See docs/WORKSHOP_STANDARD.md for the full identity contract.
+//
 // What it does:
-//   - Scans workshop/lesson_<NN>_<slug>/ dirs for lesson.yaml files.
-//     Each becomes manifest key "<NN>-<slug-with-dashes>".
+//   - Scans workshop/lesson_<slug>/ dirs for lesson.yaml files.
+//     Each becomes manifest key "<slug>".
 //   - Reads workshop.yaml, records which phase each existing key sits in.
 //   - Builds new phases[].lessons[]:
 //       * filesystem lesson present in workshop.yaml -> keep its phase
 //       * filesystem lesson missing from workshop.yaml -> phase A + warn
 //       * manifest key with no matching dir -> drop + warn
-//       * within each phase, sort by NN ascending
+//       * within each phase, sort slugs alphabetically
 //   - Diff vs current, with +/-/~ prefixes.
+//
+// Ordering caveat: lessons carry no number, so within-phase order falls back
+// to alphabetical. If your lessons need a specific teaching order that isn't
+// alphabetical, set the order explicitly in workshop.yaml and treat --check
+// as advisory for that phase.
 //
 // YAML preservation: we only rewrite the trailing `phases:` block (it's the
 // last top-level key in workshop.yaml by convention). Every other byte of
@@ -67,18 +75,23 @@ function printUsageAndExit(code: number): never {
   process.exit(code);
 }
 
-function dirToKey(dir: string): { key: string; nn: string } | null {
-  // "lesson_03_joins_and_aggregates" -> { key: "03-joins-and-aggregates", nn: "03" }
-  const m = dir.match(/^lesson_(\d{2})_(.+)$/);
+// Canonical lesson slug. Keep in sync with scripts/lint-manifest.ts.
+const SLUG_RE = /^[a-z][a-z0-9-]*$/;
+
+function dirToKey(dir: string): { key: string } | null {
+  // "lesson_group-by" -> { key: "group-by" }. The slug keeps its hyphen form.
+  const m = dir.match(/^lesson_(.+)$/);
   if (!m) return null;
-  return { key: `${m[1]}-${m[2]!.replace(/_/g, "-")}`, nn: m[1]! };
+  const slug = m[1]!;
+  if (!SLUG_RE.test(slug)) return null;
+  return { key: slug };
 }
 
-function scanFilesystemLessons(repoRoot: string): { key: string; nn: string }[] {
+function scanFilesystemLessons(repoRoot: string): { key: string }[] {
   const workshopDir = path.join(repoRoot, "workshop");
   if (!fs.existsSync(workshopDir)) return [];
   const entries = fs.readdirSync(workshopDir, { withFileTypes: true });
-  const found: { key: string; nn: string }[] = [];
+  const found: { key: string }[] = [];
   for (const e of entries) {
     if (!e.isDirectory()) continue;
     if (!e.name.startsWith("lesson_")) continue;
@@ -88,12 +101,7 @@ function scanFilesystemLessons(repoRoot: string): { key: string; nn: string }[] 
     if (!parsed) continue;
     found.push(parsed);
   }
-  return found.sort((a, b) => a.nn.localeCompare(b.nn));
-}
-
-function nnOfKey(key: string): string {
-  const m = key.match(/^(\d{2})-/);
-  return m ? m[1]! : "99";
+  return found.sort((a, b) => a.key.localeCompare(b.key));
 }
 
 /**
@@ -149,7 +157,7 @@ interface SyncResult {
   changed: boolean;
 }
 
-function syncPhases(workshop: Workshop, fsLessons: { key: string; nn: string }[]): SyncResult {
+function syncPhases(workshop: Workshop, fsLessons: { key: string }[]): SyncResult {
   const warnings: string[] = [];
   const currentPhases: Phase[] = workshop.phases.map((p) => ({
     id: p.id,
@@ -213,9 +221,9 @@ function syncPhases(workshop: Workshop, fsLessons: { key: string; nn: string }[]
     }
   }
 
-  // Sort each phase's lessons by NN
+  // Sort each phase's lessons by slug
   for (const p of rebuilt) {
-    p.lessons.sort((a, b) => nnOfKey(a).localeCompare(nnOfKey(b)));
+    p.lessons.sort((a, b) => a.localeCompare(b));
   }
 
   // Build the diff
@@ -230,7 +238,7 @@ function syncPhases(workshop: Workshop, fsLessons: { key: string; nn: string }[]
   }
 
   const allKeys = new Set<string>([...currentByKey.keys(), ...rebuiltByKey.keys()]);
-  const sortedKeys = [...allKeys].sort((a, b) => nnOfKey(a).localeCompare(nnOfKey(b)) || a.localeCompare(b));
+  const sortedKeys = [...allKeys].sort((a, b) => a.localeCompare(b));
   for (const key of sortedKeys) {
     const cur = currentByKey.get(key);
     const next = rebuiltByKey.get(key);

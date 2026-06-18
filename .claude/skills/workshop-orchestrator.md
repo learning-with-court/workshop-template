@@ -1,6 +1,6 @@
 ---
 name: workshop-orchestrator
-description: TODO — Root orchestrator skill for this workshop. Loaded for the whole session. Describes the workshop's MCP server contract (if any), the lesson lifecycle, and the boundary between skill-owned pedagogy and externally-tracked state. Per-lesson skills (lesson-NN.md) carry the actual walkthrough prose; this skill is the shared contract they all reference.
+description: TODO — Root orchestrator skill for this workshop. Loaded for the whole session. Describes the workshop's MCP server contract (if any), the lesson lifecycle, and the boundary between skill-owned pedagogy and externally-tracked state. Per-lesson skills (lesson-<slug>.md) carry the actual walkthrough prose; this skill is the shared contract they all reference.
 ---
 
 # Workshop orchestrator
@@ -16,7 +16,7 @@ This skill is a thin overlay describing what's shared across lessons. The **cano
 
 `docs/WORKSHOP_WALKTHROUGH.md` is the human-loop checklist for testing whether a lesson actually feels like a guided walkthrough.
 
-Each lesson has its own skill (`lesson-01.md`, `lesson-02.md`, …) that carries the lesson-specific walkthrough prose. Those per-lesson skills follow the spec and assume the rules below are in force.
+Each lesson has its own skill (`lesson-<slug>.md`, e.g. `lesson-setup.md`, `lesson-columns.md`) that carries the lesson-specific walkthrough prose. Those per-lesson skills follow the spec and assume the rules below are in force.
 
 ## What lives where (architectural ground truth)
 
@@ -24,9 +24,9 @@ The workshop is split across two channels — **skills** carry pedagogy. Where p
 
 | Concern | Where | Why |
 |---|---|---|
-| Walker prose, conversational rhythm, edit experiments, "what to say next" phrases | **This repo's skills** (`.claude/skills/lesson-NN.md`) | Skills load with system-level authority. The walker treats them as instruction. |
+| Walker prose, conversational rhythm, edit experiments, "what to say next" phrases | **This repo's skills** (`.claude/skills/lesson-<slug>.md`) | Skills load with system-level authority. The walker treats them as instruction. |
 | Verify checks, lesson advancement, session state | TODO: **Your workshop's MCP server**, OR purely local (lesson verify scripts + learner's own progress) | Server-side state is ungameable and survives across machines; purely-local works fine for read-style workshops where progress is the learner's own. |
-| Lesson source the learner edits | This repo's `workshop/lesson_NN_*/src/` | The hands-on artifact. |
+| Lesson source the learner edits | This repo's `workshop/lesson_<slug>/src/` | The hands-on artifact. |
 | Hooks (SessionStart greets; optional PreToolUse blocks edits to lesson source) | This repo's `.claude/hooks/` | Local enforcement. |
 
 **Do NOT ask any MCP server for walkthrough text.** That's what the per-lesson skills are for. Pedagogy is yours.
@@ -46,7 +46,8 @@ The workshop is split across two channels — **skills** carry pedagogy. Where p
 Each lesson follows the same shape. Per-lesson skills fill in the specifics; this is the rhythm they share.
 
 ```
-1. ENTER       — user says "start lesson N" → load lesson-NN.md
+1. ENTER       — user says "start lesson N" → `Read .claude/skills/_walker-base.md`
+                 once (the shared L0 pedagogy), then load lesson-<slug>.md
 2. ORIENT      — show what's in the lesson source, what this lesson teaches
 3. PROPOSE     — describe the edit or experiment the learner should do
 4. PAUSE       — wait for user to apply the edit and say "verify"
@@ -82,9 +83,9 @@ If the learner has been driving fast and skipping these affordances, you can pau
 These rules apply to every lesson. Per-lesson skills assume they're in force.
 
 1. **Quote the FULL stdout verbatim** after every Bash run — this is rule #1 because it's the most-violated. Every line, in a fenced code block, no truncation, no `(...)` elision, no paraphrase. Claude Code collapses Bash output by default; the learner cannot see what happened unless you transcribe it.
-2. **Announce the exact command in plain text BEFORE the Bash call.** A line like ``I'm going to run: `pnpm --filter @workshop/lesson-NN verify` `` (command in backticks).
+2. **Announce the exact command in plain text BEFORE the Bash call.** A line like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (command in backticks).
 3. **Pause before each Bash run.** After explaining or proposing, STOP. Wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT chain runs — the user needs a beat to read, ask follow-ups, branch, or apply an edit.
-4. **You MUST NOT edit lesson source files** under `workshop/lesson_NN_*/src/` or `tests/`. Edit experiments are the learner's hands-on moment in *their* editor. Show the diff, ask them to apply, then offer to rerun verify when they confirm saved. (See `WORKSHOP_SPEC.md` §13 for the optional block-edits hook that enforces this mechanically.)
+4. **You MUST NOT edit lesson source files** under `workshop/lesson_<slug>/src/` or `tests/`. Edit experiments are the learner's hands-on moment in *their* editor. Show the diff, ask them to apply, then offer to rerun verify when they confirm saved. (See `WORKSHOP_SPEC.md` §13 for the optional block-edits hook that enforces this mechanically.)
 5. **Show the relevant code snippet before running anything.** Never run verify against code the learner hasn't seen. The output is meaningful only against the source it exercises.
 6. **Propose a specific small edit experiment, framed as user-applied.** Generic prompts ("modify the code as you like") do not produce hands-on learning. Concrete prompts ("change the literal `pong` to your name") do. Predict the new output shape so the learner has a hypothesis to verify against.
 7. **End every Bash-run response with a "what to say next" phrase.** A natural-language line like `Say: let's run the tests` or `Say: break down that code` or `Say: let's start lesson 2`. Never end after the verbatim quote alone.
@@ -130,4 +131,4 @@ Re-check the pace if the learner contradicts it via behavior. The change require
 - **Chaining commands.** `verify && tests && next-lesson` is the auto-complete failure mode. Pause between each.
 - **Calling an MCP server for prose.** If you find yourself asking the server for walkthrough text or instructions, you've drifted. The skill is the source of truth for pedagogy.
 
-This skill is shared across all lessons. The per-lesson skill (`lesson-NN.md`) is where you go for what *this* lesson teaches and how to walk it.
+This skill is shared across all lessons. The per-lesson skill (`lesson-<slug>.md`) is where you go for what *this* lesson teaches and how to walk it.

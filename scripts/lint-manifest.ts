@@ -165,6 +165,25 @@ function lessonDirForKey(key: string): string {
   return `lesson_${key}`;
 }
 
+/**
+ * Soft check: if the block-edits PreToolUse hook ships but no settings.json
+ * PreToolUse entry references it, the test-file/protected-path immutability
+ * contract is silently un-enforced. Returns a warning string (never an error)
+ * — settings.json is member-local, so this must not fail the lint.
+ */
+export function checkHookWired(repoRoot: string): string | null {
+  const hook = path.join(repoRoot, ".claude", "hooks", "block-edits.sh");
+  if (!fs.existsSync(hook)) return null;
+  const settingsPath = path.join(repoRoot, ".claude", "settings.json");
+  const settings = fs.existsSync(settingsPath)
+    ? fs.readFileSync(settingsPath, "utf8")
+    : "";
+  if (!/"PreToolUse"/.test(settings) || !/block-edits\.sh/.test(settings)) {
+    return ".claude/hooks/block-edits.sh exists but no PreToolUse hook in .claude/settings.json references it — the immutability contract is not enforced. Wire Edit/Write/MultiEdit PreToolUse matchers to it.";
+  }
+  return null;
+}
+
 // CLI entry
 // Usage: tsx scripts/lint-manifest.ts [--workshopRoot .workshop/claude-code]
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -174,6 +193,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (wrIdx !== -1 && args[wrIdx + 1]) {
     workshopRoot = args[wrIdx + 1];
   }
+
+  const hookWarning = checkHookWired(process.cwd());
+  if (hookWarning) console.warn(`⚠ ${hookWarning}`);
 
   lintManifest({ repoRoot: process.cwd(), workshopRoot }).then((r) => {
     if (r.errors.length === 0) {

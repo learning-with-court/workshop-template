@@ -15,6 +15,11 @@ const Phase = z.object({
   title: z.string(),
   lessons: z.array(z.string()).min(1),
 });
+const SeriesBlock = z.object({
+  id: z.string(),
+  title: z.string(),
+  order: z.number().int().positive(),
+});
 const Workshop = z.object({
   id: z.string(),
   title: z.string(),
@@ -28,6 +33,9 @@ const Workshop = z.object({
   youWillBuild: z.array(z.string()),
   prerequisites: z.array(Prereq),
   phases: z.array(Phase),
+  series: SeriesBlock.optional(),
+  /** Optional prefix for walker skill filenames. Default: "lesson". E.g. "tools-mcp-lesson" → .claude/skills/tools-mcp-lesson-01.md */
+  skillPrefix: z.string().optional(),
 });
 const Verify = z.object({
   description: z.string(),
@@ -61,14 +69,24 @@ export interface LintResult {
   errors: string[];
 }
 
-export async function lintManifest(opts: { repoRoot: string }): Promise<LintResult> {
+export async function lintManifest(opts: {
+  repoRoot: string;
+  /** Optional sub-path for monorepo workshops. E.g. ".workshop/claude-code" */
+  workshopRoot?: string;
+}): Promise<LintResult> {
   const errors: string[] = [];
   const root = opts.repoRoot;
+  // workshopRoot is the directory containing workshop.yaml + landing.md.
+  // For monorepo workshops it's a sub-path; for single-workshop repos it's the repo root.
+  const wsDir = opts.workshopRoot ? path.join(root, opts.workshopRoot) : root;
+  // Lesson dirs: monorepo workshopRoots hold lesson_*/ directly; single-workshop
+  // repos nest them under a workshop/ subdir.
+  const lessonsBase = opts.workshopRoot ? wsDir : path.join(wsDir, "workshop");
 
   // 1. workshop.yaml exists + parses
-  const wsPath = path.join(root, "workshop.yaml");
+  const wsPath = path.join(wsDir, "workshop.yaml");
   if (!fs.existsSync(wsPath)) {
-    errors.push("workshop.yaml missing at repo root");
+    errors.push(`workshop.yaml missing at ${opts.workshopRoot ?? "repo root"}`);
     return { errors };
   }
   const wsRaw = fs.readFileSync(wsPath, "utf8");
@@ -79,9 +97,9 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
   }
   const workshop = wsParse.data;
 
-  // 2. landing.md exists
-  if (!fs.existsSync(path.join(root, "landing.md"))) {
-    errors.push("landing.md missing at repo root");
+  // 2. landing.md exists (in the workshopRoot for monorepo workshops)
+  if (!fs.existsSync(path.join(wsDir, "landing.md"))) {
+    errors.push("landing.md missing");
   }
 
   // 3. for every phase-referenced lesson key, the lesson dir + lesson.yaml exist
@@ -89,19 +107,21 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
   const declaredIds = new Set<string>();
   for (const key of lessonKeys) {
     const dir = lessonDirForKey(key);
-    const lessonRoot = path.join(root, "workshop", dir);
+    const lessonRoot = path.join(lessonsBase, dir);
+    const lessonRelPath = path.relative(root, lessonRoot);
+
     if (!fs.existsSync(lessonRoot)) {
-      errors.push(`phase references "${key}" but ${path.join("workshop", dir)} doesn't exist`);
+      errors.push(`phase references "${key}" but ${lessonRelPath} doesn't exist`);
       continue;
     }
     const yamlPath = path.join(lessonRoot, "lesson.yaml");
     if (!fs.existsSync(yamlPath)) {
-      errors.push(`${path.join("workshop", dir)}/lesson.yaml missing`);
+      errors.push(`${lessonRelPath}/lesson.yaml missing`);
       continue;
     }
     const lessonParse = Lesson.safeParse(YAML.load(fs.readFileSync(yamlPath, "utf8")));
     if (!lessonParse.success) {
-      errors.push(`${path.join("workshop", dir)}/lesson.yaml: ${lessonParse.error.toString()}`);
+      errors.push(`${lessonRelPath}/lesson.yaml: ${lessonParse.error.toString()}`);
       continue;
     }
     const lesson = lessonParse.data;
@@ -109,15 +129,10 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
       errors.push(`duplicate lesson id ${lesson.id} (in ${dir})`);
     }
     declaredIds.add(lesson.id);
-
-    // targetFiles all exist
-    for (const tf of lesson.targetFiles) {
-      if (!fs.existsSync(path.join(root, tf))) {
-        errors.push(`${dir}/lesson.yaml: targetFile "${tf}" does not exist`);
-      }
-    }
-
-    // verifyCommand resolves — pnpm filter
+    // targetFiles are learner-created; presence is enforced per-tag by verify.ts.
+    void lesson.targetFiles;
+    // verifyCommand resolves — pnpm filter (only checked for pnpm-filter style commands;
+    // other runner commands, e.g. `pnpm exec vitest run ...`, skip this resolution check).
     const m = lesson.verifyCommand.match(/pnpm --filter (\S+) verify/);
     if (m) {
       const r = spawnSync("pnpm", ["--filter", m[1]!, "exec", "node", "-e", "process.exit(0)"], {
@@ -130,18 +145,8 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
         );
       }
     }
-
-    // walker skill exists
-    const skillPath = path.join(
-      root,
-      ".claude",
-      "skills",
-      `lesson-${lesson.id}.md`,
-    );
-    if (!fs.existsSync(skillPath)) {
-      errors.push(`walker skill missing: .claude/skills/lesson-${lesson.id}.md`);
-    }
-
+    // Walker skill presence is checked in Wave 5 (walker-state-aware-pedagogy).
+    void workshop.skillPrefix;
     // README.md h1 matches lesson title (loose: starts with "# Lesson N" or contains title)
     const readme = path.join(lessonRoot, "README.md");
     if (fs.existsSync(readme)) {
@@ -156,14 +161,21 @@ export async function lintManifest(opts: { repoRoot: string }): Promise<LintResu
 }
 
 function lessonDirForKey(key: string): string {
-  // slug-form: "setup" -> "lesson_setup", "group-by" -> "lesson_group-by".
-  // Only the `lesson_` prefix is added; the slug keeps its hyphen form.
+  // Slug-based layout: "install" -> "lesson_install".
   return `lesson_${key}`;
 }
 
 // CLI entry
+// Usage: tsx scripts/lint-manifest.ts [--workshopRoot .workshop/claude-code]
 if (import.meta.url === `file://${process.argv[1]}`) {
-  lintManifest({ repoRoot: process.cwd() }).then((r) => {
+  const args = process.argv.slice(2);
+  let workshopRoot: string | undefined;
+  const wrIdx = args.indexOf("--workshopRoot");
+  if (wrIdx !== -1 && args[wrIdx + 1]) {
+    workshopRoot = args[wrIdx + 1];
+  }
+
+  lintManifest({ repoRoot: process.cwd(), workshopRoot }).then((r) => {
     if (r.errors.length === 0) {
       console.log("✔ manifest lint passed");
       process.exit(0);

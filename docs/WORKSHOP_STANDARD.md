@@ -6,6 +6,29 @@ mechanism (`base.manifest` + `scripts/validate-base.mjs`). The platform manifest
 fetcher (`platform/packages/server/src/manifest/schema.ts`) is the upstream
 source of truth; the linter vendors a copy of that schema. Keep them in sync.
 
+## Delivery: the compose model (authoritative)
+
+Workshops are authored and delivered via the **compose model** — see
+[COMPOSE_MODEL.md](./COMPOSE_MODEL.md) (the authoritative layout + generation
+process) and [VERIFICATION_CONTRACT.md](./VERIFICATION_CONTRACT.md) (the test
+recipes). In short: a workshop is a normal branch of `base/` +
+`lessons/<NN>-<slug>/{lesson.yaml, README.md, solution/, test/}`, and
+`scripts/compose.ts` generates the per-lesson cumulative tags the platform serves
+— no force-push, no overlays. `workshop.yaml` carries `composeShort` (the tag
+namespace + `.workshop/<composeShort>/` served-path segment). `new-lesson.ts`
+scaffolds this shape; `validate-compose.ts` checks it.
+
+> The git **chain** (`rebuild-chain.ts` + `scripts/chain-edits/` overlays +
+> `from:`) is **legacy** — it remains live for the CCA monorepo only, until that
+> suite is migrated to compose. Do not use the chain for anything new.
+
+Sections below describe shared invariants (slug identity, runtime scaffolding,
+toolchain, runnable artifacts). Where an older example shows the pre-compose
+`workshop/lesson_<slug>/` per-lesson-package layout, COMPOSE_MODEL.md is the
+current truth (lesson source lives in `lessons/<NN>-<slug>/`; the served tree has
+prose under `.workshop/<composeShort>/lesson_<slug>/`; there are no per-lesson
+packages).
+
 ## Lesson identity is a slug
 
 Every lesson is identified by a **slug** — a short, human-readable,
@@ -29,18 +52,21 @@ No leading digit, no underscores, no uppercase. Examples: `setup`,
 
 | Surface | Form | Example |
 |---|---|---|
-| Lesson directory | `workshop/lesson_<slug>/` | `workshop/lesson_group-by/` |
+| Lesson source dir | `lessons/<NN>-<slug>/` | `lessons/03-group-by/` |
+| Served prose dir | `.workshop/<composeShort>/lesson_<slug>/` | `.workshop/sql/lesson_group-by/` |
 | `lesson.yaml` `id` | the bare slug (string) | `id: group-by` |
 | `workshop.yaml` phase ref | the bare slug | `lessons: [group-by]` |
 | `prerequisites` (lesson.yaml) | slug list | `prerequisites: [aggregates]` |
 | `onPass.advanceTo` (optional) | a slug | `advanceTo: having` |
 | Walker skill | `.claude/skills/lesson-<slug>.md` | `.claude/skills/lesson-group-by.md` |
-| Package name | `@workshop/lesson-<slug>` | `@workshop/lesson-group-by` |
+| Shipped test | `lessons/<NN>-<slug>/test/src/<slug>.test.ts` | served as `src/group-by.test.ts` |
 
-The directory is `lesson_<slug>` — only the `lesson_` prefix is added; the
-slug keeps its hyphen form inside the directory name (no underscore
-substitution). `lessonDirForKey(key)` in the linter is exactly
-`` `lesson_${key}` ``.
+The `<NN>-` numeric prefix on the source dir is **disk-ordering only** — it never
+appears in `lesson.yaml` `id`, phase refs, prerequisites, or the walker skill
+filename. Ordering of record comes from `workshop.yaml` `phases[].lessons[]`.
+There are **no per-lesson packages** (`@workshop/lesson-<slug>`) in the compose
+model — lessons are prose + a shipped test, run via an advisory
+`pnpm exec vitest run src/<slug>.test.ts || true`.
 
 ## Migration: numeric scheme → slug scheme
 

@@ -135,8 +135,10 @@ function treeFor(slugs: string[], dirs: Record<string, string>, idx: number): { 
   // 1) UNIFORM: base/** (incl base/src) -> served root
   const baseDir = join(REPO, "base");
   for (const abs of walk(baseDir)) add(posix.relative(baseDir, abs), abs);
-  // 2) UNIFORM: source .claude/** -> served /.claude/**
-  for (const abs of walk(join(REPO, ".claude"))) add(posix.relative(REPO, abs), abs);
+  // 2) UNIFORM: source .claude/skills/** (the learner-facing coach skills) -> served /.claude/skills/**
+  //    base/.claude/ owns settings + hooks; the AUTHOR's root .claude/settings.json + hooks are
+  //    intentionally NOT served (no author-env leakage into the learner's tree).
+  for (const abs of walk(join(REPO, ".claude", "skills"))) add(posix.relative(REPO, abs), abs);
   // 3) UNIFORM: workshop.yaml + landing.md -> .workshop/<SHORT>/
   add(`.workshop/${SHORT}/workshop.yaml`, join(REPO, "workshop.yaml"));
   if (existsSync(join(REPO, "landing.md"))) add(`.workshop/${SHORT}/landing.md`, join(REPO, "landing.md"));

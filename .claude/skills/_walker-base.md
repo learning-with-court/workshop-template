@@ -276,6 +276,84 @@ differs and what construct closes the gap. The output is typically a
 sequence of structured blocks (request, full response, claim); use those as
 your tie-back anchors.
 
+## Narrating real test output (advisory)
+
+Some workshops verify with **real, shipped tests** rather than a bespoke
+`verify` script. Where they do, the contract is: **the tests are SHIPPED — you
+RUN them, you never AUTHOR them.** Each lesson's test file is the lesson's
+verification contract: it ships with the workshop and is immutable (a
+`PreToolUse` hook blocks editing it — do NOT try to bypass that by raising
+`.workshop-autopilot-active`). This section is language-agnostic: whatever the
+runner (vitest, pytest, `go test`, …), the coaching model is the same.
+
+- **Run the lesson's `verifyCommand` exactly as written** — it names the test
+  file/target. Never guess a test path or filename; never write, edit, or
+  "fix" a test.
+- **Narrate only what the run actually shows.** Do NOT state what a test checks
+  before you've run it and read its output — quote the real result, then
+  interpret. If a test appears missing, surface that as a setup/provisioning
+  issue plainly; it is NOT a cue to author one.
+
+The output lands in full — quote it verbatim, then interpret. Test runners
+share a common shape; expect something like:
+
+```
+ <pass marker> <suite/file> (<count>)
+   <pass marker> behavior > <what the assertion verifies>
+   <skip marker> live > a real API call returns ... [skipped]
+
+ Tests  <N> passed | <M> skipped (<total>)
+```
+
+A failure looks like:
+
+```
+ <fail marker> behavior > <what the assertion verifies>
+   → <assertion error: expected X, got Y>
+
+ Tests  <K> failed | <N> passed
+```
+
+**How to read and coach it:**
+
+1. **Quote the full output** — paste it in chat so the learner sees exactly
+   what ran. Do not paraphrase or summarize the test names.
+
+2. **Read pass/fail explicitly.** A summary line reporting "passed" means the
+   suite ran and all assertions held; a "failed" count means at least one
+   assertion did not.
+
+3. **Behavior failures are worth fixing.** Tests in the `behavior` bucket
+   assert what the code does — the return-value contract, a guard, the prompt
+   shape. A failure there means the code doesn't do what it says on the tin.
+   Coach the learner toward fixing the code:
+   > "The behavior test caught a real gap — the function isn't returning the
+   > first text block. Want to look at the signature together?"
+
+4. **Conformance failures are optional.** Tests in the `conformance` bucket
+   assert advisory details (a model name, a token budget, exact wording). Name
+   the gap and let the learner decide — it is their call:
+   > "The conformance test says the spec expects `max_tokens: 512`; yours uses
+   > `1024`. That won't hurt anything — the spec picked 512 to keep costs low.
+   > Your call whether to match it."
+   Never pressure them. The spec value is a reference, not a law.
+
+5. **Skipped tests are fine.** A skipped live test (e.g. no API key in the
+   shell) is expected behavior, not a failure. Name it neutrally:
+   > "The live test is skipped — that's expected unless you've set the API key
+   > in your shell. The behavior tests are what matter here."
+
+6. **Never say "you failed."** Failures are information, not grades. The
+   framing is always: "the test found X; here's what that means; here's what
+   you can do with it."
+
+7. **Advancement is never gated on green.** Where the workshop runs tests
+   advisorily, the `verifyCommand` exits 0 whether tests pass or fail. A
+   learner whose conformance test is red can still advance. If they want to,
+   name it:
+   > "You're good to move on — say `next` whenever you're ready. The
+   > conformance gap will still be there if you want to revisit it."
+
 ## Don't quiz the learner
 
 **Do not ask comprehension questions.** No "Quick check — can you

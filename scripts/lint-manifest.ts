@@ -85,8 +85,11 @@ export async function lintManifest(opts: {
   // workshopRoot is the directory containing workshop.yaml + landing.md.
   // For monorepo workshops it's a sub-path; for single-workshop repos it's the repo root.
   const wsDir = opts.workshopRoot ? path.join(root, opts.workshopRoot) : root;
-  // Lesson dirs: monorepo workshopRoots hold lesson_*/ directly; single-workshop
-  // repos nest them under a workshop/ subdir.
+  // Lesson dirs, by layout:
+  //  - compose model: lessons/<NN>-<slug>/ at the repo root (the NN prefix is disk-ordering only)
+  //  - monorepo workshopRoots: lesson_*/ directly under the workshopRoot
+  //  - legacy single-workshop repos: lesson_*/ under a workshop/ subdir
+  const composeMode = !opts.workshopRoot && fs.existsSync(path.join(root, "lessons"));
   const lessonsBase = opts.workshopRoot ? wsDir : path.join(wsDir, "workshop");
 
   // 1. workshop.yaml exists + parses
@@ -112,14 +115,19 @@ export async function lintManifest(opts: {
   const lessonKeys = workshop.phases.flatMap((p) => p.lessons);
   const declaredIds = new Set<string>();
   for (const key of lessonKeys) {
-    const dir = lessonDirForKey(key);
-    const lessonRoot = path.join(lessonsBase, dir);
-    const lessonRelPath = path.relative(root, lessonRoot);
-
-    if (!fs.existsSync(lessonRoot)) {
-      errors.push(`phase references "${key}" but ${lessonRelPath} doesn't exist`);
+    const lessonRoot = composeMode
+      ? composeLessonDir(root, key)
+      : path.join(lessonsBase, lessonDirForKey(key));
+    if (!lessonRoot || !fs.existsSync(lessonRoot)) {
+      errors.push(
+        composeMode
+          ? `phase references "${key}" but no lessons/<NN>-${key}/ dir exists`
+          : `phase references "${key}" but ${path.relative(root, path.join(lessonsBase, lessonDirForKey(key)))} doesn't exist`,
+      );
       continue;
     }
+    const dir = path.basename(lessonRoot);
+    const lessonRelPath = path.relative(root, lessonRoot);
     const yamlPath = path.join(lessonRoot, "lesson.yaml");
     if (!fs.existsSync(yamlPath)) {
       errors.push(`${lessonRelPath}/lesson.yaml missing`);
@@ -169,6 +177,19 @@ export async function lintManifest(opts: {
 function lessonDirForKey(key: string): string {
   // Slug-based layout: "install" -> "lesson_install".
   return `lesson_${key}`;
+}
+
+/**
+ * Compose model: lessons live at lessons/<NN>-<slug>/ (the NN prefix is disk-ordering
+ * only). Resolve a slug to its absolute lesson dir, or null if absent.
+ */
+function composeLessonDir(root: string, key: string): string | null {
+  const lessonsRoot = path.join(root, "lessons");
+  if (!fs.existsSync(lessonsRoot)) return null;
+  const hit = fs
+    .readdirSync(lessonsRoot)
+    .find((d) => d.replace(/^\d+-/, "") === key);
+  return hit ? path.join(lessonsRoot, hit) : null;
 }
 
 /**

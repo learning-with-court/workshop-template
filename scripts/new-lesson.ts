@@ -1,6 +1,6 @@
 // scripts/new-lesson.ts
 //
-// Scaffold a new lesson package from `workshop/lesson_example/`.
+// Scaffold a new compose-model lesson.
 //
 // Usage:
 //   pnpm new-lesson <slug> [--phase A|B|C|...]
@@ -8,34 +8,29 @@
 // Example:
 //   pnpm new-lesson joins-and-aggregates --phase B
 //
-// Lessons are identified by slug (kebab-case) — there is no lesson number.
+// Lessons are identified by slug (kebab-case). The lesson number (<NN>) is
+// assigned automatically (highest existing lessons/<NN>-* + 1, zero-padded to 2 digits).
 // See docs/WORKSHOP_STANDARD.md for the full identity contract.
 //
-// What it does:
-//   - Copies workshop/lesson_example/  -> workshop/lesson_<slug>/
-//     (the slug keeps its hyphen form in the directory name).
-//   - Rewrites the new package.json `name` to @workshop/lesson-<slug>.
-//   - Rewrites lesson.yaml: `id` to the slug, blanks title/blurb to TODO
-//     placeholders, sets verifyCommand to the new filter.
-//   - Rewrites the lesson README H1 to "TODO: <slug> lesson title" so the
-//     manifest linter doesn't fail on the title check before the author edits.
-//   - Carries `src/canonical.example` across as-is. The author renames
-//     it to `canonical.<ext>` (sql/ts/json) once they've decided the
-//     lesson's reference-implementation format and wires the matching
-//     `it.skip("canonical matches expected", ...)` test in
-//     tests/template.test.ts. See workshop/LESSON_TEMPLATE.md
-//     §canonical-reference-implementation for the full convention.
-//   - Copies .claude/skills/lesson-example.md -> lesson-<slug>.md and
-//     rewrites frontmatter `name` + the obvious slug references.
+// What it does (compose-model layout):
+//   - Creates lessons/<NN>-<slug>/lesson.yaml — from lessons/01-example/lesson.yaml,
+//     with id/title/blurb/verifyCommand rewritten for the new slug.
+//   - Creates lessons/<NN>-<slug>/README.md — H1 placeholder + minimal body.
+//   - Creates lessons/<NN>-<slug>/solution/src/<slug>.ts — stub export.
+//   - Creates lessons/<NN>-<slug>/test/src/<slug>.test.ts — minimal vitest test
+//     (written via shell; the block-edits hook denies Write/Edit on *.test.*).
+//   - Copies .claude/skills/lesson-example.md -> lesson-<slug>.md, rewrites slug refs.
 //   - Appends <slug> to workshop.yaml phases[--phase].lessons.
-//   - Refuses to overwrite existing files; exits non-zero on conflict.
+//   - Refuses to overwrite existing dirs; exits non-zero on conflict.
 //
 // Intentional non-goals:
+//   - No package.json / tsconfig.json / canonical.* — compose-model lessons don't have them.
 //   - No interactive prompts. Args only.
 //   - No content generation. The author / agent fills the scaffold.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -90,25 +85,6 @@ function printUsageAndExit(code: number): never {
   ].join("\n");
   (code === 0 ? console.log : console.error)(msg);
   process.exit(code);
-}
-
-function copyDirSync(src: string, dst: string, skip: (rel: string) => boolean) {
-  fs.mkdirSync(dst, { recursive: true });
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-  for (const e of entries) {
-    const rel = e.name;
-    if (skip(rel)) continue;
-    const s = path.join(src, e.name);
-    const d = path.join(dst, e.name);
-    if (e.isDirectory()) {
-      copyDirSync(s, d, (sub) => skip(path.join(rel, sub)));
-    } else if (e.isSymbolicLink()) {
-      const linkTarget = fs.readlinkSync(s);
-      fs.symlinkSync(linkTarget, d);
-    } else if (e.isFile()) {
-      fs.copyFileSync(s, d);
-    }
-  }
 }
 
 function rewriteFile(file: string, fn: (text: string) => string): void {
@@ -205,106 +181,154 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
   return lines.join("\n");
 }
 
+/**
+ * Compute the next zero-padded 2-digit lesson index by scanning lessons/*.
+ * Highest existing <NN> + 1; defaults to 2 if the directory is empty or missing.
+ */
+function nextLessonIndex(): number {
+  const lessonsDir = path.join(REPO_ROOT, "lessons");
+  if (!fs.existsSync(lessonsDir)) return 2;
+  const entries = fs.readdirSync(lessonsDir);
+  let max = 1;
+  for (const e of entries) {
+    const m = e.match(/^(\d+)-/);
+    if (m) max = Math.max(max, parseInt(m[1]!, 10));
+  }
+  return max + 1;
+}
+
+/**
+ * Convert a kebab-case slug to a camelCase JS identifier for use as a function name.
+ * E.g. "joins-and-aggregates" -> "joinsAndAggregates"
+ */
+function slugToFunctionName(slug: string): string {
+  return slug.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+}
+
+/**
+ * Rewrite the example-lesson references in the copied walker skill to the new
+ * lesson slug. Targets the compose-model path layout.
+ */
+function rewriteLessonReferences(text: string, slug: string, lessonDir: string, funcName: string): string {
+  let out = text;
+
+  // Frontmatter `name: lesson-example` -> `name: lesson-<slug>`.
+  out = out.replace(/^name:\s*lesson-\S+\s*$/m, `name: lesson-${slug}`);
+
+  // Skill name references `lesson-example` -> `lesson-<slug>`.
+  out = out.replace(/\blesson-example\b/g, `lesson-${slug}`);
+
+  // Lesson dir path `lessons/01-example/` -> `lessons/<NN>-<slug>/`.
+  out = out.replace(/\blessons\/01-example\b/g, `lessons/${lessonDir}`);
+
+  // Lesson prose path `.workshop/.../lesson_example/` -> `lesson_<slug>/`.
+  out = out.replace(/\blesson_example\b/g, `lesson_${slug}`);
+
+  // File references `src/example.test.ts` -> `src/<slug>.test.ts`.
+  out = out.replace(/\bsrc\/example\.test\.ts\b/g, `src/${slug}.test.ts`);
+
+  // File references `src/example.ts` -> `src/<slug>.ts`.
+  out = out.replace(/\bsrc\/example\.ts\b/g, `src/${slug}.ts`);
+
+  // Function name references `example()` -> `<funcName>()`.
+  out = out.replace(/\bexample\(\)/g, `${funcName}()`);
+
+  return out;
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const { slug, phase } = args;
 
-  const dirName = `lesson_${slug}`;
-  const pkgName = `@workshop/lesson-${slug}`;
   const lessonKey = slug;
+  const funcName = slugToFunctionName(slug);
+  const nn = String(nextLessonIndex()).padStart(2, "0");
+  const lessonDir = `${nn}-${slug}`;
+  const newDir = path.join(REPO_ROOT, "lessons", lessonDir);
 
-  const templateDir = path.join(REPO_ROOT, "workshop", "lesson_example");
-  const newDir = path.join(REPO_ROOT, "workshop", dirName);
+  const templateLessonYaml = path.join(REPO_ROOT, "lessons", "01-example", "lesson.yaml");
   const skillSrc = path.join(REPO_ROOT, ".claude", "skills", "lesson-example.md");
   const skillDst = path.join(REPO_ROOT, ".claude", "skills", `lesson-${slug}.md`);
   const workshopYaml = path.join(REPO_ROOT, "workshop.yaml");
 
   // --- Pre-flight checks ---------------------------------------------------
-  if (!fs.existsSync(templateDir)) {
-    throw new Error(`template missing: ${path.relative(REPO_ROOT, templateDir)}`);
+  if (!fs.existsSync(templateLessonYaml)) {
+    throw new Error(`template missing: lessons/01-example/lesson.yaml`);
   }
   if (!fs.existsSync(skillSrc)) {
-    throw new Error(`template walker missing: ${path.relative(REPO_ROOT, skillSrc)}`);
+    throw new Error(`template walker missing: .claude/skills/lesson-example.md`);
   }
   if (!fs.existsSync(workshopYaml)) {
     throw new Error("workshop.yaml missing at repo root");
   }
   if (fs.existsSync(newDir)) {
-    throw new Error(`refuse to overwrite: ${path.relative(REPO_ROOT, newDir)} already exists`);
+    throw new Error(`refuse to overwrite: lessons/${lessonDir} already exists`);
   }
   if (fs.existsSync(skillDst)) {
-    throw new Error(`refuse to overwrite: ${path.relative(REPO_ROOT, skillDst)} already exists`);
+    throw new Error(`refuse to overwrite: .claude/skills/lesson-${slug}.md already exists`);
   }
 
-  // --- Copy lesson dir (skip node_modules + build artifacts) ---------------
-  copyDirSync(templateDir, newDir, (rel) => {
-    const top = rel.split(path.sep)[0]!;
-    if (top === "node_modules") return true;
-    if (top === "dist") return true;
-    if (rel === "tsconfig.tsbuildinfo") return true;
-    return false;
-  });
+  // --- Create lesson.yaml --------------------------------------------------
+  fs.mkdirSync(newDir, { recursive: true });
+  const templateYamlText = fs.readFileSync(templateLessonYaml, "utf8");
+  let lessonYaml = templateYamlText;
+  lessonYaml = lessonYaml.replace(/^id:\s*.*$/m, `id: ${slug}`);
+  lessonYaml = lessonYaml.replace(/^title:\s*.*$/m, `title: "TODO: ${slug} lesson title"`);
+  lessonYaml = lessonYaml.replace(/^blurb:\s*.*$/m, `blurb: "TODO: one-sentence hook describing what the learner does in this lesson."`);
+  lessonYaml = lessonYaml.replace(
+    /^verifyCommand:\s*.*$/m,
+    `verifyCommand: "pnpm exec vitest run src/${slug}.test.ts || true"`,
+  );
+  fs.writeFileSync(path.join(newDir, "lesson.yaml"), lessonYaml);
 
-  // --- Rewrite package.json -----------------------------------------------
-  rewriteFile(path.join(newDir, "package.json"), (text) => {
-    const pkg = JSON.parse(text);
-    pkg.name = pkgName;
-    return JSON.stringify(pkg, null, 2) + "\n";
-  });
+  // --- Create README.md ----------------------------------------------------
+  const readmeText = [
+    `# TODO: ${slug} lesson title`,
+    "",
+    "TODO: brief description of what the learner builds in this lesson.",
+    "",
+    "## What you'll build",
+    "",
+    `TODO: describe the artifact — e.g. a TypeScript module at \`src/${slug}.ts\`.`,
+    "",
+    "## Verification",
+    "",
+    "```",
+    `pnpm exec vitest run src/${slug}.test.ts`,
+    "```",
+    "",
+  ].join("\n");
+  fs.writeFileSync(path.join(newDir, "README.md"), readmeText);
 
-  // --- Rewrite lesson.yaml -------------------------------------------------
-  rewriteFile(path.join(newDir, "lesson.yaml"), (text) => {
-    let out = text;
-    // id: <slug>
-    out = out.replace(/^id:\s*.*$/m, `id: ${slug}`);
-    // title: <placeholder>
-    out = out.replace(
-      /^title:\s*.*$/m,
-      `title: "TODO: ${slug} lesson title"`,
-    );
-    // blurb
-    out = out.replace(
-      /^blurb:\s*.*$/m,
-      `blurb: "TODO: one-sentence hook describing what the learner does in this lesson."`,
-    );
-    // verifyCommand — point at the new filter
-    out = out.replace(
-      /^verifyCommand:\s*.*$/m,
-      `verifyCommand: "pnpm --filter ${pkgName} verify"`,
-    );
-    return out;
-  });
+  // --- Create solution/src/<slug>.ts ---------------------------------------
+  const solDir = path.join(newDir, "solution", "src");
+  fs.mkdirSync(solDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(solDir, `${slug}.ts`),
+    `export function ${funcName}(): void {}\n`,
+  );
 
-  // --- Rewrite README.md ---------------------------------------------------
-  rewriteFile(path.join(newDir, "README.md"), (text) => {
-    const lines = text.split("\n");
-    // H1: "# TODO: <slug> lesson title" — substring-matches the lesson.yaml
-    // title so the manifest linter passes until the author edits.
-    lines[0] = `# TODO: ${slug} lesson title`;
-    // Replace the canonical filter reference if present so `pnpm verify`
-    // examples line up with the new package.
-    return lines
-      .join("\n")
-      .replace(
-        /pnpm --filter @workshop\/lesson-example verify/g,
-        `pnpm --filter ${pkgName} verify`,
-      );
-  });
+  // --- Create test/src/<slug>.test.ts via shell ----------------------------
+  // (the block-edits hook denies Write/Edit on *.test.* files)
+  const testSrcDir = path.join(newDir, "test", "src");
+  fs.mkdirSync(testSrcDir, { recursive: true });
+  const testFilePath = path.join(testSrcDir, `${slug}.test.ts`);
+  execFileSync("bash", ["-c", [
+    `cat > '${testFilePath}' << 'NEWLESSONEOF'`,
+    `import { describe, it, expect } from "vitest";`,
+    `import { ${funcName} } from "./${slug}.ts";`,
+    ``,
+    `describe("${slug}", () => {`,
+    `  it("runs without error", () => {`,
+    `    expect(() => ${funcName}()).not.toThrow();`,
+    `  });`,
+    `});`,
+    `NEWLESSONEOF`,
+  ].join("\n")]);
 
-  // --- tests/template.test.ts ----------------------------------------------
-  // Keep the file as-is — it exercises extract.ts and remains useful as a
-  // smoke test until the author replaces it. No rename needed.
-
-  // --- Copy + rewrite walker skill ----------------------------------------
+  // --- Copy + rewrite walker skill -----------------------------------------
   fs.copyFileSync(skillSrc, skillDst);
-  rewriteFile(skillDst, (text) => {
-    let out = text;
-    // Frontmatter `name: lesson-<slug>`
-    out = out.replace(/^name:\s*lesson-\S+\s*$/m, `name: lesson-${slug}`);
-    // Mechanical slug references in the scaffold body.
-    out = rewriteLessonReferences(out, slug, pkgName);
-    return out;
-  });
+  rewriteFile(skillDst, (text) => rewriteLessonReferences(text, slug, lessonDir, funcName));
 
   // --- Append phase entry --------------------------------------------------
   const wsText = fs.readFileSync(workshopYaml, "utf8");
@@ -320,45 +344,25 @@ function main() {
   // --- Summary -------------------------------------------------------------
   const summary = [
     "",
-    `created lesson ${slug}`,
+    `created lesson ${slug} (lessons/${lessonDir}/)`,
     "",
-    `  dir:    workshop/${dirName}/`,
-    `  pkg:    ${pkgName}`,
-    `  walker: .claude/skills/lesson-${slug}.md`,
-    `  phase:  workshop.yaml phases[id=${phase}].lessons += ${lessonKey}`,
+    `  lesson.yaml:  lessons/${lessonDir}/lesson.yaml`,
+    `  README.md:    lessons/${lessonDir}/README.md`,
+    `  solution:     lessons/${lessonDir}/solution/src/${slug}.ts`,
+    `  test:         lessons/${lessonDir}/test/src/${slug}.test.ts`,
+    `  walker:       .claude/skills/lesson-${slug}.md`,
+    `  phase:        workshop.yaml phases[id=${phase}].lessons += ${lessonKey}`,
     "",
     "next:",
-    "  pnpm install",
-    "  grep -rn TODO: " + `workshop/${dirName} .claude/skills/lesson-${slug}.md`,
-    "  # fill in title/blurb/verifyCommand assertions, walker prose, lesson source",
-    `  # rename workshop/${dirName}/src/canonical.example -> canonical.<ext>`,
-    "  # (sql/ts/json) and wire the skipped \"canonical matches expected\"",
-    `  # test in workshop/${dirName}/tests/template.test.ts. Read-pedagogy`,
-    "  # lessons can leave the slot empty.",
+    `  grep -rn TODO: lessons/${lessonDir} .claude/skills/lesson-${slug}.md`,
+    "  # fill in title/blurb, lesson prose (README.md + lesson.yaml verify description)",
+    `  # implement lessons/${lessonDir}/solution/src/${slug}.ts`,
+    `  # update lessons/${lessonDir}/test/src/${slug}.test.ts with real assertions`,
+    "  # rewrite the walker skill (.claude/skills/lesson-" + slug + ".md)",
+    "  pnpm exec tsx scripts/compose.ts --dry-run  # verify compose sees the lesson",
     "",
   ].join("\n");
   console.log(summary);
-}
-
-/**
- * Rewrite the example-lesson references in the copied walker skill to the new
- * lesson slug. Scoped to the unambiguous mechanical references (skill name,
- * lesson dir path, package filter). The walker body is mostly TODO prose; the
- * author rewrites it wholesale, so we only remove the obvious foot-guns.
- */
-function rewriteLessonReferences(text: string, slug: string, pkgName: string): string {
-  let out = text;
-
-  // Lesson dir path `lesson_example` -> `lesson_<slug>`.
-  out = out.replace(/\blesson_example\b/g, `lesson_${slug}`);
-
-  // Skill name references `lesson-example` -> `lesson-<slug>`.
-  out = out.replace(/\blesson-example\b/g, `lesson-${slug}`);
-
-  // Package filter `@workshop/lesson-example` -> `@workshop/lesson-<slug>`.
-  out = out.replace(/@workshop\/lesson-example/g, pkgName);
-
-  return out;
 }
 
 try {

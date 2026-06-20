@@ -7,6 +7,9 @@
 #   platform/packages/server/src/manifest/schema.ts
 
 id: template-workshop
+# compose model: the tag namespace + .workshop/<short>/ segment the generator emits.
+# build-workshop substitutes WORKSHOP_SHORT with the real short id (e.g. "my-ws").
+composeShort: WORKSHOP_SHORT
 title: "TODO: Workshop title"
 status: available  # ships available from day one; see docs/WORKSHOP_STANDARD.md
 repo: learning-with-court/template-workshop

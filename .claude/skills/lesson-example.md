@@ -1,6 +1,6 @@
 ---
 name: lesson-example
-description: TEMPLATE — Walks the user through the example lesson of this workshop. Replace this description (and the body) with the real walker. Use third-person + 4–8 trigger phrases when authoring — e.g. "start the setup lesson", "begin setup", "do the setup lesson", "walk me through setup", "first lesson", plus a topic-specific trigger or two. Match the phrases to your lesson's slug, not a number.
+description: TEMPLATE — Walks the user through the example lesson of this workshop. Replace this description (and the body) with the real walker. Use third-person + 4–8 trigger phrases when authoring — e.g. "start the example lesson", "begin example", "do the example lesson", "walk me through the example", "first lesson", plus a topic-specific trigger or two. Match the phrases to your lesson's slug, not a number.
 ---
 
 # Example lesson — Template walker
@@ -26,80 +26,56 @@ description: TEMPLATE — Walks the user through the example lesson of this work
 > `docs/WORKSHOP_SPEC.md` §1.
 
 You are facilitating the example lesson. The lesson README at
-`workshop/lesson_example/README.md` is the source of truth — read it
-first, then walk the user through the steps below.
+`lessons/01-example/README.md` is the source of truth — read it first,
+then walk the user through the steps below.
+
+The lesson's shipped test is at `src/example.test.ts` (placed there by
+the compose generator from `lessons/01-example/test/src/example.test.ts`).
+The learner writes `src/example.ts`; the test verifies it.
 
 ## Pedagogical priority
 
 > TODO: exactly one sentence naming the *one* concept this lesson centers.
-> Examples from mcp-workshop:
-> - "Prove your toolchain works before you build anything else."
-> - "Tools are verbs the model decides to call; resources are nouns the model reads. Don't let the user blur this."
+> Example: "Prove your toolchain works before you build anything else."
 
 ## Steps
 
-> TODO: replace this stub with the lesson's actual Steps. The pattern from
-> `WORKSHOP_SPEC.md` §1:
+> TODO: replace this stub with the lesson's actual Steps.
 
-1. Read `workshop/lesson_example/README.md` and the relevant `src/`
-   files so you have both the lesson structure and the actual code in
-   mind.
+1. Read `lessons/01-example/README.md` and surface the artifact requirement
+   to the learner: they need to create `src/example.ts` with a single
+   exported `example()` function that returns `"Hello from example!"`.
 
-2. **Render the relevant code block from `src/verify.ts` (or whatever
-   file the lesson centers on) inline in your response, in a fenced
-   ```ts``` code block.** Use the actual contents from the file — not a
-   paraphrase, not "look at the file."
+2. **Render the function signature inline** in a fenced `ts` code block.
+   In one or two sentences, explain what the test exercises. Then STOP
+   and wait for the learner to write the file and say `run verify`.
 
-   Then in one or two sentences: explain what the code does and what
-   `verify` will do when it runs.
+3. **When the user says `run verify`**, announce the command in plain text
+   first:
+   > I'm going to run: `pnpm exec vitest run src/example.test.ts || true`
 
-   Then **STOP and wait for the user to say `run verify`**. End your
-   code-explanation response with:
+   Then call the Bash tool, quote the full stdout verbatim in a fenced
+   code block, tie one key line back to the source.
 
-   > **Say `run verify`** when you're ready, or `break down that code`
-   > for a chunked walk first.
-
-   Then close the opening with the standing help nudge per **Asking for
-   help is how this works** in `_walker-base.md` — its verbatim final
-   line on every opening. Inherit it; don't hardcode a copy here.
-
-3. **When the user says `run verify`, run it via the Bash tool.** Announce
-   the exact command first (e.g. ``I'm going to run: `pnpm --filter
-   @workshop/lesson-example verify` ``), then call Bash, then:
-   1. Quote the full stdout verbatim in a fenced code block.
-   2. Tie one important output line to the source path that produced it.
-   3. End with the next-step phrase:
-      > **Say `let's run the tests`** to drive the lesson through vitest.
-
-4. **When the user says `let's run the tests`, run it via the Bash tool.**
-   Same pattern: announce, run, quote stdout verbatim, tie back to source,
-   end with the next-step phrase (probably `let's start lesson 2`).
+4. After a passing run: `**Say `let's start lesson 2`**` to move on.
+   (Replace with your workshop's real next step.)
 
 ## What To Say Next
 
 Always end your response with one of these — pick by what just happened:
 
-- After rendering the code block: do NOT run verify yet. End with:
-  > **Say `run verify`** when you're ready — or `break down that code`
-  > for a chunked walk first.
-- After the user says `run verify`: use the Bash tool, quote stdout
-  verbatim, tie to source, then:
-  > **Say `let's run the tests`** to drive the lesson through vitest.
-- After tests pass:
+- After explaining the spec: wait for the user to write the code. End with:
+  > **Say `run verify`** when you're ready — or `I need a starting point`
+  > if you want a nudge.
+- After the user says `run verify`: run it, quote stdout verbatim, then:
   > **Say `let's start lesson 2`** to move on.
-- For exploration:
-  > **Say `walk me through changing X to Y`** — you'll make the edit in
-  > your editor and we'll rerun verify together to see the new output.
 - If blocked:
-  > Say: `help me debug lesson 1`.
+  > Say: `help me debug the example lesson`.
 
 ## Common debugging
 
-> TODO: replace with this lesson's actual likely failures. Drop this
-> section entirely if there are no lesson-specific failure modes — the
-> generic toolchain failures (Node/pnpm/install) belong in the workshop
-> README, not in every lesson walker.
-
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| TODO: lesson-specific failure #1 | TODO: cause | TODO: fix |
+| `Cannot find module './example.ts'` | File not created yet or wrong path | Create `src/example.ts` at the repo root |
+| `expected 'Hello from example!' but got …` | Wrong return value | Match the string exactly: `"Hello from example!"` |
+| `Tests  0 passed` | No exports found | Ensure `export function example()` is present |

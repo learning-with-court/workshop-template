@@ -36,6 +36,12 @@ const Workshop = z.object({
   series: SeriesBlock.optional(),
   /** Optional prefix for walker skill filenames. Default: "lesson". E.g. "tools-mcp-lesson" → .claude/skills/tools-mcp-lesson-01.md */
   skillPrefix: z.string().optional(),
+  /** Optional: primary language of the workshop's runnable code. */
+  language: z.string().optional(),
+  /** Optional: the test runner command pattern (e.g. "vitest", "pytest", "go test"). Informational. */
+  testRunner: z.string().optional(),
+  /** Optional: glob patterns the block-edits PreToolUse hook enforces as immutable. Read by .claude/hooks/block-edits.sh. */
+  protectedPaths: z.array(z.string()).optional(),
 });
 const Verify = z.object({
   description: z.string(),

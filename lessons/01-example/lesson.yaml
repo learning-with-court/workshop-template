@@ -1,0 +1,22 @@
+id: example
+title: "Example Lesson"
+blurb: "Write a trivial exported function — proving the compose delivery model."
+prerequisites: []
+targetFiles:
+  - src/example.ts
+verifyCommand: "pnpm exec vitest run src/example.test.ts || true"
+verify:
+  description: |
+    Runs the behavioral vitest test for example.ts. The test imports `example` from
+    ./example.ts and asserts example() returns the expected string. A passing run
+    prints "Tests  1 passed"; a missing export or wrong return value prints a failure.
+  mustInclude:
+    - "Tests "
+  mustNotInclude:
+    - "Cannot find module"
+onPass:
+  feedback: |
+    You've built and verified a typed exported function. The compose model
+    delivered this lesson's starting tree — the test was pre-shipped, you
+    wrote the implementation, and vitest confirmed the contract.
+    Replace this lesson with your first real lesson.

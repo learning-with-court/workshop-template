@@ -1,3 +1,2 @@
 packages:
-  - "workshop/lesson_*"
   - "scripts"

@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "lwc-WORKSHOP_ID": {
+      "command": "lwc"
+    }
+  }
+}

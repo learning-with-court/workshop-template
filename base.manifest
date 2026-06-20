@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v4",
+  "version": "base-v5",
   "verbatim": [
     ".claude/skills/_walker-base.md",
     ".claude/hooks/block-edits.sh",
@@ -8,9 +8,9 @@
     "tsconfig.base.json",
     "scripts/tsconfig.json",
     "scripts/lint-manifest.ts",
+    "scripts/compose.ts",
+    "scripts/validate-compose.ts",
     "scripts/new-lesson.ts",
-    "scripts/rename-lesson.ts",
-    "scripts/sync-workshop-yaml.ts",
     "scripts/setup-shared.ts",
     "scripts/validate-base.mjs",
     ".github/workflows/validate-base.yml"

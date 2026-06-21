@@ -275,15 +275,19 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const rootWorkshopYaml = path.join(repoRoot, "workshop.yaml");
   const workshopsDir = path.join(repoRoot, "workshops");
 
+  // Repo-level overlay check runs in every layout mode (computed once).
+  const overlayErr = seriesOverlayError();
+
   async function runLints(): Promise<void> {
     if (workshopRoot || fs.existsSync(rootWorkshopYaml)) {
       // Classic single-workshop or explicit --workshopRoot mode.
       const r = await lintManifest({ repoRoot, workshopRoot });
-      if (r.errors.length === 0) {
+      const errs = overlayErr ? [overlayErr, ...r.errors] : r.errors;
+      if (errs.length === 0) {
         console.log("✔ manifest lint passed");
         process.exit(0);
       }
-      for (const e of r.errors) console.error(`✘ ${e}`);
+      for (const e of errs) console.error(`✘ ${e}`);
       process.exit(1);
     } else if (fs.existsSync(workshopsDir)) {
       // Unified compose model: lint each workshops/<ws>/ that has a workshop.yaml.
@@ -296,7 +300,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(0);
       }
       let allErrors: string[] = [];
-      const overlayErr = seriesOverlayError();
       if (overlayErr) allErrors.push(overlayErr);
       for (const ws of workshopDirs) {
         const r = await lintManifest({ repoRoot: path.join(workshopsDir, ws) });
@@ -311,6 +314,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       for (const e of allErrors) console.error(`✘ ${e}`);
       process.exit(1);
     } else {
+      if (overlayErr) { console.error(`✘ ${overlayErr}`); process.exit(1); }
       console.warn("⚠ workshop.yaml missing at repo root — nothing to lint");
       process.exit(0);
     }

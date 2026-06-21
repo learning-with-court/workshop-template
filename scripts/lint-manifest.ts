@@ -221,15 +221,56 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     workshopRoot = args[wrIdx + 1];
   }
 
-  const hookWarning = checkHookWired(process.cwd());
+  const repoRoot = process.cwd();
+  const hookWarning = checkHookWired(repoRoot);
   if (hookWarning) console.warn(`⚠ ${hookWarning}`);
 
-  lintManifest({ repoRoot: process.cwd(), workshopRoot }).then((r) => {
-    if (r.errors.length === 0) {
-      console.log("✔ manifest lint passed");
+  // Unified compose model: workshop.yaml lives under workshops/<ws>/workshop.yaml.
+  // Fall through to per-workshop scanning when root workshop.yaml is absent.
+  const rootWorkshopYaml = path.join(repoRoot, "workshop.yaml");
+  const workshopsDir = path.join(repoRoot, "workshops");
+
+  async function runLints(): Promise<void> {
+    if (workshopRoot || fs.existsSync(rootWorkshopYaml)) {
+      // Classic single-workshop or explicit --workshopRoot mode.
+      const r = await lintManifest({ repoRoot, workshopRoot });
+      if (r.errors.length === 0) {
+        console.log("✔ manifest lint passed");
+        process.exit(0);
+      }
+      for (const e of r.errors) console.error(`✘ ${e}`);
+      process.exit(1);
+    } else if (fs.existsSync(workshopsDir)) {
+      // Unified compose model: lint each workshops/<ws>/ that has a workshop.yaml.
+      // Skip "example" — it's the canonical template scaffold, not a real workshop.
+      const workshopDirs = fs
+        .readdirSync(workshopsDir)
+        .filter((d) => d !== "example" && fs.existsSync(path.join(workshopsDir, d, "workshop.yaml")));
+      if (workshopDirs.length === 0) {
+        console.warn("⚠ no workshop.yaml found at repo root or under workshops/ — nothing to lint");
+        process.exit(0);
+      }
+      let allErrors: string[] = [];
+      for (const ws of workshopDirs) {
+        const r = await lintManifest({ repoRoot: path.join(workshopsDir, ws) });
+        if (r.errors.length > 0) {
+          for (const e of r.errors) allErrors.push(`[${ws}] ${e}`);
+        }
+      }
+      if (allErrors.length === 0) {
+        console.log(`✔ manifest lint passed (${workshopDirs.length} workshop(s))`);
+        process.exit(0);
+      }
+      for (const e of allErrors) console.error(`✘ ${e}`);
+      process.exit(1);
+    } else {
+      console.warn("⚠ workshop.yaml missing at repo root — nothing to lint");
       process.exit(0);
     }
-    for (const e of r.errors) console.error(`✘ ${e}`);
+  }
+
+  runLints().catch((err) => {
+    console.error(`✘ ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   });
 }

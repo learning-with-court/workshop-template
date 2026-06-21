@@ -13,15 +13,20 @@
 // See docs/WORKSHOP_STANDARD.md for the full identity contract.
 //
 // What it does (compose-model layout):
-//   - Creates lessons/<NN>-<slug>/lesson.yaml — from lessons/01-example/lesson.yaml,
+//   - Creates lessons/<NN>-<slug>/lesson.yaml — from workshops/example/lessons/01-example/lesson.yaml,
 //     with id/title/blurb/verifyCommand rewritten for the new slug.
 //   - Creates lessons/<NN>-<slug>/README.md — H1 placeholder + minimal body.
 //   - Creates lessons/<NN>-<slug>/solution/src/<slug>.ts — stub export.
 //   - Creates lessons/<NN>-<slug>/test/src/<slug>.test.ts — minimal vitest test
 //     (written via shell; the block-edits hook denies Write/Edit on *.test.*).
-//   - Copies .claude/skills/lesson-example.md -> lesson-<slug>.md, rewrites slug refs.
+//   - Copies workshops/example/lessons/01-example/coach.md -> .claude/skills/lesson-<slug>.md,
+//     rewrites slug refs.
 //   - Appends <slug> to workshop.yaml phases[--phase].lessons.
 //   - Refuses to overwrite existing dirs; exits non-zero on conflict.
+//
+// NOTE: This script targets the single-workshop root layout and will be rewritten
+// in Plan 2 for suite-aware usage (workshops/<ws>/lessons/<NN>-<slug>/).
+// For the compose model, use compose.ts to generate tags from workshops/.
 //
 // Intentional non-goals:
 //   - No package.json / tsconfig.json / canonical.* — compose-model lessons don't have them.
@@ -218,8 +223,8 @@ function rewriteLessonReferences(text: string, slug: string, lessonDir: string, 
   // Skill name references `lesson-example` -> `lesson-<slug>`.
   out = out.replace(/\blesson-example\b/g, `lesson-${slug}`);
 
-  // Lesson dir path `lessons/01-example/` -> `lessons/<NN>-<slug>/`.
-  out = out.replace(/\blessons\/01-example\b/g, `lessons/${lessonDir}`);
+  // Lesson dir path references -> `lessons/<NN>-<slug>/`.
+  out = out.replace(/\b(workshops\/example\/lessons|lessons)\/01-example\b/g, `lessons/${lessonDir}`);
 
   // Lesson prose path `.workshop/.../lesson_example/` -> `lesson_<slug>/`.
   out = out.replace(/\blesson_example\b/g, `lesson_${slug}`);
@@ -246,21 +251,24 @@ function main() {
   const lessonDir = `${nn}-${slug}`;
   const newDir = path.join(REPO_ROOT, "lessons", lessonDir);
 
-  const templateLessonYaml = path.join(REPO_ROOT, "lessons", "01-example", "lesson.yaml");
-  const skillSrc = path.join(REPO_ROOT, ".claude", "skills", "lesson-example.md");
+  // Template sources now live in the compose-model canonical location.
+  // Plan 2 will rewrite this script fully for suite-aware usage.
+  const templateLessonYaml = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example", "lesson.yaml");
+  const skillSrc = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example", "coach.md");
   const skillDst = path.join(REPO_ROOT, ".claude", "skills", `lesson-${slug}.md`);
   const workshopYaml = path.join(REPO_ROOT, "workshop.yaml");
 
   // --- Pre-flight checks ---------------------------------------------------
   if (!fs.existsSync(templateLessonYaml)) {
-    throw new Error(`template missing: lessons/01-example/lesson.yaml`);
+    throw new Error(`template missing: workshops/example/lessons/01-example/lesson.yaml`);
   }
   if (!fs.existsSync(skillSrc)) {
-    throw new Error(`template walker missing: .claude/skills/lesson-example.md`);
+    throw new Error(`template walker missing: workshops/example/lessons/01-example/coach.md`);
   }
-  if (!fs.existsSync(workshopYaml)) {
-    throw new Error("workshop.yaml missing at repo root");
-  }
+  // workshop.yaml at root is removed in the unified compose model (it now lives under
+  // workshops/<ws>/workshop.yaml). Plan 2 will update this script to target the suite layout.
+  // For now, skip the phase-append step if root workshop.yaml is absent.
+  const hasRootWorkshopYaml = fs.existsSync(workshopYaml);
   if (fs.existsSync(newDir)) {
     throw new Error(`refuse to overwrite: lessons/${lessonDir} already exists`);
   }
@@ -331,14 +339,22 @@ function main() {
   rewriteFile(skillDst, (text) => rewriteLessonReferences(text, slug, lessonDir, funcName));
 
   // --- Append phase entry --------------------------------------------------
-  const wsText = fs.readFileSync(workshopYaml, "utf8");
-  const wsUpdated = appendPhaseLesson(wsText, phase, lessonKey);
-  if (wsUpdated === wsText) {
-    console.warn(
-      `note: workshop.yaml already lists "${lessonKey}" under phase ${phase} — skipped append`,
-    );
+  // Root workshop.yaml is absent in the unified compose model; skip if not present.
+  // Plan 2 will update this script to target workshops/<ws>/workshop.yaml instead.
+  if (hasRootWorkshopYaml) {
+    const wsText = fs.readFileSync(workshopYaml, "utf8");
+    const wsUpdated = appendPhaseLesson(wsText, phase, lessonKey);
+    if (wsUpdated === wsText) {
+      console.warn(
+        `note: workshop.yaml already lists "${lessonKey}" under phase ${phase} — skipped append`,
+      );
+    } else {
+      fs.writeFileSync(workshopYaml, wsUpdated);
+    }
   } else {
-    fs.writeFileSync(workshopYaml, wsUpdated);
+    console.warn(
+      `note: root workshop.yaml not found — skipping phase append. Update workshops/<ws>/workshop.yaml manually. (Plan 2 will fix this script.)`,
+    );
   }
 
   // --- Summary -------------------------------------------------------------

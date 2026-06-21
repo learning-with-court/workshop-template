@@ -12,6 +12,9 @@ import { lintManifest } from "./lint-manifest.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..");
 const SCRIPT = path.join(__dirname, "lint-manifest.ts");
+// Use the workspace-installed tsx (absolute path) — never `npx -y tsx`, which downloads to the
+// shared ~/.npm/_npx cache and races across parallel test files (esbuild ENOTEMPTY corruption).
+const TSX = path.join(__dirname, "..", "node_modules", ".bin", "tsx");
 
 describe("lintManifest", () => {
   it("passes on the canonical example workshop (unified compose layout)", async () => {
@@ -43,7 +46,7 @@ describe("lintManifest", () => {
 
     let threw = false;
     try {
-      execFileSync("npx", ["-y", "tsx", SCRIPT, "--workshopRoot", "workshops/w1"], {
+      execFileSync(TSX, [SCRIPT, "--workshopRoot", "workshops/w1"], {
         cwd: repo, encoding: "utf8",
       });
     } catch {

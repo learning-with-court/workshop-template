@@ -10,6 +10,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SCRIPT = join(__dirname, "compose.ts");
+// Use the workspace-installed tsx (absolute path) — never `npx -y tsx`, which downloads to the
+// shared ~/.npm/_npx cache and races across parallel test files (esbuild ENOTEMPTY corruption).
+const TSX = join(__dirname, "..", "node_modules", ".bin", "tsx");
 let repo: string;
 const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" }).trim();
 const showTree = (ref: string) =>
@@ -74,7 +77,7 @@ beforeAll(() => {
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
-  execFileSync("npx", ["-y", "tsx", "scripts/compose.ts"], { cwd: repo, encoding: "utf8" });
+  execFileSync(TSX, ["scripts/compose.ts"], { cwd: repo, encoding: "utf8" });
 }, 60000);
 
 describe("unified compose generator", () => {
@@ -165,7 +168,7 @@ const VALIDATE_SCRIPT = join(__dirname, "validate-compose.ts");
 describe("validate-compose", () => {
   it("passes on a well-formed canonical repo", () => {
     execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
-    const out = execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+    const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
       cwd: repo, encoding: "utf8",
     } as ExecFileSyncOptions);
     expect(out).toMatch(/validate-compose:\s*OK/i);
@@ -179,7 +182,7 @@ describe("validate-compose", () => {
     // validate-compose was already copied to the repo in the prior test;
     // re-copy to ensure it's the latest version under test.
     execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
-    const out = execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+    const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
       cwd: repo, encoding: "utf8",
     } as ExecFileSyncOptions);
     expect(out).toMatch(/validate-compose:\s*OK/i);
@@ -217,7 +220,7 @@ describe("validate-compose", () => {
 
     let threw = false;
     try {
-      execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
         cwd: badRepo, encoding: "utf8",
       } as ExecFileSyncOptions);
     } catch {
@@ -255,7 +258,7 @@ describe("validate-compose", () => {
 
     let threw = false;
     try {
-      execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
         cwd: badRepo, encoding: "utf8",
       } as ExecFileSyncOptions);
     } catch {
@@ -296,7 +299,7 @@ describe("validate-compose", () => {
 
     let threw = false;
     try {
-      execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
         cwd: badRepo, encoding: "utf8",
       } as ExecFileSyncOptions);
     } catch {

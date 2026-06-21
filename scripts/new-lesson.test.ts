@@ -6,9 +6,12 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// Use the workspace-installed tsx (absolute path) — never `npx -y tsx`, which downloads to the
+// shared ~/.npm/_npx cache and races across parallel test files (esbuild ENOTEMPTY corruption).
+const TSX = join(__dirname, "..", "node_modules", ".bin", "tsx");
 let repo: string;
 const run = (...a: string[]) =>
-  execFileSync("npx", ["-y", "tsx", "scripts/new-lesson.ts", ...a], { cwd: repo, encoding: "utf8" });
+  execFileSync(TSX, ["scripts/new-lesson.ts", ...a], { cwd: repo, encoding: "utf8" });
 
 beforeAll(() => {
   repo = mkdtempSync(join(tmpdir(), "new-lesson-"));

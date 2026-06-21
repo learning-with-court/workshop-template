@@ -363,15 +363,18 @@ for (let wi = 0; wi < workshops.length; wi++) {
   }
 }
 
-// self-verify series/v0: must contain no solution files
+// self-verify series/v0: must not contain any COMPLETED solution work. A base/** file at the same
+// path as a solution file is fine (base provides a starting version the lesson evolves) — only an
+// IDENTICAL blob is a true leak (the lesson's finished work already present at the series start).
 const v0Built = built.find((b) => b.tag === `${SHORT}/series/v0`);
 if (!v0Built) throw new Error(`self-verify: ${SHORT}/series/v0 not found in built`);
 for (const { ws, slug } of flat) {
   const solDir = solDirFor(ws, slug);
   for (const abs of walk(solDir)) {
     const rel = posix.relative(solDir, abs);
-    if (v0Built.entries.has(rel))
-      throw new Error(`self-verify: ${SHORT}/series/v0 must not contain solution file ${rel}`);
+    const present = v0Built.entries.get(rel);
+    if (present && present.blob === hashFile(abs))
+      throw new Error(`self-verify: ${SHORT}/series/v0 already contains solution work ${rel} (identical content)`);
   }
 }
 

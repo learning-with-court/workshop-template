@@ -19,7 +19,7 @@ beforeAll(() => {
   mkdirSync(join(ex, "solution", "src"), { recursive: true });
   mkdirSync(join(ex, "test", "src"), { recursive: true });
   writeFileSync(join(repo, "workshops", "example", "workshop.yaml"),
-    `id: example\ntitle: "Example"\nstatus: available\nrepo: learning-with-court/x\ntagline: t\nsummary: s\ndifficulty: beginner\ntags:\n  - t\ninstall: i\nyouWillBuild:\n  - b\nprerequisites:\n  - term: t\n    desc: d\nphases:\n  - id: A\n    title: A\n    lessons:\n      - example\n`);
+    `id: example\ntitle: "Example"\nstatus: available\nrepo: learning-with-court/x\ntagline: t\nsummary: s\ndifficulty: beginner\ntags:\n  - example\ninstall: i\nyouWillBuild:\n  - b\nprerequisites:\n  - term: t\n    desc: d\nphases:\n  - id: A\n    title: A\n    lessons:\n      - example\n`);
   writeFileSync(join(repo, "workshops", "example", "landing.md"), "# Example\n");
   writeFileSync(join(ex, "lesson.yaml"), `id: example\ntitle: Example\nblurb: b\n`);
   writeFileSync(join(ex, "README.md"), "# Example\n");
@@ -42,7 +42,14 @@ describe("add-workshop", () => {
     const lessons = join(repo, "workshops", "w2", "lessons");
     expect(existsSync(lessons)).toBe(true);
     // new workshop.yaml id rewritten to w2
-    expect(readFileSync(join(repo, "workshops", "w2", "workshop.yaml"), "utf8")).toMatch(/^id:\s*w2/m);
+    const w2Yaml = readFileSync(join(repo, "workshops", "w2", "workshop.yaml"), "utf8");
+    expect(w2Yaml).toMatch(/^id:\s*w2/m);
+    // tags entry must NOT be clobbered by the lesson-slug rewrite:
+    // fixture has `- example` under tags; first-lesson default is "intro".
+    // The rewriter must only touch `lessons:` entries, not `tags:` entries.
+    expect(w2Yaml).toMatch(/^\s*-\s*example\s*$/m);
+    // And the lesson slug must have been rewritten to "intro"
+    expect(w2Yaml).toMatch(/^\s*-\s*intro\s*$/m);
     expect(out).toMatch(/w2/);
   });
 

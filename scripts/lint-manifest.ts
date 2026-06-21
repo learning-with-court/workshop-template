@@ -216,16 +216,19 @@ function unifiedLessonDir(wsDir: string, key: string): string | null {
  * PreToolUse entry references it, the test-file/protected-path immutability
  * contract is silently un-enforced. Returns a warning string (never an error)
  * — settings.json is member-local, so this must not fail the lint.
+ *
+ * base-v6 moved the served chassis to base/.claude/ (root .claude/ was removed).
+ * Checks base/.claude/hooks/block-edits.sh and base/.claude/settings.json.
  */
 export function checkHookWired(repoRoot: string): string | null {
-  const hook = path.join(repoRoot, ".claude", "hooks", "block-edits.sh");
+  const hook = path.join(repoRoot, "base", ".claude", "hooks", "block-edits.sh");
   if (!fs.existsSync(hook)) return null;
-  const settingsPath = path.join(repoRoot, ".claude", "settings.json");
+  const settingsPath = path.join(repoRoot, "base", ".claude", "settings.json");
   const settings = fs.existsSync(settingsPath)
     ? fs.readFileSync(settingsPath, "utf8")
     : "";
   if (!/"PreToolUse"/.test(settings) || !/block-edits\.sh/.test(settings)) {
-    return ".claude/hooks/block-edits.sh exists but no PreToolUse hook in .claude/settings.json references it — the immutability contract is not enforced. Wire Edit/Write/MultiEdit PreToolUse matchers to it.";
+    return "base/.claude/hooks/block-edits.sh exists but no PreToolUse hook in base/.claude/settings.json references it — the immutability contract is not enforced. Wire Edit/Write/MultiEdit PreToolUse matchers to it.";
   }
   return null;
 }

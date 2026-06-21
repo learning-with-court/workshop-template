@@ -258,6 +258,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const hookWarning = checkHookWired(repoRoot);
   if (hookWarning) console.warn(`⚠ ${hookWarning}`);
 
+  // Repo-level: optional series.settings.overlay.json must parse as JSON if present.
+  function seriesOverlayError(): string | null {
+    const p = path.join(repoRoot, "series.settings.overlay.json");
+    if (!fs.existsSync(p)) return null;
+    try {
+      JSON.parse(fs.readFileSync(p, "utf8"));
+      return null;
+    } catch {
+      return "series.settings.overlay.json: invalid JSON — must be a valid JSON object";
+    }
+  }
+
   // Unified compose model: workshop.yaml lives under workshops/<ws>/workshop.yaml.
   // Fall through to per-workshop scanning when root workshop.yaml is absent.
   const rootWorkshopYaml = path.join(repoRoot, "workshop.yaml");
@@ -284,6 +296,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         process.exit(0);
       }
       let allErrors: string[] = [];
+      const overlayErr = seriesOverlayError();
+      if (overlayErr) allErrors.push(overlayErr);
       for (const ws of workshopDirs) {
         const r = await lintManifest({ repoRoot: path.join(workshopsDir, ws) });
         if (r.errors.length > 0) {

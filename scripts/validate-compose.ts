@@ -40,6 +40,18 @@ if (!seriesText) {
   if (wsIds.length === 0)
     errors.push("series.yaml: `workshops` list is empty — need ≥1 workshop entry");
 
+  // ---- 1b. optional series.settings.overlay.json (repo-level): must parse as JSON if present ----
+  if (existsSync(join(REPO, "series.settings.overlay.json"))) {
+    const seriesOverlayText = read("series.settings.overlay.json");
+    if (seriesOverlayText !== null) {
+      try {
+        JSON.parse(seriesOverlayText);
+      } catch {
+        errors.push("series.settings.overlay.json: invalid JSON — must be a valid JSON object");
+      }
+    }
+  }
+
   // ---- 2. per-workshop checks ----
   for (const ws of wsIds) {
     const wsDir = `workshops/${ws}`;

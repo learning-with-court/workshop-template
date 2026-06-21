@@ -5,6 +5,8 @@
 //
 // Source layout (canonical; task 1):
 //   series.yaml                          { id, short, title, workshops: [{id, order}] }
+//   series.settings.overlay.json         optional — deep-merged onto base/.claude/settings.json
+//                                        for EVERY tag (series-wide settings; ws overlay wins on top)
 //   base/**                              uniform baseline (incl base/.claude/skills/)
 //   workshops/<ws>/workshop.yaml         { id, phases: [{id, lessons: [slug...]}] }
 //   workshops/<ws>/landing.md
@@ -186,7 +188,8 @@ if (flat.length === 0) throw new Error("No lessons found across all workshops in
 
 // --- build a tree for position upTo (prior solutions only) ---
 // solUpTo: solutions k < solUpTo; testUpTo: sticky tests k <= testUpTo (defaults to solUpTo)
-// overlayWs: if provided and workshops/<overlayWs>/settings.overlay.json exists, deep-merge onto base settings
+// overlayWs: the workshop whose per-workshop settings.overlay.json (if any) merges last; the repo-root
+//            series.settings.overlay.json always merges first, so it applies even when overlayWs is undefined
 function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo, overlayWs?: string): { tree: string; entries: Map<string, Entry> } {
   const upTo = solUpTo;
   const tmpIndex = join(REPO, ".git", `compose-index-${idxLabel}`);
@@ -201,19 +204,25 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
   const baseDir = join(REPO, "base");
   for (const abs of walk(baseDir)) add(posix.relative(baseDir, abs), abs);
 
-  // 1b) per-workshop settings overlay: deep-merge onto base/.claude/settings.json if overlay exists
-  if (overlayWs) {
-    const overlayPath = join(REPO, "workshops", overlayWs, "settings.overlay.json");
-    if (existsSync(overlayPath)) {
-      const baseSettingsPath = join(REPO, "base", ".claude", "settings.json");
-      const baseSettings = existsSync(baseSettingsPath)
-        ? JSON.parse(readFileSync(baseSettingsPath, "utf8")) as Record<string, unknown>
-        : {};
-      const overlay = JSON.parse(readFileSync(overlayPath, "utf8")) as Record<string, unknown>;
-      const merged = deepMerge(baseSettings, overlay);
-      const mergedStr = JSON.stringify(merged, null, 2) + "\n";
-      entries.set(".claude/settings.json", { mode: "100644", blob: hashContent(mergedStr) });
-    }
+  // 1b) settings overlays: chassis settings.json <- series overlay <- per-workshop overlay (deep-merged).
+  //     The series overlay (repo-root series.settings.overlay.json) applies to EVERY tag — including
+  //     series/v0 (which has no workshop). The per-workshop overlay applies only to that workshop's
+  //     tags and wins on conflict. base wins where no overlay touches a key.
+  const seriesOverlayPath = join(REPO, "series.settings.overlay.json");
+  const wsOverlayPath = overlayWs ? join(REPO, "workshops", overlayWs, "settings.overlay.json") : null;
+  const hasSeriesOverlay = existsSync(seriesOverlayPath);
+  const hasWsOverlay = wsOverlayPath !== null && existsSync(wsOverlayPath);
+  if (hasSeriesOverlay || hasWsOverlay) {
+    const baseSettingsPath = join(REPO, "base", ".claude", "settings.json");
+    let merged = existsSync(baseSettingsPath)
+      ? JSON.parse(readFileSync(baseSettingsPath, "utf8")) as Record<string, unknown>
+      : {};
+    if (hasSeriesOverlay)
+      merged = deepMerge(merged, JSON.parse(readFileSync(seriesOverlayPath, "utf8")) as Record<string, unknown>);
+    if (hasWsOverlay)
+      merged = deepMerge(merged, JSON.parse(readFileSync(wsOverlayPath!, "utf8")) as Record<string, unknown>);
+    const mergedStr = JSON.stringify(merged, null, 2) + "\n";
+    entries.set(".claude/settings.json", { mode: "100644", blob: hashContent(mergedStr) });
   }
 
   // 2) UNIFORM prose + coach for EVERY lesson in the series

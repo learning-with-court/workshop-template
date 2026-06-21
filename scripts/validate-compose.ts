@@ -10,10 +10,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-
-// ESM-safe: derive __dirname from import.meta.url
-const __filename = fileURLToPath(import.meta.url);
 
 const REPO = process.cwd();
 const errors: string[] = [];

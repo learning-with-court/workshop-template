@@ -15,9 +15,6 @@ const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8
 const showTree = (ref: string) =>
   execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8" })
     .split("\n").filter(Boolean).sort();
-const showFile = (ref: string, p: string) =>
-  execFileSync("git", ["show", `${ref}:${p}`], { cwd: repo, encoding: "utf8" });
-
 function writeLesson(ws: string, nn: string, slug: string, body: string) {
   const d = join(repo, "workshops", ws, "lessons", `${nn}-${slug}`);
   mkdirSync(join(d, "solution", "src"), { recursive: true });
@@ -94,6 +91,15 @@ describe("unified compose generator", () => {
   it("series/v0 == base only; ws/v1 == workshop finished", () => {
     expect(showTree("s/series/v0")).not.toContain("src/w1a.ts");
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
+  });
+
+  it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {
+    // w1/v1 must not carry w2's first lesson's test
+    expect(showTree("s/w1/v1")).not.toContain("src/w2a.test.ts");
+    // w1/v1 must carry w1's own last solution
+    expect(showTree("s/w1/v1")).toContain("src/w1b.ts");
+    // w2/v1 must carry w2's own last test
+    expect(showTree("s/w2/v1")).toContain("src/w2b.test.ts");
   });
 });
 

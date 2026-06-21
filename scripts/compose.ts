@@ -45,12 +45,6 @@ The source branch is never rewritten — only <short>/* tags move.`);
   process.exit(0);
 }
 
-// CLI guard: only run as a script, not when imported by tests
-if (import.meta.url !== `file://${process.argv[1]}`) {
-  // imported — nothing to execute at module load time
-  // (all logic runs when called as main)
-}
-
 const dryRun = args.includes("--dry-run");
 const doPush = args.includes("--push");
 const REPO = process.cwd();
@@ -172,7 +166,9 @@ for (const { ws } of workshops) {
 if (flat.length === 0) throw new Error("No lessons found across all workshops in series.yaml");
 
 // --- build a tree for position upTo (prior solutions only) ---
-function buildTree(upTo: number, idxLabel: string): { tree: string; entries: Map<string, Entry> } {
+// solUpTo: solutions k < solUpTo; testUpTo: sticky tests k <= testUpTo (defaults to solUpTo)
+function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo): { tree: string; entries: Map<string, Entry> } {
+  const upTo = solUpTo;
   const tmpIndex = join(REPO, ".git", `compose-index-${idxLabel}`);
   const env: GitEnv = { GIT_INDEX_FILE: tmpIndex };
   rmSync(tmpIndex, { force: true });
@@ -214,8 +210,8 @@ function buildTree(upTo: number, idxLabel: string): { tree: string; entries: Map
     for (const abs of walk(solDir)) add(posix.relative(solDir, abs), abs);
   }
 
-  // 5) sticky tests: for every lesson at-or-before upTo position, ship its test/ → root
-  for (let k = 0; k <= upTo && k < flat.length; k++) {
+  // 5) sticky tests: for every lesson at-or-before testUpTo position, ship its test/ → root
+  for (let k = 0; k <= testUpTo && k < flat.length; k++) {
     const testDir = testDirFor(flat[k]!.ws, flat[k]!.slug);
     for (const abs of walk(testDir)) add(posix.relative(testDir, abs), abs);
   }
@@ -237,31 +233,17 @@ flat.forEach((l, idx) => {
   built.push({ tag: `${SHORT}/${l.ws}/${l.slug}`, tree, entries });
 });
 
-// series/v0 = base + prose only (no solutions, no tests beyond position -1… buildTree(0) = prior 0 items; tests idx 0..0 = first lesson's test)
-// Actually series/v0 should be base only per the test: showTree("s/series/v0")).not.toContain("src/w1a.ts")
-// AND the test says series/v0 == base only. But the brief says series/v0 = buildTree(0).
-// buildTree(0): solutions upTo=0 → none; sticky tests 0..0 = first lesson's test.
-// But "series/v0 == base only" test checks for no solutions — tests are fine to include per sticky rule.
-// Wait: the test says "series/v0 == base only; ws/v1 == workshop finished" — "base only" means no solutions,
-// not no tests. Let's use buildTree(-1) for a true base-only (no tests either, just base+prose).
-// Actually re-reading: the test ONLY checks that src/w1a.ts is NOT in series/v0. Tests in src/*.test.ts
-// would still pass that assertion. But to be clean, series/v0 = base + prose + no solutions + no tests.
-// Use a special build with upTo=-1 (no solutions, sticky tests loop k=0..(-1) → no iterations).
+// series/v0 = first lesson's starting tree (base + prose + coach + that lesson's test; no solutions).
 {
-  // series/v0: base + prose + series/ws metadata; no solutions, no tests
-  // Use upTo = -1 semantics: we call with upTo=0 but clamp the sticky-tests loop to k < 0
-  // The cleanest approach: just call buildTree but with upTo=0 means:
-  // solutions: k < 0 → none ✓
-  // sticky tests: k=0..0 → first lesson's test IS included
-  // The test only checks "not contain src/w1a.ts" which is a solution, so buildTree(0) should pass.
   const { tree, entries } = buildTree(0, "v0");
   built.push({ tag: `${SHORT}/series/v0`, tree, entries });
 }
 
 // <ws>/v1 = base + prose + Σ solution(0..lastIdxOfWs) + sticky tests(0..lastIdxOfWs)
+// solUpTo = e+1 (solutions for all lessons through e), testUpTo = e (tests only through that ws's last lesson)
 for (const { ws } of workshops) {
   const e = wsLastIdx[ws]!;
-  const { tree, entries } = buildTree(e + 1, `v1-${ws}`);
+  const { tree, entries } = buildTree(e + 1, `v1-${ws}`, e);
   built.push({ tag: `${SHORT}/${ws}/v1`, tree, entries });
 }
 
@@ -290,6 +272,49 @@ flat.forEach((l, idx) => {
     }
   }
 });
+
+// self-verify <ws>/v1: ws's own last solution present; next-ws first lesson's test absent
+for (let wi = 0; wi < workshops.length; wi++) {
+  const ws = workshops[wi]!.ws;
+  const v1Tag = `${SHORT}/${ws}/v1`;
+  const v1Built = built.find((b) => b.tag === v1Tag);
+  if (!v1Built) throw new Error(`self-verify: ${v1Tag} not found in built`);
+
+  // own last solution MUST be present
+  const lastIdx = wsLastIdx[ws]!;
+  const lastSolDir = solDirFor(flat[lastIdx]!.ws, flat[lastIdx]!.slug);
+  for (const abs of walk(lastSolDir)) {
+    const rel = posix.relative(lastSolDir, abs);
+    if (!v1Built.entries.has(rel))
+      throw new Error(`self-verify: ${v1Tag} missing own last solution ${rel}`);
+  }
+
+  // next workshop's first lesson's test must NOT be present
+  if (wi + 1 < workshops.length) {
+    const nextWs = workshops[wi + 1]!.ws;
+    const nextSlugs = lessonOrder(nextWs);
+    if (nextSlugs.length > 0) {
+      const nextTestDir = testDirFor(nextWs, nextSlugs[0]!);
+      for (const abs of walk(nextTestDir)) {
+        const rel = posix.relative(nextTestDir, abs);
+        if (v1Built.entries.has(rel))
+          throw new Error(`self-verify: ${v1Tag} leaks next-workshop test ${rel} (off-by-one in testUpTo)`);
+      }
+    }
+  }
+}
+
+// self-verify series/v0: must contain no solution files
+const v0Built = built.find((b) => b.tag === `${SHORT}/series/v0`);
+if (!v0Built) throw new Error(`self-verify: ${SHORT}/series/v0 not found in built`);
+for (const { ws, slug } of flat) {
+  const solDir = solDirFor(ws, slug);
+  for (const abs of walk(solDir)) {
+    const rel = posix.relative(solDir, abs);
+    if (v0Built.entries.has(rel))
+      throw new Error(`self-verify: ${SHORT}/series/v0 must not contain solution file ${rel}`);
+  }
+}
 
 // --- commit-tree + emit ---
 let parent: string | null = null;

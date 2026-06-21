@@ -113,6 +113,17 @@ export async function lintManifest(opts: {
     errors.push("landing.md missing");
   }
 
+  // 2b. optional settings.overlay.json: must parse as JSON if present.
+  //     fixtures/ is optional and free-form — no lint assertions.
+  const overlayPath = path.join(wsDir, "settings.overlay.json");
+  if (fs.existsSync(overlayPath)) {
+    try {
+      JSON.parse(fs.readFileSync(overlayPath, "utf8"));
+    } catch {
+      errors.push("settings.overlay.json: invalid JSON — must be a valid JSON object");
+    }
+  }
+
   // 3. for every phase-referenced lesson key, the lesson dir + lesson.yaml exist
   const lessonKeys = workshop.phases.flatMap((p) => p.lessons);
   const declaredIds = new Set<string>();

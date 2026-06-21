@@ -1,0 +1,312 @@
+import { describe, it, expect, beforeAll } from "vitest";
+import { execFileSync, ExecFileSyncOptions } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// ESM-safe __dirname resolution (no bare __dirname in ESM modules)
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const SCRIPT = join(__dirname, "compose.ts");
+// Use the workspace-installed tsx (absolute path) — never `npx -y tsx`, which downloads to the
+// shared ~/.npm/_npx cache and races across parallel test files (esbuild ENOTEMPTY corruption).
+const TSX = join(__dirname, "..", "node_modules", ".bin", "tsx");
+let repo: string;
+const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" }).trim();
+const showTree = (ref: string) =>
+  execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8" })
+    .split("\n").filter(Boolean).sort();
+const showFile = (ref: string, filePath: string) =>
+  execFileSync("git", ["show", `${ref}:${filePath}`], { cwd: repo, encoding: "utf8" });
+function writeLesson(ws: string, nn: string, slug: string, body: string) {
+  const d = join(repo, "workshops", ws, "lessons", `${nn}-${slug}`);
+  mkdirSync(join(d, "solution", "src"), { recursive: true });
+  mkdirSync(join(d, "test", "src"), { recursive: true });
+  writeFileSync(join(d, "lesson.yaml"), `id: ${slug}\ntitle: "${slug}"\nblurb: "b"\nverifyCommand: "true"\n`);
+  writeFileSync(join(d, "README.md"), `# ${slug}\n`);
+  writeFileSync(join(d, "coach.md"), `---\nname: ${ws}-${slug}\ndescription: coach ${slug}\n---\nbody\n`);
+  writeFileSync(join(d, "solution", "src", `${slug}.ts`), body);
+  writeFileSync(join(d, "test", "src", `${slug}.test.ts`), `// test ${slug}\n`);
+}
+
+beforeAll(() => {
+  repo = mkdtempSync(join(tmpdir(), "compose-fixture-"));
+  git(["init", "-q"]);
+  git(["config", "user.email", "t@t"]); git(["config", "user.name", "t"]);
+  // base/
+  mkdirSync(join(repo, "base", "src"), { recursive: true });
+  mkdirSync(join(repo, "base", ".claude", "skills"), { recursive: true });
+  writeFileSync(join(repo, "base", "src", ".gitkeep"), "");
+  writeFileSync(join(repo, "base", ".claude", "skills", "_walker-base.md"), "walker base\n");
+  writeFileSync(join(repo, "base", "package.json"), `{"name":"x"}\n`);
+  // series of two workshops
+  writeFileSync(join(repo, "series.yaml"),
+    `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n  - id: w2\n    order: 2\n`);
+  for (const ws of ["w1", "w2"]) {
+    mkdirSync(join(repo, "workshops", ws), { recursive: true });
+    writeFileSync(join(repo, "workshops", ws, "workshop.yaml"),
+      `id: ${ws}\ntitle: ${ws}\nphases:\n  - id: A\n    lessons:\n      - ${ws}a\n      - ${ws}b\n`);
+    writeFileSync(join(repo, "workshops", ws, "landing.md"), `# ${ws}\n`);
+    writeLesson(ws, "01", `${ws}a`, `export const ${ws}a = 1\n`);
+    writeLesson(ws, "02", `${ws}b`, `export const ${ws}b = 1\n`);
+  }
+  // base settings.json
+  writeFileSync(join(repo, "base", ".claude", "settings.json"),
+    JSON.stringify({ permissions: { allow: ["Read"] }, model: "sonnet" }, null, 2) + "\n");
+  // series-level overlay (repo root): applies to EVERY tag, incl. series/v0
+  writeFileSync(join(repo, "series.settings.overlay.json"),
+    JSON.stringify({ model: "haiku", telemetry: false }, null, 2) + "\n");
+  // w1 overlay: wins over the series overlay on conflicting keys
+  mkdirSync(join(repo, "workshops", "w1"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "settings.overlay.json"),
+    JSON.stringify({ model: "opus" }, null, 2) + "\n");
+  // per-workshop fixture for w1
+  mkdirSync(join(repo, "workshops", "w1", "fixtures", "diffs"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "fixtures", "diffs", "sample.diff"), "DIFF\n");
+  // per-lesson fixture for w1's first lesson (01-w1a)
+  mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures", "case.json"), "{}\n");
+  // cross-lesson file evolution: w1a creates src/shared.ts; w1b MODIFIES it (different content).
+  // The canonical self-verify must allow this (same path, different blob), not flag a leak.
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", "shared.ts"),
+    `export const shared = "v1"\n`);
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "02-w1b", "solution", "src", "shared.ts"),
+    `export const shared = "v2"\n`);
+  // copy the generator under test into the fixture so relative paths resolve
+  mkdirSync(join(repo, "scripts"), { recursive: true });
+  execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
+  execFileSync(TSX, ["scripts/compose.ts"], { cwd: repo, encoding: "utf8" });
+}, 60000);
+
+describe("unified compose generator", () => {
+  it("emits a tag per lesson + per-ws v1 + series/v0", () => {
+    const tags = git(["tag"]).split("\n").filter(Boolean).sort();
+    expect(tags).toEqual([
+      "s/series/v0",
+      "s/w1/v1", "s/w1/w1a", "s/w1/w1b",
+      "s/w2/v1", "s/w2/w2a", "s/w2/w2b",
+    ].sort());
+  });
+
+  it("serves prose + coach for ALL lessons at every tag (uniform)", () => {
+    const t = showTree("s/w1/w1a");
+    expect(t).toContain(".workshop/series.yaml");
+    expect(t).toContain(".workshop/w2/lesson_w2b/README.md");        // other-ws prose present
+    expect(t).toContain(".claude/skills/w2-w2b.md");                  // other-ws coach present
+    expect(t).toContain(".claude/skills/_walker-base.md");            // base/.claude served
+  });
+
+  it("a lesson's STARTING tree excludes its own solution, includes prior ones (cumulative across the series)", () => {
+    // w1a is first → no solutions yet
+    expect(showTree("s/w1/w1a")).not.toContain("src/w1a.ts");
+    // w1b starts after w1a → has w1a's solution
+    expect(showTree("s/w1/w1b")).toContain("src/w1a.ts");
+    // w2a (workshop 2, lesson 1) starts with ALL of w1's solutions (cumulative across workshops)
+    const w2a = showTree("s/w2/w2a");
+    expect(w2a).toContain("src/w1a.ts");
+    expect(w2a).toContain("src/w1b.ts");
+    expect(w2a).not.toContain("src/w2a.ts");
+  });
+
+  it("allows a later lesson to evolve an earlier lesson's file (same path, different content)", () => {
+    // w1b's starting tree holds w1a's version of src/shared.ts (the learner edits it forward)
+    expect(showFile("s/w1/w1b", "src/shared.ts")).toContain('"v1"');
+    // w1 finished holds w1b's evolved version
+    expect(showFile("s/w1/v1", "src/shared.ts")).toContain('"v2"');
+  });
+
+  it("ships each lesson's test from its own position onward (sticky)", () => {
+    expect(showTree("s/w1/w1a")).toContain("src/w1a.test.ts");        // own test present at start
+    expect(showTree("s/w1/w1b")).toContain("src/w1a.test.ts");        // and later
+  });
+
+  it("series/v0 == base only; ws/v1 == workshop finished", () => {
+    expect(showTree("s/series/v0")).not.toContain("src/w1a.ts");
+    expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
+  });
+
+  it("serves per-workshop + per-lesson fixtures uniformly", () => {
+    const t = showTree("s/w1/w1a");
+    expect(t).toContain(".workshop/w1/fixtures/diffs/sample.diff");           // per-workshop
+    expect(t).toContain(".workshop/w1/lesson_w1a/fixtures/case.json");        // per-lesson
+    // uniform: also present at a later tag
+    expect(showTree("s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
+  });
+
+  it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {
+    // w1/v1 must not carry w2's first lesson's test
+    expect(showTree("s/w1/v1")).not.toContain("src/w2a.test.ts");
+    // w1/v1 must carry w1's own last solution
+    expect(showTree("s/w1/v1")).toContain("src/w1b.ts");
+    // w2/v1 must carry w2's own last test
+    expect(showTree("s/w2/v1")).toContain("src/w2b.test.ts");
+  });
+
+  it("layers settings: chassis <- series overlay <- per-workshop overlay", () => {
+    const w1 = JSON.parse(showFile("s/w1/w1a", ".claude/settings.json"));
+    expect(w1.model).toBe("opus");                      // w1 overlay wins over series + base
+    expect(w1.telemetry).toBe(false);                   // series overlay applies
+    expect(w1.permissions.allow).toEqual(["Read"]);     // base preserved (no overlay touches it)
+    const w2 = JSON.parse(showFile("s/w2/w2a", ".claude/settings.json"));
+    expect(w2.model).toBe("haiku");                     // series overlay applies (no w2 overlay)
+    expect(w2.telemetry).toBe(false);                   // series overlay applies
+    expect(w2.permissions.allow).toEqual(["Read"]);     // base preserved
+  });
+
+  it("applies the series overlay to series/v0 (which has no workshop)", () => {
+    const v0 = JSON.parse(showFile("s/series/v0", ".claude/settings.json"));
+    expect(v0.model).toBe("haiku");                     // series overlay applies
+    expect(v0.telemetry).toBe(false);                   // series overlay applies
+    expect(v0.permissions.allow).toEqual(["Read"]);     // base preserved
+  });
+});
+
+const VALIDATE_SCRIPT = join(__dirname, "validate-compose.ts");
+
+describe("validate-compose", () => {
+  it("passes on a well-formed canonical repo", () => {
+    execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
+    const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
+      cwd: repo, encoding: "utf8",
+    } as ExecFileSyncOptions);
+    expect(out).toMatch(/validate-compose:\s*OK/i);
+  }, 30000);
+
+  it("accepts optional fixtures + a valid settings.overlay.json", () => {
+    // The main fixture repo (set up in beforeAll) already has:
+    //   workshops/w1/fixtures/diffs/sample.diff  (per-workshop fixture)
+    //   workshops/w1/lessons/01-w1a/fixtures/case.json  (per-lesson fixture)
+    //   workshops/w1/settings.overlay.json  (valid JSON overlay)
+    // validate-compose was already copied to the repo in the prior test;
+    // re-copy to ensure it's the latest version under test.
+    execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
+    const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
+      cwd: repo, encoding: "utf8",
+    } as ExecFileSyncOptions);
+    expect(out).toMatch(/validate-compose:\s*OK/i);
+  }, 30000);
+
+  it("rejects a malformed settings.overlay.json", () => {
+    // Build a minimal well-formed repo with a bad overlay
+    const badRepo = mkdtempSync(join(tmpdir(), "compose-overlay-bad-"));
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    badGit(["init", "-q"]);
+    badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
+
+    // base/
+    mkdirSync(join(badRepo, "base", "src"), { recursive: true });
+    writeFileSync(join(badRepo, "base", "src", ".gitkeep"), "");
+
+    // series.yaml
+    writeFileSync(join(badRepo, "series.yaml"),
+      `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n`);
+
+    // well-formed workshop + lesson
+    mkdirSync(join(badRepo, "workshops", "w1", "lessons", "01-w1a"), { recursive: true });
+    writeFileSync(join(badRepo, "workshops", "w1", "workshop.yaml"),
+      `id: w1\ntitle: w1\nphases:\n  - id: A\n    lessons:\n      - w1a\n`);
+    writeFileSync(join(badRepo, "workshops", "w1", "landing.md"), `# w1\n`);
+    const d = join(badRepo, "workshops", "w1", "lessons", "01-w1a");
+    writeFileSync(join(d, "lesson.yaml"), `id: w1a\ntitle: "w1a"\nblurb: "b"\nverifyCommand: "true"\n`);
+    writeFileSync(join(d, "README.md"), `# w1a\n`);
+    writeFileSync(join(d, "coach.md"), `---\nname: w1-w1a\ndescription: coach\n---\nbody\n`);
+    // MALFORMED overlay — invalid JSON
+    writeFileSync(join(badRepo, "workshops", "w1", "settings.overlay.json"), "{ not json");
+
+    mkdirSync(join(badRepo, "scripts"), { recursive: true });
+    execFileSync("cp", [VALIDATE_SCRIPT, join(badRepo, "scripts", "validate-compose.ts")]);
+
+    let threw = false;
+    try {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
+        cwd: badRepo, encoding: "utf8",
+      } as ExecFileSyncOptions);
+    } catch {
+      threw = true;
+    } finally {
+      rmSync(badRepo, { recursive: true, force: true });
+    }
+    expect(threw).toBe(true);
+  }, 30000);
+
+  it("rejects a malformed series.settings.overlay.json", () => {
+    const badRepo = mkdtempSync(join(tmpdir(), "compose-series-overlay-bad-"));
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    badGit(["init", "-q"]);
+    badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
+
+    mkdirSync(join(badRepo, "base", "src"), { recursive: true });
+    writeFileSync(join(badRepo, "base", "src", ".gitkeep"), "");
+    writeFileSync(join(badRepo, "series.yaml"),
+      `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n`);
+    // well-formed workshop + lesson
+    mkdirSync(join(badRepo, "workshops", "w1", "lessons", "01-w1a"), { recursive: true });
+    writeFileSync(join(badRepo, "workshops", "w1", "workshop.yaml"),
+      `id: w1\ntitle: w1\nphases:\n  - id: A\n    lessons:\n      - w1a\n`);
+    writeFileSync(join(badRepo, "workshops", "w1", "landing.md"), `# w1\n`);
+    const d = join(badRepo, "workshops", "w1", "lessons", "01-w1a");
+    writeFileSync(join(d, "lesson.yaml"), `id: w1a\ntitle: "w1a"\nblurb: "b"\nverifyCommand: "true"\n`);
+    writeFileSync(join(d, "README.md"), `# w1a\n`);
+    writeFileSync(join(d, "coach.md"), `---\nname: w1-w1a\ndescription: coach\n---\nbody\n`);
+    // MALFORMED series-level overlay — invalid JSON
+    writeFileSync(join(badRepo, "series.settings.overlay.json"), "{ not json");
+
+    mkdirSync(join(badRepo, "scripts"), { recursive: true });
+    execFileSync("cp", [VALIDATE_SCRIPT, join(badRepo, "scripts", "validate-compose.ts")]);
+
+    let threw = false;
+    try {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
+        cwd: badRepo, encoding: "utf8",
+      } as ExecFileSyncOptions);
+    } catch {
+      threw = true;
+    } finally {
+      rmSync(badRepo, { recursive: true, force: true });
+    }
+    expect(threw).toBe(true);
+  }, 30000);
+
+  it("fails when a lesson is missing coach.md", () => {
+    // Build a minimal bad repo
+    const badRepo = mkdtempSync(join(tmpdir(), "compose-bad-"));
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    badGit(["init", "-q"]);
+    badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
+
+    // base/
+    mkdirSync(join(badRepo, "base", "src"), { recursive: true });
+    writeFileSync(join(badRepo, "base", "src", ".gitkeep"), "");
+
+    // series.yaml
+    writeFileSync(join(badRepo, "series.yaml"),
+      `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n`);
+
+    // workshop dir + lesson — MISSING coach.md intentionally
+    mkdirSync(join(badRepo, "workshops", "w1", "lessons", "01-w1a"), { recursive: true });
+    writeFileSync(join(badRepo, "workshops", "w1", "workshop.yaml"),
+      `id: w1\ntitle: w1\nphases:\n  - id: A\n    lessons:\n      - w1a\n`);
+    writeFileSync(join(badRepo, "workshops", "w1", "landing.md"), `# w1\n`);
+    const d = join(badRepo, "workshops", "w1", "lessons", "01-w1a");
+    writeFileSync(join(d, "lesson.yaml"), `id: w1a\ntitle: "w1a"\nblurb: "b"\nverifyCommand: "true"\n`);
+    writeFileSync(join(d, "README.md"), `# w1a\n`);
+    // no coach.md here
+
+    mkdirSync(join(badRepo, "scripts"), { recursive: true });
+    execFileSync("cp", [VALIDATE_SCRIPT, join(badRepo, "scripts", "validate-compose.ts")]);
+
+    let threw = false;
+    try {
+      execFileSync(TSX, ["scripts/validate-compose.ts"], {
+        cwd: badRepo, encoding: "utf8",
+      } as ExecFileSyncOptions);
+    } catch {
+      threw = true;
+    } finally {
+      rmSync(badRepo, { recursive: true, force: true });
+    }
+    expect(threw).toBe(true);
+  }, 30000);
+});

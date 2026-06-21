@@ -87,9 +87,11 @@ export async function lintManifest(opts: {
   const wsDir = opts.workshopRoot ? path.join(root, opts.workshopRoot) : root;
   // Lesson dirs, by layout:
   //  - compose model: lessons/<NN>-<slug>/ at the repo root (the NN prefix is disk-ordering only)
+  //  - unified compose model: <workshopRoot>/lessons/<NN>-<slug>/ (workshopRoot set + lessons/ present)
   //  - monorepo workshopRoots: lesson_*/ directly under the workshopRoot
   //  - legacy single-workshop repos: lesson_*/ under a workshop/ subdir
   const composeMode = !opts.workshopRoot && fs.existsSync(path.join(root, "lessons"));
+  const unifiedMode = !!opts.workshopRoot && fs.existsSync(path.join(wsDir, "lessons"));
   const lessonsBase = opts.workshopRoot ? wsDir : path.join(wsDir, "workshop");
 
   // 1. workshop.yaml exists + parses
@@ -117,12 +119,16 @@ export async function lintManifest(opts: {
   for (const key of lessonKeys) {
     const lessonRoot = composeMode
       ? composeLessonDir(root, key)
-      : path.join(lessonsBase, lessonDirForKey(key));
+      : unifiedMode
+        ? unifiedLessonDir(wsDir, key)
+        : path.join(lessonsBase, lessonDirForKey(key));
     if (!lessonRoot || !fs.existsSync(lessonRoot)) {
       errors.push(
         composeMode
           ? `phase references "${key}" but no lessons/<NN>-${key}/ dir exists`
-          : `phase references "${key}" but ${path.relative(root, path.join(lessonsBase, lessonDirForKey(key)))} doesn't exist`,
+          : unifiedMode
+            ? `phase references "${key}" but no <workshopRoot>/lessons/<NN>-${key}/ dir exists`
+            : `phase references "${key}" but ${path.relative(root, path.join(lessonsBase, lessonDirForKey(key)))} doesn't exist`,
       );
       continue;
     }
@@ -193,6 +199,19 @@ function composeLessonDir(root: string, key: string): string | null {
 }
 
 /**
+ * Unified compose model: lessons live at <workshopRoot>/lessons/<NN>-<slug>/.
+ * Resolve a slug to its absolute lesson dir, or null if absent.
+ */
+function unifiedLessonDir(wsDir: string, key: string): string | null {
+  const lessonsRoot = path.join(wsDir, "lessons");
+  if (!fs.existsSync(lessonsRoot)) return null;
+  const hit = fs
+    .readdirSync(lessonsRoot)
+    .find((d) => d.replace(/^\d+-/, "") === key);
+  return hit ? path.join(lessonsRoot, hit) : null;
+}
+
+/**
  * Soft check: if the block-edits PreToolUse hook ships but no settings.json
  * PreToolUse entry references it, the test-file/protected-path immutability
  * contract is silently un-enforced. Returns a warning string (never an error)
@@ -245,7 +264,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       // Skip "example" — it's the canonical template scaffold, not a real workshop.
       const workshopDirs = fs
         .readdirSync(workshopsDir)
-        .filter((d) => d !== "example" && fs.existsSync(path.join(workshopsDir, d, "workshop.yaml")));
+        .filter((d) => fs.existsSync(path.join(workshopsDir, d, "workshop.yaml")));
       if (workshopDirs.length === 0) {
         console.warn("⚠ no workshop.yaml found at repo root or under workshops/ — nothing to lint");
         process.exit(0);

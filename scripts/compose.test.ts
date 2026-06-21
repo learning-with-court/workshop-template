@@ -65,6 +65,12 @@ beforeAll(() => {
   // per-lesson fixture for w1's first lesson (01-w1a)
   mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures"), { recursive: true });
   writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures", "case.json"), "{}\n");
+  // cross-lesson file evolution: w1a creates src/shared.ts; w1b MODIFIES it (different content).
+  // The canonical self-verify must allow this (same path, different blob), not flag a leak.
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", "shared.ts"),
+    `export const shared = "v1"\n`);
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "02-w1b", "solution", "src", "shared.ts"),
+    `export const shared = "v2"\n`);
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
@@ -99,6 +105,13 @@ describe("unified compose generator", () => {
     expect(w2a).toContain("src/w1a.ts");
     expect(w2a).toContain("src/w1b.ts");
     expect(w2a).not.toContain("src/w2a.ts");
+  });
+
+  it("allows a later lesson to evolve an earlier lesson's file (same path, different content)", () => {
+    // w1b's starting tree holds w1a's version of src/shared.ts (the learner edits it forward)
+    expect(showFile("s/w1/w1b", "src/shared.ts")).toContain('"v1"');
+    // w1 finished holds w1b's evolved version
+    expect(showFile("s/w1/v1", "src/shared.ts")).toContain('"v2"');
   });
 
   it("ships each lesson's test from its own position onward (sticky)", () => {

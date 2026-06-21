@@ -305,11 +305,15 @@ for (const { ws } of workshops) {
 // --- self-verify ---
 flat.forEach((l, idx) => {
   const b = built[idx]!;
-  // own solution must NOT be in the starting tree
+  // own solution must NOT already be present with IDENTICAL content (a true leak — nothing
+  // for the learner to do). A different blob at the same path is legitimate: a later lesson
+  // evolves a file an earlier lesson created, so the starting tree holds the earlier version.
   const ownSol = solDirFor(l.ws, l.slug);
   for (const abs of walk(ownSol)) {
     const rel = posix.relative(ownSol, abs);
-    if (b.entries.has(rel)) throw new Error(`self-verify: ${b.tag} leaks its OWN solution ${rel}`);
+    const present = b.entries.get(rel);
+    if (present && present.blob === hashFile(abs))
+      throw new Error(`self-verify: ${b.tag} already contains its OWN solution ${rel} (identical content — nothing to do)`);
   }
   // own test MUST be present
   const ownTest = testDirFor(l.ws, l.slug);

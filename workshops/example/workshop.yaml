@@ -1,0 +1,8 @@
+id: example
+title: "Example Workshop"
+status: available
+phases:
+  - id: A
+    title: Getting started
+    lessons:
+      - example

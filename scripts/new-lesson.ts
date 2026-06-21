@@ -1,37 +1,29 @@
 // scripts/new-lesson.ts
 //
-// Scaffold a new compose-model lesson.
+// Scaffold a new compose-model lesson into a chosen workshop of the series.
 //
 // Usage:
-//   pnpm new-lesson <slug> [--phase A|B|C|...]
+//   pnpm exec tsx scripts/new-lesson.ts <ws> <slug> [--phase A|B|C|...]
 //
 // Example:
-//   pnpm new-lesson joins-and-aggregates --phase B
+//   pnpm exec tsx scripts/new-lesson.ts example my-new-lesson --phase A
 //
-// Lessons are identified by slug (kebab-case). The lesson number (<NN>) is
-// assigned automatically (highest existing lessons/<NN>-* + 1, zero-padded to 2 digits).
-// See docs/WORKSHOP_STANDARD.md for the full identity contract.
+// <ws>   is a workshop id listed in series.yaml.
+// <slug> is the lesson's kebab-case identifier.
+// The lesson number (<NN>) is assigned automatically (highest existing
+// workshops/<ws>/lessons/<NN>-* + 1, zero-padded to 2 digits).
 //
-// What it does (compose-model layout):
-//   - Creates lessons/<NN>-<slug>/lesson.yaml — from workshops/example/lessons/01-example/lesson.yaml,
-//     with id/title/blurb/verifyCommand rewritten for the new slug.
-//   - Creates lessons/<NN>-<slug>/README.md — H1 placeholder + minimal body.
-//   - Creates lessons/<NN>-<slug>/solution/src/<slug>.ts — stub export.
-//   - Creates lessons/<NN>-<slug>/test/src/<slug>.test.ts — minimal vitest test
-//     (written via shell; the block-edits hook denies Write/Edit on *.test.*).
-//   - Copies workshops/example/lessons/01-example/coach.md -> .claude/skills/lesson-<slug>.md,
-//     rewrites slug refs.
-//   - Appends <slug> to workshop.yaml phases[--phase].lessons.
+// What it does (compose-suite co-located layout):
+//   - Creates workshops/<ws>/lessons/<NN>-<slug>/lesson.yaml
+//     (templated from the workshop's first lesson; id/title/blurb/verifyCommand rewritten)
+//   - Creates workshops/<ws>/lessons/<NN>-<slug>/README.md (H1 + minimal body)
+//   - Creates workshops/<ws>/lessons/<NN>-<slug>/coach.md
+//     (copied from workshop's first lesson coach.md; frontmatter name: → <ws>-<slug>)
+//   - Creates workshops/<ws>/lessons/<NN>-<slug>/solution/src/<slug>.ts (stub export)
+//   - Creates workshops/<ws>/lessons/<NN>-<slug>/test/src/<slug>.test.ts
+//     (written via shell; the block-edits hook denies Write/Edit on *.test.*)
+//   - Appends <slug> to workshops/<ws>/workshop.yaml phases[--phase].lessons
 //   - Refuses to overwrite existing dirs; exits non-zero on conflict.
-//
-// NOTE: This script targets the single-workshop root layout and will be rewritten
-// in Plan 2 for suite-aware usage (workshops/<ws>/lessons/<NN>-<slug>/).
-// For the compose model, use compose.ts to generate tags from workshops/.
-//
-// Intentional non-goals:
-//   - No package.json / tsconfig.json / canonical.* — compose-model lessons don't have them.
-//   - No interactive prompts. Args only.
-//   - No content generation. The author / agent fills the scaffold.
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -44,7 +36,7 @@ const REPO_ROOT = path.resolve(__dirname, "..");
 // Canonical lesson slug. Keep in sync with scripts/lint-manifest.ts.
 const SLUG_RE = /^[a-z][a-z0-9-]*$/;
 
-type Args = { slug: string; phase: string };
+type Args = { ws: string; slug: string; phase: string };
 
 function parseArgs(argv: string[]): Args {
   const positional: string[] = [];
@@ -63,30 +55,31 @@ function parseArgs(argv: string[]): Args {
       positional.push(a);
     }
   }
-  if (positional.length < 1) {
+  if (positional.length < 2) {
     printUsageAndExit(1);
   }
-  const [slug] = positional;
+  const [ws, slug] = positional;
   if (!SLUG_RE.test(slug!)) {
     throw new Error(
-      `<slug> must be slug-form (lowercase letter first, then lowercase letters, digits, single hyphens), got "${slug}"`,
+      `<slug> must be slug-form (lowercase letter first, then lowercase letters, digits, hyphens), got "${slug}"`,
     );
   }
   if (!/^[A-Za-z0-9_-]+$/.test(phase)) {
     throw new Error(`--phase must be a simple identifier, got "${phase}"`);
   }
-  return { slug: slug!, phase };
+  return { ws: ws!, slug: slug!, phase };
 }
 
 function printUsageAndExit(code: number): never {
   const msg = [
-    "Usage: pnpm new-lesson <slug> [--phase A|B|C]",
+    "Usage: pnpm exec tsx scripts/new-lesson.ts <ws> <slug> [--phase A|B|C]",
     "",
+    "  <ws>    workshop id listed in series.yaml",
     "  <slug>  kebab-case lesson slug, e.g. joins-and-aggregates",
-    "  --phase phase id from workshop.yaml; defaults to A",
+    "  --phase phase id from workshops/<ws>/workshop.yaml; defaults to A",
     "",
     "Example:",
-    "  pnpm new-lesson joins-and-aggregates --phase B",
+    "  pnpm exec tsx scripts/new-lesson.ts example my-new-lesson --phase A",
   ].join("\n");
   (code === 0 ? console.log : console.error)(msg);
   process.exit(code);
@@ -96,6 +89,95 @@ function rewriteFile(file: string, fn: (text: string) => string): void {
   const before = fs.readFileSync(file, "utf8");
   const after = fn(before);
   fs.writeFileSync(file, after);
+}
+
+/**
+ * Parse series.yaml and return the ordered list of workshop ids.
+ */
+function seriesWorkshops(): string[] {
+  const seriesYaml = path.join(REPO_ROOT, "series.yaml");
+  if (!fs.existsSync(seriesYaml)) {
+    throw new Error("series.yaml not found at repo root");
+  }
+  const text = fs.readFileSync(seriesYaml, "utf8");
+  const ids: { id: string; order: number }[] = [];
+  let inWorkshops = false;
+  let cur: { id?: string; order?: number } | null = null;
+  for (const line of text.split("\n")) {
+    if (/^workshops:\s*$/.test(line)) {
+      inWorkshops = true;
+      continue;
+    }
+    if (!inWorkshops) continue;
+    // Top-level key ends workshops block
+    if (/^\S/.test(line) && !/^workshops:/.test(line)) {
+      inWorkshops = false;
+      continue;
+    }
+    if (/^\s*-\s*id:/.test(line)) {
+      if (cur?.id != null) ids.push({ id: cur.id, order: cur.order ?? 0 });
+      const m = line.match(/^\s*-\s*id:\s*(\S+)/);
+      cur = { id: m?.[1] };
+      continue;
+    }
+    if (cur != null) {
+      const om = line.match(/^\s*order:\s*(\d+)/);
+      if (om) cur.order = parseInt(om[1]!, 10);
+    }
+  }
+  if (cur?.id != null) ids.push({ id: cur.id, order: cur.order ?? 0 });
+  return ids.sort((a, b) => a.order - b.order).map((e) => e.id);
+}
+
+/**
+ * Return all lesson slugs registered in a workshop.yaml (across all phases).
+ */
+function registeredSlugs(workshopYaml: string): string[] {
+  const text = fs.readFileSync(workshopYaml, "utf8");
+  const slugs: string[] = [];
+  let inLessons = false;
+  for (const line of text.split("\n")) {
+    if (/^\s*lessons:\s*$/.test(line)) {
+      inLessons = true;
+      continue;
+    }
+    if (inLessons) {
+      const m = line.match(/^\s*-\s*([a-z][a-z0-9-]*)\s*$/);
+      if (m) {
+        slugs.push(m[1]!);
+        continue;
+      }
+      // A sibling key (non-list, non-blank) ends the lessons block
+      if (/^\s*\w+:/.test(line) || /^\S/.test(line)) {
+        inLessons = false;
+      }
+    }
+  }
+  return slugs;
+}
+
+/**
+ * Compute the next zero-padded 2-digit lesson index by scanning workshops/<ws>/lessons/.
+ * Highest existing <NN> + 1; defaults to 1 if the directory is empty or missing.
+ */
+function nextLessonIndex(ws: string): number {
+  const lessonsDir = path.join(REPO_ROOT, "workshops", ws, "lessons");
+  if (!fs.existsSync(lessonsDir)) return 1;
+  const entries = fs.readdirSync(lessonsDir);
+  let max = 0;
+  for (const e of entries) {
+    const m = e.match(/^(\d+)-/);
+    if (m) max = Math.max(max, parseInt(m[1]!, 10));
+  }
+  return max + 1;
+}
+
+/**
+ * Convert a kebab-case slug to a camelCase JS identifier for use as a function name.
+ * E.g. "joins-and-aggregates" -> "joinsAndAggregates"
+ */
+function slugToFunctionName(slug: string): string {
+  return slug.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());
 }
 
 /**
@@ -118,8 +200,6 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
   }
 
   // Walk forward to find the phase entry matching phaseId.
-  // A phase entry begins with `  - id: <phase>` (two-space indent for sequence
-  // item under top-level `phases:`).
   let phaseStartIdx = -1;
   for (let i = phasesIdx + 1; i < lines.length; i++) {
     const line = lines[i]!;
@@ -137,7 +217,7 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
     );
   }
 
-  // Find the `lessons:` line in this phase block, then the last item under it.
+  // Find the `lessons:` line in this phase block.
   let lessonsIdx = -1;
   for (let i = phaseStartIdx + 1; i < lines.length; i++) {
     const line = lines[i]!;
@@ -156,7 +236,6 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
   }
 
   // Walk forward collecting lesson item lines (e.g. `      - example`).
-  // Indentation is whatever the existing items use; preserve it.
   let lastLessonIdx = lessonsIdx;
   let lessonItemIndent: string | null = null;
   for (let i = lessonsIdx + 1; i < lines.length; i++) {
@@ -167,7 +246,7 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
     if (!m) {
       // Blank line or comment inside the block — keep scanning but don't update lastLessonIdx.
       if (line.trim() === "" || line.trim().startsWith("#")) continue;
-      // A sibling key under the phase (e.g. next phase field) — stop.
+      // A sibling key under the phase — stop.
       break;
     }
     if (m[2] === lessonKey) {
@@ -178,108 +257,92 @@ function appendPhaseLesson(yamlText: string, phaseId: string, lessonKey: string)
     lastLessonIdx = i;
   }
 
-  // If the lessons: block had no items yet, fall back to a 6-space indent
-  // (matches the template's existing entry: "      - example").
+  // If the lessons: block had no items yet, fall back to a 6-space indent.
   const indent = lessonItemIndent ?? "      ";
   const newItem = `${indent}- ${lessonKey}`;
   lines.splice(lastLessonIdx + 1, 0, newItem);
   return lines.join("\n");
 }
 
-/**
- * Compute the next zero-padded 2-digit lesson index by scanning lessons/*.
- * Highest existing <NN> + 1; defaults to 2 if the directory is empty or missing.
- */
-function nextLessonIndex(): number {
-  const lessonsDir = path.join(REPO_ROOT, "lessons");
-  if (!fs.existsSync(lessonsDir)) return 2;
-  const entries = fs.readdirSync(lessonsDir);
-  let max = 1;
-  for (const e of entries) {
-    const m = e.match(/^(\d+)-/);
-    if (m) max = Math.max(max, parseInt(m[1]!, 10));
-  }
-  return max + 1;
-}
-
-/**
- * Convert a kebab-case slug to a camelCase JS identifier for use as a function name.
- * E.g. "joins-and-aggregates" -> "joinsAndAggregates"
- */
-function slugToFunctionName(slug: string): string {
-  return slug.replace(/-([a-z0-9])/g, (_, c: string) => c.toUpperCase());
-}
-
-/**
- * Rewrite the example-lesson references in the copied walker skill to the new
- * lesson slug. Targets the compose-model path layout.
- */
-function rewriteLessonReferences(text: string, slug: string, lessonDir: string, funcName: string): string {
-  let out = text;
-
-  // Frontmatter `name: lesson-example` -> `name: lesson-<slug>`.
-  out = out.replace(/^name:\s*lesson-\S+\s*$/m, `name: lesson-${slug}`);
-
-  // Skill name references `lesson-example` -> `lesson-<slug>`.
-  out = out.replace(/\blesson-example\b/g, `lesson-${slug}`);
-
-  // Lesson dir path references -> `lessons/<NN>-<slug>/`.
-  out = out.replace(/\b(workshops\/example\/lessons|lessons)\/01-example\b/g, `lessons/${lessonDir}`);
-
-  // Lesson prose path `.workshop/.../lesson_example/` -> `lesson_<slug>/`.
-  out = out.replace(/\blesson_example\b/g, `lesson_${slug}`);
-
-  // File references `src/example.test.ts` -> `src/<slug>.test.ts`.
-  out = out.replace(/\bsrc\/example\.test\.ts\b/g, `src/${slug}.test.ts`);
-
-  // File references `src/example.ts` -> `src/<slug>.ts`.
-  out = out.replace(/\bsrc\/example\.ts\b/g, `src/${slug}.ts`);
-
-  // Function name references `example()` -> `<funcName>()`.
-  out = out.replace(/\bexample\(\)/g, `${funcName}()`);
-
-  return out;
-}
-
 function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const { slug, phase } = args;
+  const { ws, slug, phase } = parseArgs(process.argv.slice(2));
 
-  const lessonKey = slug;
+  // --- Validate workshop against series.yaml ---
+  const workshops = seriesWorkshops();
+  if (!workshops.includes(ws)) {
+    throw new Error(
+      `unknown workshop "${ws}". Series workshops: ${workshops.join(", ")}`,
+    );
+  }
+
   const funcName = slugToFunctionName(slug);
-  const nn = String(nextLessonIndex()).padStart(2, "0");
+  const workshopDir = path.join(REPO_ROOT, "workshops", ws);
+  const workshopYaml = path.join(workshopDir, "workshop.yaml");
+  const lessonsDir = path.join(workshopDir, "lessons");
+
+  // --- Validate workshop.yaml exists ---
+  if (!fs.existsSync(workshopYaml)) {
+    throw new Error(`missing workshops/${ws}/workshop.yaml`);
+  }
+
+  // --- Check for duplicate slug ---
+  const existing = registeredSlugs(workshopYaml);
+  if (existing.includes(slug)) {
+    throw new Error(`workshop "${ws}" already has a lesson "${slug}"`);
+  }
+
+  // --- Also check if lesson dir exists already (belt-and-suspenders) ---
+  if (fs.existsSync(lessonsDir)) {
+    for (const entry of fs.readdirSync(lessonsDir)) {
+      if (entry.endsWith(`-${slug}`)) {
+        throw new Error(`refuse to overwrite: workshops/${ws}/lessons/${entry} already exists`);
+      }
+    }
+  }
+
+  // --- Compute NN and paths ---
+  const nn = String(nextLessonIndex(ws)).padStart(2, "0");
   const lessonDir = `${nn}-${slug}`;
-  const newDir = path.join(REPO_ROOT, "lessons", lessonDir);
+  const newDir = path.join(lessonsDir, lessonDir);
 
-  // Template sources now live in the compose-model canonical location.
-  // Plan 2 will rewrite this script fully for suite-aware usage.
-  const templateLessonYaml = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example", "lesson.yaml");
-  const skillSrc = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example", "coach.md");
-  const skillDst = path.join(REPO_ROOT, ".claude", "skills", `lesson-${slug}.md`);
-  const workshopYaml = path.join(REPO_ROOT, "workshop.yaml");
-
-  // --- Pre-flight checks ---------------------------------------------------
-  if (!fs.existsSync(templateLessonYaml)) {
-    throw new Error(`template missing: workshops/example/lessons/01-example/lesson.yaml`);
-  }
-  if (!fs.existsSync(skillSrc)) {
-    throw new Error(`template walker missing: workshops/example/lessons/01-example/coach.md`);
-  }
-  // workshop.yaml at root is removed in the unified compose model (it now lives under
-  // workshops/<ws>/workshop.yaml). Plan 2 will update this script to target the suite layout.
-  // For now, skip the phase-append step if root workshop.yaml is absent.
-  const hasRootWorkshopYaml = fs.existsSync(workshopYaml);
   if (fs.existsSync(newDir)) {
-    throw new Error(`refuse to overwrite: lessons/${lessonDir} already exists`);
-  }
-  if (fs.existsSync(skillDst)) {
-    throw new Error(`refuse to overwrite: .claude/skills/lesson-${slug}.md already exists`);
+    throw new Error(`refuse to overwrite: workshops/${ws}/lessons/${lessonDir} already exists`);
   }
 
-  // --- Create lesson.yaml --------------------------------------------------
+  // --- Find template sources ---
+  // Use the workshop's first lesson as template, falling back to workshops/example/lessons/01-example/
+  const firstSlug = existing[0];
+  let templateLessonDir: string;
+  let templateCoach: string;
+
+  if (firstSlug) {
+    // Find the first lesson dir for this slug
+    const firstLessonDir = fs.readdirSync(lessonsDir).find((e) => e.endsWith(`-${firstSlug}`));
+    if (firstLessonDir) {
+      templateLessonDir = path.join(lessonsDir, firstLessonDir);
+      templateCoach = path.join(templateLessonDir, "coach.md");
+    } else {
+      templateLessonDir = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example");
+      templateCoach = path.join(templateLessonDir, "coach.md");
+    }
+  } else {
+    templateLessonDir = path.join(REPO_ROOT, "workshops", "example", "lessons", "01-example");
+    templateCoach = path.join(templateLessonDir, "coach.md");
+  }
+
+  const templateLessonYaml = path.join(templateLessonDir, "lesson.yaml");
+
+  // --- Pre-flight checks ---
+  if (!fs.existsSync(templateLessonYaml)) {
+    throw new Error(`template missing: ${path.relative(REPO_ROOT, templateLessonYaml)}`);
+  }
+  if (!fs.existsSync(templateCoach)) {
+    throw new Error(`template coach missing: ${path.relative(REPO_ROOT, templateCoach)}`);
+  }
+
+  // --- Create lesson.yaml ---
   fs.mkdirSync(newDir, { recursive: true });
-  const templateYamlText = fs.readFileSync(templateLessonYaml, "utf8");
-  let lessonYaml = templateYamlText;
+  let lessonYaml = fs.readFileSync(templateLessonYaml, "utf8");
   lessonYaml = lessonYaml.replace(/^id:\s*.*$/m, `id: ${slug}`);
   lessonYaml = lessonYaml.replace(/^title:\s*.*$/m, `title: "TODO: ${slug} lesson title"`);
   lessonYaml = lessonYaml.replace(/^blurb:\s*.*$/m, `blurb: "TODO: one-sentence hook describing what the learner does in this lesson."`);
@@ -289,7 +352,7 @@ function main() {
   );
   fs.writeFileSync(path.join(newDir, "lesson.yaml"), lessonYaml);
 
-  // --- Create README.md ----------------------------------------------------
+  // --- Create README.md ---
   const readmeText = [
     `# TODO: ${slug} lesson title`,
     "",
@@ -308,7 +371,15 @@ function main() {
   ].join("\n");
   fs.writeFileSync(path.join(newDir, "README.md"), readmeText);
 
-  // --- Create solution/src/<slug>.ts ---------------------------------------
+  // --- Create coach.md (copied from template, frontmatter name rewritten) ---
+  const coachDst = path.join(newDir, "coach.md");
+  fs.copyFileSync(templateCoach, coachDst);
+  rewriteFile(coachDst, (text) => {
+    // Rewrite frontmatter name: <anything> -> name: <ws>-<slug>
+    return text.replace(/^name:\s*\S+\s*$/m, `name: ${ws}-${slug}`);
+  });
+
+  // --- Create solution/src/<slug>.ts ---
   const solDir = path.join(newDir, "solution", "src");
   fs.mkdirSync(solDir, { recursive: true });
   fs.writeFileSync(
@@ -316,7 +387,7 @@ function main() {
     `export function ${funcName}(): void {}\n`,
   );
 
-  // --- Create test/src/<slug>.test.ts via shell ----------------------------
+  // --- Create test/src/<slug>.test.ts via shell ---
   // (the block-edits hook denies Write/Edit on *.test.* files)
   const testSrcDir = path.join(newDir, "test", "src");
   fs.mkdirSync(testSrcDir, { recursive: true });
@@ -334,47 +405,35 @@ function main() {
     `NEWLESSONEOF`,
   ].join("\n")]);
 
-  // --- Copy + rewrite walker skill -----------------------------------------
-  fs.copyFileSync(skillSrc, skillDst);
-  rewriteFile(skillDst, (text) => rewriteLessonReferences(text, slug, lessonDir, funcName));
-
-  // --- Append phase entry --------------------------------------------------
-  // Root workshop.yaml is absent in the unified compose model; skip if not present.
-  // Plan 2 will update this script to target workshops/<ws>/workshop.yaml instead.
-  if (hasRootWorkshopYaml) {
-    const wsText = fs.readFileSync(workshopYaml, "utf8");
-    const wsUpdated = appendPhaseLesson(wsText, phase, lessonKey);
-    if (wsUpdated === wsText) {
-      console.warn(
-        `note: workshop.yaml already lists "${lessonKey}" under phase ${phase} — skipped append`,
-      );
-    } else {
-      fs.writeFileSync(workshopYaml, wsUpdated);
-    }
-  } else {
+  // --- Append to workshops/<ws>/workshop.yaml ---
+  const wsText = fs.readFileSync(workshopYaml, "utf8");
+  const wsUpdated = appendPhaseLesson(wsText, phase, slug);
+  if (wsUpdated === wsText) {
     console.warn(
-      `note: root workshop.yaml not found — skipping phase append. Update workshops/<ws>/workshop.yaml manually. (Plan 2 will fix this script.)`,
+      `note: workshops/${ws}/workshop.yaml already lists "${slug}" under phase ${phase} — skipped append`,
     );
+  } else {
+    fs.writeFileSync(workshopYaml, wsUpdated);
   }
 
-  // --- Summary -------------------------------------------------------------
+  // --- Summary ---
   const summary = [
     "",
-    `created lesson ${slug} (lessons/${lessonDir}/)`,
+    `created lesson ${ws}/${slug} (workshops/${ws}/lessons/${lessonDir}/)`,
     "",
-    `  lesson.yaml:  lessons/${lessonDir}/lesson.yaml`,
-    `  README.md:    lessons/${lessonDir}/README.md`,
-    `  solution:     lessons/${lessonDir}/solution/src/${slug}.ts`,
-    `  test:         lessons/${lessonDir}/test/src/${slug}.test.ts`,
-    `  walker:       .claude/skills/lesson-${slug}.md`,
-    `  phase:        workshop.yaml phases[id=${phase}].lessons += ${lessonKey}`,
+    `  lesson.yaml:  workshops/${ws}/lessons/${lessonDir}/lesson.yaml`,
+    `  README.md:    workshops/${ws}/lessons/${lessonDir}/README.md`,
+    `  coach.md:     workshops/${ws}/lessons/${lessonDir}/coach.md`,
+    `  solution:     workshops/${ws}/lessons/${lessonDir}/solution/src/${slug}.ts`,
+    `  test:         workshops/${ws}/lessons/${lessonDir}/test/src/${slug}.test.ts`,
+    `  phase:        workshops/${ws}/workshop.yaml phases[id=${phase}].lessons += ${slug}`,
     "",
     "next:",
-    `  grep -rn TODO: lessons/${lessonDir} .claude/skills/lesson-${slug}.md`,
+    `  grep -rn TODO: workshops/${ws}/lessons/${lessonDir}`,
     "  # fill in title/blurb, lesson prose (README.md + lesson.yaml verify description)",
-    `  # implement lessons/${lessonDir}/solution/src/${slug}.ts`,
-    `  # update lessons/${lessonDir}/test/src/${slug}.test.ts with real assertions`,
-    "  # rewrite the walker skill (.claude/skills/lesson-" + slug + ".md)",
+    `  # implement workshops/${ws}/lessons/${lessonDir}/solution/src/${slug}.ts`,
+    `  # update workshops/${ws}/lessons/${lessonDir}/test/src/${slug}.test.ts with real assertions`,
+    `  # rewrite the coach skill (workshops/${ws}/lessons/${lessonDir}/coach.md)`,
     "  pnpm exec tsx scripts/compose.ts --dry-run  # verify compose sees the lesson",
     "",
   ].join("\n");

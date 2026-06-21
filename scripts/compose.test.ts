@@ -15,6 +15,8 @@ const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8
 const showTree = (ref: string) =>
   execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8" })
     .split("\n").filter(Boolean).sort();
+const showFile = (ref: string, filePath: string) =>
+  execFileSync("git", ["show", `${ref}:${filePath}`], { cwd: repo, encoding: "utf8" });
 function writeLesson(ws: string, nn: string, slug: string, body: string) {
   const d = join(repo, "workshops", ws, "lessons", `${nn}-${slug}`);
   mkdirSync(join(d, "solution", "src"), { recursive: true });
@@ -47,6 +49,19 @@ beforeAll(() => {
     writeLesson(ws, "01", `${ws}a`, `export const ${ws}a = 1\n`);
     writeLesson(ws, "02", `${ws}b`, `export const ${ws}b = 1\n`);
   }
+  // base settings.json
+  writeFileSync(join(repo, "base", ".claude", "settings.json"),
+    JSON.stringify({ permissions: { allow: ["Read"] }, model: "sonnet" }, null, 2) + "\n");
+  // w1 overlay
+  mkdirSync(join(repo, "workshops", "w1"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "settings.overlay.json"),
+    JSON.stringify({ model: "opus" }, null, 2) + "\n");
+  // per-workshop fixture for w1
+  mkdirSync(join(repo, "workshops", "w1", "fixtures", "diffs"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "fixtures", "diffs", "sample.diff"), "DIFF\n");
+  // per-lesson fixture for w1's first lesson (01-w1a)
+  mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures", "case.json"), "{}\n");
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
@@ -93,6 +108,14 @@ describe("unified compose generator", () => {
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
   });
 
+  it("serves per-workshop + per-lesson fixtures uniformly", () => {
+    const t = showTree("s/w1/w1a");
+    expect(t).toContain(".workshop/w1/fixtures/diffs/sample.diff");           // per-workshop
+    expect(t).toContain(".workshop/w1/lesson_w1a/fixtures/case.json");        // per-lesson
+    // uniform: also present at a later tag
+    expect(showTree("s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
+  });
+
   it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {
     // w1/v1 must not carry w2's first lesson's test
     expect(showTree("s/w1/v1")).not.toContain("src/w2a.test.ts");
@@ -100,6 +123,14 @@ describe("unified compose generator", () => {
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");
     // w2/v1 must carry w2's own last test
     expect(showTree("s/w2/v1")).toContain("src/w2b.test.ts");
+  });
+
+  it("deep-merges a per-workshop settings overlay onto the base settings", () => {
+    const w1 = JSON.parse(showFile("s/w1/w1a", ".claude/settings.json"));
+    expect(w1.model).toBe("opus");                      // overlay wins
+    expect(w1.permissions.allow).toEqual(["Read"]);     // base preserved
+    const w2 = JSON.parse(showFile("s/w2/w2a", ".claude/settings.json"));
+    expect(w2.model).toBe("sonnet");                    // no w2 overlay → base verbatim
   });
 });
 
@@ -112,6 +143,63 @@ describe("validate-compose", () => {
       cwd: repo, encoding: "utf8",
     } as ExecFileSyncOptions);
     expect(out).toMatch(/validate-compose:\s*OK/i);
+  }, 30000);
+
+  it("accepts optional fixtures + a valid settings.overlay.json", () => {
+    // The main fixture repo (set up in beforeAll) already has:
+    //   workshops/w1/fixtures/diffs/sample.diff  (per-workshop fixture)
+    //   workshops/w1/lessons/01-w1a/fixtures/case.json  (per-lesson fixture)
+    //   workshops/w1/settings.overlay.json  (valid JSON overlay)
+    // validate-compose was already copied to the repo in the prior test;
+    // re-copy to ensure it's the latest version under test.
+    execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
+    const out = execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+      cwd: repo, encoding: "utf8",
+    } as ExecFileSyncOptions);
+    expect(out).toMatch(/validate-compose:\s*OK/i);
+  }, 30000);
+
+  it("rejects a malformed settings.overlay.json", () => {
+    // Build a minimal well-formed repo with a bad overlay
+    const badRepo = mkdtempSync(join(tmpdir(), "compose-overlay-bad-"));
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    badGit(["init", "-q"]);
+    badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
+
+    // base/
+    mkdirSync(join(badRepo, "base", "src"), { recursive: true });
+    writeFileSync(join(badRepo, "base", "src", ".gitkeep"), "");
+
+    // series.yaml
+    writeFileSync(join(badRepo, "series.yaml"),
+      `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n`);
+
+    // well-formed workshop + lesson
+    mkdirSync(join(badRepo, "workshops", "w1", "lessons", "01-w1a"), { recursive: true });
+    writeFileSync(join(badRepo, "workshops", "w1", "workshop.yaml"),
+      `id: w1\ntitle: w1\nphases:\n  - id: A\n    lessons:\n      - w1a\n`);
+    writeFileSync(join(badRepo, "workshops", "w1", "landing.md"), `# w1\n`);
+    const d = join(badRepo, "workshops", "w1", "lessons", "01-w1a");
+    writeFileSync(join(d, "lesson.yaml"), `id: w1a\ntitle: "w1a"\nblurb: "b"\nverifyCommand: "true"\n`);
+    writeFileSync(join(d, "README.md"), `# w1a\n`);
+    writeFileSync(join(d, "coach.md"), `---\nname: w1-w1a\ndescription: coach\n---\nbody\n`);
+    // MALFORMED overlay — invalid JSON
+    writeFileSync(join(badRepo, "workshops", "w1", "settings.overlay.json"), "{ not json");
+
+    mkdirSync(join(badRepo, "scripts"), { recursive: true });
+    execFileSync("cp", [VALIDATE_SCRIPT, join(badRepo, "scripts", "validate-compose.ts")]);
+
+    let threw = false;
+    try {
+      execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+        cwd: badRepo, encoding: "utf8",
+      } as ExecFileSyncOptions);
+    } catch {
+      threw = true;
+    } finally {
+      rmSync(badRepo, { recursive: true, force: true });
+    }
+    expect(threw).toBe(true);
   }, 30000);
 
   it("fails when a lesson is missing coach.md", () => {

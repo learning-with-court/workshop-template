@@ -151,6 +151,25 @@ function walk(absDir: string): string[] {
 
 const hashFile = (abs: string): string => git(["hash-object", "-w", abs]);
 
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && !Array.isArray(v) && v !== null;
+
+function deepMerge(a: Record<string, unknown>, b: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...a };
+  for (const k of Object.keys(b)) {
+    out[k] = isPlainObject(a[k]) && isPlainObject(b[k])
+      ? deepMerge(a[k] as Record<string, unknown>, b[k] as Record<string, unknown>)
+      : b[k];
+  }
+  return out;
+}
+
+function hashContent(s: string): string {
+  return execFileSync("git", ["hash-object", "-w", "--stdin"], {
+    input: s, cwd: REPO, encoding: "utf8",
+  }).trim();
+}
+
 // --- flat ordered lesson list across the whole series ---
 type L = { ws: string; slug: string };
 const SHORT = seriesShort();
@@ -167,7 +186,8 @@ if (flat.length === 0) throw new Error("No lessons found across all workshops in
 
 // --- build a tree for position upTo (prior solutions only) ---
 // solUpTo: solutions k < solUpTo; testUpTo: sticky tests k <= testUpTo (defaults to solUpTo)
-function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo): { tree: string; entries: Map<string, Entry> } {
+// overlayWs: if provided and workshops/<overlayWs>/settings.overlay.json exists, deep-merge onto base settings
+function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo, overlayWs?: string): { tree: string; entries: Map<string, Entry> } {
   const upTo = solUpTo;
   const tmpIndex = join(REPO, ".git", `compose-index-${idxLabel}`);
   const env: GitEnv = { GIT_INDEX_FILE: tmpIndex };
@@ -181,6 +201,21 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
   const baseDir = join(REPO, "base");
   for (const abs of walk(baseDir)) add(posix.relative(baseDir, abs), abs);
 
+  // 1b) per-workshop settings overlay: deep-merge onto base/.claude/settings.json if overlay exists
+  if (overlayWs) {
+    const overlayPath = join(REPO, "workshops", overlayWs, "settings.overlay.json");
+    if (existsSync(overlayPath)) {
+      const baseSettingsPath = join(REPO, "base", ".claude", "settings.json");
+      const baseSettings = existsSync(baseSettingsPath)
+        ? JSON.parse(readFileSync(baseSettingsPath, "utf8")) as Record<string, unknown>
+        : {};
+      const overlay = JSON.parse(readFileSync(overlayPath, "utf8")) as Record<string, unknown>;
+      const merged = deepMerge(baseSettings, overlay);
+      const mergedStr = JSON.stringify(merged, null, 2) + "\n";
+      entries.set(".claude/settings.json", { mode: "100644", blob: hashContent(mergedStr) });
+    }
+  }
+
   // 2) UNIFORM prose + coach for EVERY lesson in the series
   //    workshops/<ws>/lessons/<NN>-<slug>/lesson.yaml + README.md → .workshop/<ws>/lesson_<slug>/
   //    workshops/<ws>/lessons/<NN>-<slug>/coach.md → .claude/skills/<ws>-<slug>.md
@@ -192,6 +227,17 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
     if (existsSync(readme)) add(`.workshop/${ws}/lesson_${slug}/README.md`, readme);
     const coach = join(d, "coach.md");
     if (existsSync(coach)) add(`.claude/skills/${ws}-${slug}.md`, coach);
+    // per-lesson fixtures: workshops/<ws>/lessons/<NN>-<slug>/fixtures/** → .workshop/<ws>/lesson_<slug>/fixtures/**
+    const lessonFixtures = join(d, "fixtures");
+    for (const abs of walk(lessonFixtures))
+      add(`.workshop/${ws}/lesson_${slug}/fixtures/${posix.relative(lessonFixtures, abs)}`, abs);
+  }
+
+  // 2b) UNIFORM per-workshop fixtures: workshops/<ws>/fixtures/** → .workshop/<ws>/fixtures/**
+  for (const { ws } of workshops) {
+    const fixturesDir = join(REPO, "workshops", ws, "fixtures");
+    for (const abs of walk(fixturesDir))
+      add(`.workshop/${ws}/fixtures/${posix.relative(fixturesDir, abs)}`, abs);
   }
 
   // 3) series.yaml → .workshop/series.yaml; per-ws workshop.yaml + landing.md
@@ -229,7 +275,7 @@ const built: Built[] = [];
 
 // per-lesson tags: tree = base + prose(all) + Σ solution(0..idx-1) + sticky tests(0..idx)
 flat.forEach((l, idx) => {
-  const { tree, entries } = buildTree(idx, `L${idx}`);
+  const { tree, entries } = buildTree(idx, `L${idx}`, idx, l.ws);
   built.push({ tag: `${SHORT}/${l.ws}/${l.slug}`, tree, entries });
 });
 
@@ -243,7 +289,7 @@ flat.forEach((l, idx) => {
 // solUpTo = e+1 (solutions for all lessons through e), testUpTo = e (tests only through that ws's last lesson)
 for (const { ws } of workshops) {
   const e = wsLastIdx[ws]!;
-  const { tree, entries } = buildTree(e + 1, `v1-${ws}`, e);
+  const { tree, entries } = buildTree(e + 1, `v1-${ws}`, e, ws);
   built.push({ tag: `${SHORT}/${ws}/v1`, tree, entries });
 }
 

@@ -71,6 +71,20 @@ if (!seriesText) {
       continue;
     }
 
+    // ---- 2b. optional settings.overlay.json: must parse as JSON if present ----
+    const overlayPath = join(REPO, wsDir, "settings.overlay.json");
+    if (existsSync(overlayPath)) {
+      const overlayText = read(`${wsDir}/settings.overlay.json`);
+      if (overlayText !== null) {
+        try {
+          JSON.parse(overlayText);
+        } catch {
+          errors.push(`${wsDir}/settings.overlay.json: invalid JSON — must be a valid JSON object`);
+        }
+      }
+    }
+    // fixtures/ is optional and free-form — no assertions needed
+
     // ---- 3. per-lesson checks ----
     const lessonsRoot = join(REPO, wsDir, "lessons");
     const lessonDirs = existsSync(lessonsRoot) ? readdirSync(lessonsRoot) : [];

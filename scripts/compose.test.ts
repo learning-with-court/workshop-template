@@ -15,6 +15,8 @@ const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8
 const showTree = (ref: string) =>
   execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8" })
     .split("\n").filter(Boolean).sort();
+const showFile = (ref: string, filePath: string) =>
+  execFileSync("git", ["show", `${ref}:${filePath}`], { cwd: repo, encoding: "utf8" });
 function writeLesson(ws: string, nn: string, slug: string, body: string) {
   const d = join(repo, "workshops", ws, "lessons", `${nn}-${slug}`);
   mkdirSync(join(d, "solution", "src"), { recursive: true });
@@ -47,6 +49,13 @@ beforeAll(() => {
     writeLesson(ws, "01", `${ws}a`, `export const ${ws}a = 1\n`);
     writeLesson(ws, "02", `${ws}b`, `export const ${ws}b = 1\n`);
   }
+  // base settings.json
+  writeFileSync(join(repo, "base", ".claude", "settings.json"),
+    JSON.stringify({ permissions: { allow: ["Read"] }, model: "sonnet" }, null, 2) + "\n");
+  // w1 overlay
+  mkdirSync(join(repo, "workshops", "w1"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "settings.overlay.json"),
+    JSON.stringify({ model: "opus" }, null, 2) + "\n");
   // per-workshop fixture for w1
   mkdirSync(join(repo, "workshops", "w1", "fixtures", "diffs"), { recursive: true });
   writeFileSync(join(repo, "workshops", "w1", "fixtures", "diffs", "sample.diff"), "DIFF\n");
@@ -114,6 +123,14 @@ describe("unified compose generator", () => {
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");
     // w2/v1 must carry w2's own last test
     expect(showTree("s/w2/v1")).toContain("src/w2b.test.ts");
+  });
+
+  it("deep-merges a per-workshop settings overlay onto the base settings", () => {
+    const w1 = JSON.parse(showFile("s/w1/w1a", ".claude/settings.json"));
+    expect(w1.model).toBe("opus");                      // overlay wins
+    expect(w1.permissions.allow).toEqual(["Read"]);     // base preserved
+    const w2 = JSON.parse(showFile("s/w2/w2a", ".claude/settings.json"));
+    expect(w2.model).toBe("sonnet");                    // no w2 overlay → base verbatim
   });
 });
 

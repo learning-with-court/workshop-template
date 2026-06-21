@@ -181,19 +181,13 @@ This is captured in `.claude/skills/_walker-base.md` (base file). In short:
   (no API key) are expected. **Never say "you failed."** Advancement is never
   gated on green.
 
-## Suite (chain) vs independent repos
+## Test delivery (compose model)
 
-- **Independent repos** (one repo per workshop): the test file lives at
-  `src/<slug>.test.ts` and that is the whole story.
-- **Chain suites** (the CCA monorepo): a lesson's served tree is a *position* in
-  a git chain, so the test must also be delivered as a chain overlay. The same
-  bytes live twice — `src/<slug>.test.ts` (validated in the working tree) and
-  `scripts/chain-edits/cwalk-<slug>-test.ts` (the overlay content), with an
-  edit-set entry whose `from:` is the lesson's **chain predecessor** (so the test
-  is present at the lesson's own served/starting tree). Overlays only land under a
-  *varying* pathspec (`src/`) — see `scripts/chain-edits/README.md` and
-  `scripts/rebuild-chain.ts`. Prefer the `chain-edit add-test` helper, which
-  derives the `from:` and creates both copies, over hand-editing the edit set.
+Every workshop — single or series — follows the compose model. A lesson's test
+source lives once in `lessons/<NN>-<slug>/test/src/<slug>.test.ts`;
+`scripts/compose.ts` delivers it into each per-lesson cumulative tag (served as
+`src/<slug>.test.ts`). There is no second copy and no overlay step — the chain /
+`chain-edits` overlay mechanism is retired (CCA migrated off it onto compose).
 
 ## Checklist for one lesson
 
@@ -205,4 +199,3 @@ This is captured in `.claude/skills/_walker-base.md` (base file). In short:
 - [ ] README "## Verify" says **"say run verify"** (prose) — it does NOT hardcode
       a `pnpm --filter … verify` command (that breaks once the package is gone).
 - [ ] Coach skill references the current signature/command (no stale spec).
-- [ ] (Suite only) overlay copy + edit-set entry via `chain-edit add-test`.

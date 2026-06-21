@@ -18,9 +18,11 @@ recipes). In short: a workshop is a normal branch of `base/` +
 namespace + `.workshop/<composeShort>/` served-path segment). `new-lesson.ts`
 scaffolds this shape; `validate-compose.ts` checks it.
 
-> The git **chain** (`rebuild-chain.ts` + `scripts/chain-edits/` overlays +
-> `from:`) is **legacy** — it remains live for the CCA monorepo only, until that
-> suite is migrated to compose. Do not use the chain for anything new.
+> The compose model is THE standard for **every** workshop. The git **chain**
+> (`rebuild-chain.ts` + `scripts/chain-edits/` overlays + `from:`) and the
+> suite-overlay / "one-off vs suite" distinction are **retired** — CCA has been
+> migrated off the chain onto compose, so there are no chain repos left. Do not
+> use the chain for anything.
 
 Sections below describe shared invariants (slug identity, runtime scaffolding,
 toolchain, runnable artifacts). Where an older example shows the pre-compose
@@ -139,11 +141,9 @@ connector ("these lwc tools are for Cowork mode") — every workshop must ship:
    `.workshop/<workshop>/.claude/skills/`; the hook defers the lesson opening
    to `_walker-base.md` + the per-lesson walker rather than prescribing one.
 
-**Chain-suite repos (CCA):** `.mcp.json` is a per-position varying artifact, so
-the server is seeded across the chain via a `from:"baseline"` chain-edit overlay
-(see `scripts/chain-edits/README.md`), and any lesson that teaches authoring
-`.mcp.json` must reframe to "add to the existing file." For independent-build
-workshops it is a flat committed `.mcp.json`.
+Every workshop ships a flat committed `.mcp.json` at the repo root. (Any lesson
+that *teaches* authoring `.mcp.json` reframes to "add to the existing file,"
+since the progress server is already present.)
 
 ## We teach by example — model real best practice
 
@@ -220,14 +220,10 @@ in the file and the run-line. Teach the process; don't paper over it.)
 
 New runtimes follow the same two rules; add a row when a workshop introduces one.
 
-**Applying it in a chain-suite repo (CCA):** the runnable source is varying.
-Files that are **stable once built** (e.g. `review.ts`, `batch.ts`) take a single
-sticky chain-edit overlay. Files that **evolve across lessons** (e.g.
-`agent/orchestrator.ts`) need the change at the position they first appear *and*
-an overlay at each later position they change — the overlay tool is whole-file +
-sticky, not a line-patch, so freezing one version clobbers the evolution. Apply
-these during that workshop's own end-to-end walk, where the per-position content
-is verified, not as a blind bulk re-cut. **Independent repos:** edit in place.
+In the compose model the runnable source lives in each lesson's `solution/`
+(plus the cumulative `base/`); compose generates the per-lesson tags. Edit the
+files in place and let `scripts/compose.ts` regenerate the tags — there is no
+overlay step.
 
 ## Authoring scripts
 

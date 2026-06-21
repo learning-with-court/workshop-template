@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { execFileSync, ExecFileSyncOptions } from "node:child_process";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import * as path from "node:path";
@@ -95,4 +95,57 @@ describe("unified compose generator", () => {
     expect(showTree("s/series/v0")).not.toContain("src/w1a.ts");
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
   });
+});
+
+const VALIDATE_SCRIPT = join(__dirname, "validate-compose.ts");
+
+describe("validate-compose", () => {
+  it("passes on a well-formed canonical repo", () => {
+    execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
+    const out = execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+      cwd: repo, encoding: "utf8",
+    } as ExecFileSyncOptions);
+    expect(out).toMatch(/validate-compose:\s*OK/i);
+  }, 30000);
+
+  it("fails when a lesson is missing coach.md", () => {
+    // Build a minimal bad repo
+    const badRepo = mkdtempSync(join(tmpdir(), "compose-bad-"));
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    badGit(["init", "-q"]);
+    badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
+
+    // base/
+    mkdirSync(join(badRepo, "base", "src"), { recursive: true });
+    writeFileSync(join(badRepo, "base", "src", ".gitkeep"), "");
+
+    // series.yaml
+    writeFileSync(join(badRepo, "series.yaml"),
+      `id: s\nshort: s\ntitle: S\nworkshops:\n  - id: w1\n    order: 1\n`);
+
+    // workshop dir + lesson — MISSING coach.md intentionally
+    mkdirSync(join(badRepo, "workshops", "w1", "lessons", "01-w1a"), { recursive: true });
+    writeFileSync(join(badRepo, "workshops", "w1", "workshop.yaml"),
+      `id: w1\ntitle: w1\nphases:\n  - id: A\n    lessons:\n      - w1a\n`);
+    writeFileSync(join(badRepo, "workshops", "w1", "landing.md"), `# w1\n`);
+    const d = join(badRepo, "workshops", "w1", "lessons", "01-w1a");
+    writeFileSync(join(d, "lesson.yaml"), `id: w1a\ntitle: "w1a"\nblurb: "b"\nverifyCommand: "true"\n`);
+    writeFileSync(join(d, "README.md"), `# w1a\n`);
+    // no coach.md here
+
+    mkdirSync(join(badRepo, "scripts"), { recursive: true });
+    execFileSync("cp", [VALIDATE_SCRIPT, join(badRepo, "scripts", "validate-compose.ts")]);
+
+    let threw = false;
+    try {
+      execFileSync("npx", ["-y", "tsx", "scripts/validate-compose.ts"], {
+        cwd: badRepo, encoding: "utf8",
+      } as ExecFileSyncOptions);
+    } catch {
+      threw = true;
+    } finally {
+      rmSync(badRepo, { recursive: true, force: true });
+    }
+    expect(threw).toBe(true);
+  }, 30000);
 });

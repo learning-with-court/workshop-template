@@ -1,4 +1,4 @@
-// scripts/compose.ts — unified suite-capable compose generator (canonical layout).
+// scripts/compose.ts — unified series-capable compose generator (canonical layout).
 //
 // Authors edit a NORMAL branch; this generates per-lesson cumulative tags for a SERIES
 // of workshops WITHOUT ever rewriting/force-pushing the source branch.

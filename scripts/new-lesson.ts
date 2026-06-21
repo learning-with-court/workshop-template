@@ -13,7 +13,7 @@
 // The lesson number (<NN>) is assigned automatically (highest existing
 // workshops/<ws>/lessons/<NN>-* + 1, zero-padded to 2 digits).
 //
-// What it does (compose-suite co-located layout):
+// What it does (compose-series co-located layout):
 //   - Creates workshops/<ws>/lessons/<NN>-<slug>/lesson.yaml
 //     (templated from the workshop's first lesson; id/title/blurb/verifyCommand rewritten)
 //   - Creates workshops/<ws>/lessons/<NN>-<slug>/README.md (H1 + minimal body)

@@ -1,5 +1,5 @@
 // scripts/validate-compose.ts — validate a compose-model workshop's SOURCE layout
-//                              (canonical suite layout, task 3).
+//                              (canonical series layout, task 3).
 //
 // Checks the authoring layout is well-formed, then delegates cumulative-tree
 // correctness to `compose --dry-run` (which self-verifies every position).

@@ -1,6 +1,6 @@
 // scripts/add-workshop.ts
 //
-// Grow a compose-suite by adding a new workshop.
+// Grow a compose-series by adding a new workshop.
 //
 // Usage:
 //   pnpm exec tsx scripts/add-workshop.ts <ws> [--first-lesson <slug>]

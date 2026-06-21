@@ -47,6 +47,12 @@ beforeAll(() => {
     writeLesson(ws, "01", `${ws}a`, `export const ${ws}a = 1\n`);
     writeLesson(ws, "02", `${ws}b`, `export const ${ws}b = 1\n`);
   }
+  // per-workshop fixture for w1
+  mkdirSync(join(repo, "workshops", "w1", "fixtures", "diffs"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "fixtures", "diffs", "sample.diff"), "DIFF\n");
+  // per-lesson fixture for w1's first lesson (01-w1a)
+  mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "fixtures", "case.json"), "{}\n");
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
@@ -91,6 +97,14 @@ describe("unified compose generator", () => {
   it("series/v0 == base only; ws/v1 == workshop finished", () => {
     expect(showTree("s/series/v0")).not.toContain("src/w1a.ts");
     expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
+  });
+
+  it("serves per-workshop + per-lesson fixtures uniformly", () => {
+    const t = showTree("s/w1/w1a");
+    expect(t).toContain(".workshop/w1/fixtures/diffs/sample.diff");           // per-workshop
+    expect(t).toContain(".workshop/w1/lesson_w1a/fixtures/case.json");        // per-lesson
+    // uniform: also present at a later tag
+    expect(showTree("s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
   });
 
   it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {

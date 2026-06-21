@@ -192,6 +192,17 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
     if (existsSync(readme)) add(`.workshop/${ws}/lesson_${slug}/README.md`, readme);
     const coach = join(d, "coach.md");
     if (existsSync(coach)) add(`.claude/skills/${ws}-${slug}.md`, coach);
+    // per-lesson fixtures: workshops/<ws>/lessons/<NN>-<slug>/fixtures/** → .workshop/<ws>/lesson_<slug>/fixtures/**
+    const lessonFixtures = join(d, "fixtures");
+    for (const abs of walk(lessonFixtures))
+      add(`.workshop/${ws}/lesson_${slug}/fixtures/${posix.relative(lessonFixtures, abs)}`, abs);
+  }
+
+  // 2b) UNIFORM per-workshop fixtures: workshops/<ws>/fixtures/** → .workshop/<ws>/fixtures/**
+  for (const { ws } of workshops) {
+    const fixturesDir = join(REPO, "workshops", ws, "fixtures");
+    for (const abs of walk(fixturesDir))
+      add(`.workshop/${ws}/fixtures/${posix.relative(fixturesDir, abs)}`, abs);
   }
 
   // 3) series.yaml → .workshop/series.yaml; per-ws workshop.yaml + landing.md

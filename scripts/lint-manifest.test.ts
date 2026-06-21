@@ -10,8 +10,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "..");
 
 describe("lintManifest", () => {
-  it("passes on the real workshop content", async () => {
-    const result = await lintManifest({ repoRoot: REPO_ROOT });
+  it("passes on the canonical example workshop (unified compose layout)", async () => {
+    const result = await lintManifest({ repoRoot: REPO_ROOT, workshopRoot: "workshops/example" });
     expect(result.errors).toEqual([]);
   });
 });

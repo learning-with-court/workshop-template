@@ -1,5 +1,5 @@
 ---
-name: lesson-example
+name: example-example
 description: TEMPLATE — Walks the user through the example lesson of this workshop. Replace this description (and the body) with the real walker. Use third-person + 4–8 trigger phrases when authoring — e.g. "start the example lesson", "begin example", "do the example lesson", "walk me through the example", "first lesson", plus a topic-specific trigger or two. Match the phrases to your lesson's slug, not a number.
 ---
 

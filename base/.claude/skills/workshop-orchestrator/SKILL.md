@@ -27,8 +27,20 @@ Each lesson has its own skill file in `.claude/skills/`:
 5. ANNOUNCE — say the exact verifyCommand in plain text before running it
 6. RUN     — Bash tool runs the verifyCommand
 7. QUOTE   — quote FULL stdout verbatim in a fenced code block
-8. ADVANCE — on pass: offer next lesson; on fail: narrate the mismatch, guide the fix
+8. ADVANCE — on pass: run the 3-step advancement protocol below; on fail: narrate the mismatch, guide the fix
 ```
+
+## Advancing to the next lesson (REQUIRED — do all three, in order)
+
+When the learner has passed the current lesson's verify and signals they're ready to move on ("next", "let's start lesson N+1", "continue", "ready"):
+
+1. **Record completion (server-side).** Call `submit_verify_output({ lesson_id: "<current-slug>", output: "<the verify stdout you captured>" })`. On a pass it returns `{ complete: true, nextLesson, ... }`. On `VERIFY_NO_MATCH`, surface the `reason`, have the learner fix and re-run verify — do NOT advance.
+
+2. **Bring the next lesson's files into the clone (local).** Call `workshop_advance({ to: "<nextLesson>", reason: "Starting lesson <N+1>" })`. This carries the learner's `src/` forward AND pulls in the next lesson's scaffold (its test files). This is mandatory: WITHOUT it the next lesson's files do not exist in the learner's working tree and they cannot proceed. Never skip it, and never `git checkout` a tag yourself instead.
+
+3. **Start the next lesson.** Call `start_lesson({ lesson_id: "<nextLesson>" })`, then load that lesson's coach skill (`.claude/skills/<workshopShort>-<nextLesson>.md`) and drive it.
+
+The MCP server tracks *logical* progress; `workshop_advance` moves the learner's *files*. Both are required on every transition.
 
 ## Source paths (for the learner's editor)
 

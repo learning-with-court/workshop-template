@@ -19,7 +19,7 @@
     "setup-shared": "tsx scripts/setup-shared.ts",
     "sync-workshop-yaml": "tsx scripts/sync-workshop-yaml.ts",
     "test:scripts": "vitest run scripts/",
-    "postinstall": "lefthook install"
+    "postinstall": "git rev-parse --git-dir > /dev/null 2>&1 && lefthook install || true"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

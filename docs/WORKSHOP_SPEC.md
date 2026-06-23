@@ -70,7 +70,7 @@ Copy this template into your walker and only adjust file references:
 ## Visible walkthrough contract
 
 - **Walker drives the verify and test commands via the Bash tool, then quotes the FULL stdout verbatim back to the user.** After every Bash run, your response MUST include the complete stdout in a fenced code block — every line, no truncation, no paraphrase, no "(...)" elision.
-- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form.
+- **Before every Bash run, announce the exact command in plain text on its own line.** A sentence like ``I'm going to run: `<the lesson's verifyCommand>` `` (with the command in backticks) BEFORE the Bash tool invocation, so the user sees what's about to execute in readable form. Use the lesson's actual `verifyCommand` from its `lesson.yaml` (a flat single-package command, e.g. `pnpm exec vitest run src/<slug>.test.ts || true`) — there are no per-lesson packages, so never a `pnpm --filter` form.
 - **Pause before each Bash run.** After explaining the code (or after a previous command's output), STOP and wait for the user to say `run verify`, `let's run the tests`, or similar. Do NOT run the next command automatically. The user needs a beat to read, ask follow-ups, or branch to `break down that code` before anything happens.
 - **Walker MUST NOT edit lesson source files** under `workshop/lesson_<slug>/src/` or `tests/`. Edit experiments are the user's hands-on moment — show them the diff, ask them to apply it in their editor, then offer to rerun verify when they confirm saved. (See §13 for the optional block-edits hook that enforces this mechanically.)
 - **Walker MUST NOT use the Bash tool to generate or echo any secret.** The verbatim-quote rule has a hard exception here: a Bash invocation that would produce or echo a secret (e.g. `crypto.randomBytes`, `openssl rand`, `cat .env`) must not be run in the first place. Generation always happens in the user's own terminal — show the recipe, tell the user to run it in their terminal, ask them to say when they've done it, and pause. See §8.
@@ -108,9 +108,11 @@ Numbered list. Each step that requires running a command follows the **Bash + ve
 ```markdown
 4. **When the user says `run verify`, run it via the Bash tool.** Before invoking Bash, write a short line announcing the exact command, e.g.:
 
-   > I'm going to run: `pnpm --filter @workshop/lesson-<slug> verify`
+   > I'm going to run: `pnpm exec vitest run src/<slug>.test.ts || true`
 
-   Then call the Bash tool with that exact command.
+   (Use this lesson's actual `verifyCommand` from `lesson.yaml` — a flat
+   single-package command; there are no per-lesson packages, so never a
+   `pnpm --filter` form.) Then call the Bash tool with that exact command.
 
    Then in your response, in this exact order:
    1. **Quote the full stdout verbatim** in a fenced code block — every line, no truncation, no paraphrase.

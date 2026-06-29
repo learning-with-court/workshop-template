@@ -4,6 +4,36 @@ The shared base is the set of files in `base.manifest`, synced into Code
 workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 `base.lock`.
 
+## base-v12 — 2026-06-28
+Shared chassis affordances from the CCA Claude Code walkthrough notes
+(`docs/2026-06-28-cca-cc-walkthrough-notes.md` #11, #8).
+
+- **Lesson-aware fixture runner (new base file `base/scripts/try.ts`):** `pnpm try`
+  gives every lesson with a live single-call demo ONE uniform command. It resolves
+  the learner's active lesson from local on-disk lwc state (the active-workshop
+  marker + the pinned-tag marker — no network, no MCP), reads that lesson's optional
+  `try:` declaration from its served `lesson.yaml`, dynamically imports the
+  deliverable export from `src/`, runs it on the declared fixture, and prints the
+  result. In-project so `type: module` applies — no ESM/CJS breakage of a hand-rolled
+  runner. Registered as a verbatim base member; `base/package.json` gains a `try`
+  script + `tsx`/`js-yaml` so `pnpm try` resolves in the served tree.
+- **`try:` field in the lesson.yaml schema (`scripts/lint-manifest.ts`):** optional
+  per-lesson block — `{ module, export, fixture, fixtureAs? }` — declaring the
+  callable + the fixture to feed it (`targetFiles` names the file, not the callable).
+  Documented in the example lesson (`workshops/example/lessons/01-example/lesson.yaml`).
+- **On-demand concept primers (new base dir `base/.claude/skills/primers/`):** a
+  shared library of short, plain-language ground-up explanations the guide `Read`s
+  ONLY on cue or detected struggle, never preloaded — depth on hand, not in the
+  learner's face. First primer: `primers/tool_use.md` (tool_use / structured output).
+  `_walker-base.md` gains a "Concept primers (on demand)" convention describing the
+  pointer pattern. Both new files registered as verbatim base members.
+- **`scripts/tsconfig.json` widened (synced base file):** `rootDir` now spans the
+  repo so `scripts/try.test.ts` can import `../base/scripts/try.ts`, and the served
+  `base/scripts/` runner is typechecked here (it has no tsconfig of its own).
+- NOT here: `/clear` at workshop boundaries is deferred to `workshop-cca` — the
+  `workshop-orchestrator` skill is a fork seed (in `base/` but NOT in `base.manifest`,
+  so not synced); CCA owns its filled-in orchestrator.
+
 ## base-v11 — 2026-06-28
 Lean up the always-loaded coaching chassis (`_walker-base.md`) — same guidance,
 smaller always-loaded floor.

@@ -14,6 +14,16 @@ verify:
     - "Tests "
   mustNotInclude:
     - "Cannot find module"
+# Optional `try:` block — declares a live single-call demo for `pnpm try`.
+# `verify` runs the lesson's tests; `try` runs the deliverable ONCE on a fixture so
+# the learner can see real output. `scripts/try.ts` resolves the active lesson from
+# local state, imports `export` from `src/<module>.ts`, feeds it the fixture (as the
+# first argument), and prints the result. Only declare it for lessons with a live demo.
+try:
+  module: example          # → src/example.ts
+  export: example          # the named export to call
+  fixture: fixtures/sample.json   # relative to .workshop/<ws>/lesson_example/
+  fixtureAs: json          # "json" (parsed object, default) | "text" (raw string)
 onPass:
   feedback: |
     You've built and verified a typed exported function. The compose model

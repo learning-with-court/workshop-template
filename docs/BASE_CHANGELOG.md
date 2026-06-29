@@ -4,6 +4,28 @@ The shared base is the set of files in `base.manifest`, synced into Code
 workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 `base.lock`.
 
+## base-v11 — 2026-06-28
+Lean up the always-loaded coaching chassis (`_walker-base.md`) — same guidance,
+smaller always-loaded floor.
+
+- **Anti-false-credit guardrail (new section):** "Only credit the skill the
+  learner actually performed." Universal Model-Y pedagogy — credit the learner's
+  *direction*, never narrate a hands-on skill (reading the draft, naming the
+  gaps) as done when they delegated or punted. Acknowledge the delegation
+  honestly and still deliver value. Stays in the CORE always-loaded set.
+- **Two sections lazy-loaded into new base files:** "Detection-based
+  fast-forward" → `base/.claude/skills/_walker-detection.md`; "HARD vs SOFT
+  gates" → `base/.claude/skills/_walker-gates.md`. `_walker-base.md` keeps a
+  1–2 line pointer (exact path + when to Read) for each; both new files are
+  registered as verbatim base members and sync to all Code workshops.
+- **Offered-prompt formatting:** the lesson-opening offered prompt now renders
+  as a fenced code block (not an indented blockquote), consistent with rule #1's
+  verbatim-output convention.
+- CORE stays always-loaded (learner-driven rule, the seven-rules contract,
+  read-state-silently, verify-is-diagnostic, "Narrating real test output", etc.).
+  The CCA `_walker-supplement.md` lean-up (its dedupe + supplement-resident
+  lazy-loads) is a separate change in `workshop-cca`.
+
 ## base-v3 — 2026-06-15
 Two polish changes to the shared base.
 

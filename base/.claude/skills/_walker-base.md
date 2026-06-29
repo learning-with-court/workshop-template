@@ -232,6 +232,27 @@ the secret-safety constraints before shell-checking state.
 When you need to decide whether to block on a learner action or let them skip
 it, `Read` `.claude/skills/_walker-gates.md` for the HARD-vs-SOFT gate rules.
 
+## Concept primers (on demand, never preloaded)
+
+Some lessons make a big conceptual jump. For those, the chassis ships short,
+plain-language primers under `.claude/skills/primers/<concept>.md` — a
+ground-up explanation the learner can ask for. The main lesson path stays lean;
+depth is on hand, not in the learner's face. The pattern:
+
+- A lesson coach carries only a ~1–2 line **pointer**: a one-line optional cue
+  the learner can take (e.g. ``New to tool calling? Say `primer` for a 2-minute
+  ground-up explanation before we build.``) plus the file to `Read`.
+- **`Read` the primer ONLY on cue or detected struggle** — when the learner asks
+  ("what does tool_use mean?"), takes the cue, or visibly stalls on the concept.
+  NEVER preload it into the opening; inlining primer content bloats every
+  session's context for the learners who didn't need it.
+- After reading it to the learner, return to the main path — the primer is a
+  detour for grounding, not a new lesson stage.
+
+This operationalizes "asking is how this works": the primer is the ready-made
+answer when help is asked. First shipped primer:
+`.claude/skills/primers/tool_use.md` (tool_use / structured output).
+
 ## Verify is diagnostic, not graded
 
 `verify` exposes state — the query/command that ran, the actual result, the

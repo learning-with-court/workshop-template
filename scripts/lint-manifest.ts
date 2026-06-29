@@ -57,6 +57,18 @@ const Slug = z
     /^[a-z][a-z0-9-]*$/,
     "must be slug-form (lowercase letter first, then lowercase alphanumeric + hyphens)",
   );
+// Optional per-lesson live-demo declaration, consumed by scripts/try.ts (`pnpm try`).
+// `targetFiles` names the file; `try` names the callable + the fixture to feed it.
+const Try = z.object({
+  /** Deliverable module under src/, no extension. E.g. "review" → src/review.ts */
+  module: z.string(),
+  /** Named export to call. */
+  export: z.string(),
+  /** Fixture path relative to the lesson dir's served root (.workshop/<ws>/lesson_<slug>/). */
+  fixture: z.string(),
+  /** How to pass the fixture: "json" (parsed, default) or "text" (raw string). */
+  fixtureAs: z.enum(["json", "text"]).optional(),
+});
 const Lesson = z.object({
   id: Slug,
   title: z.string(),
@@ -65,6 +77,8 @@ const Lesson = z.object({
   targetFiles: z.array(z.string()),
   verifyCommand: z.string(),
   verify: Verify,
+  /** Optional live-demo runner declaration (`pnpm try`). */
+  try: Try.optional(),
   onPass: z.object({
     advanceTo: Slug.optional(),
     feedback: z.string(),

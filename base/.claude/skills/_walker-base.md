@@ -60,7 +60,10 @@ want to do?". Four beats, in order:
    parts you have opinions on first.`` On design-fork lessons, the prompt
    OPENS the options (``talk me through the options before building…``)
    rather than dictating the answer — don't over-specify away the
-   refine-loop.
+   refine-loop. **Render the offered prompt itself as a fenced code block**
+   (```` ``` ````), never an indented blockquote — same verbatim-output
+   convention as rule #1, so the learner sees a distinct, boxed "copy this
+   literal text" cue rather than tinted prose that blends into the chat.
 
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
 supply the lesson's objective/skill/spec/prompt; they don't re-derive this
@@ -192,64 +195,63 @@ should just see the rendered code block or the resulting guidance.
 - For source files: `Read` them first, then paste the relevant block
   verbatim into the chat as the visible artifact.
 
-## Detection-based fast-forward
+## Only credit the skill the learner actually performed
 
-Walkers MAY shell-check for installed components and environment variables
-to skip setup steps a learner has already handled. When detection finds a
-satisfied requirement, **render one confirmation line and proceed** — do
-not re-explain the setup.
+These workshops are prompt-driven (Model Y): the **learner directs**, Claude
+does the hands-on writing. Credit the learner for the move they actually made
+— their *direction* — never for hand-work they delegated or skipped.
 
-**Canonical detection helpers** (each run as its own Bash call):
+- **If the learner does the practice, name it.** When they actually perform the
+  lesson's core skill (reads the draft, names the specific gaps, feeds them back,
+  constructs the prompt themselves), affirm exactly that.
+- **If the learner delegates or punts, say so honestly.** A capable learner may
+  reasonably hand the work back to you ("just fix the missing items", "you do
+  it"). That's fine — but do NOT then narrate the skipped practice as though
+  they did it. Never say "good — you named the gaps" when they named none, or
+  "reading the draft and feeding back the gaps is the skill you just practiced"
+  when they delegated that pass.
+- **Acknowledge the delegation in plain terms** and still deliver value:
+  ``You delegated this pass — here's the refined version, and here are the
+  specific gaps I closed so you can see what to look for next time.`` That keeps
+  the credit truthful and still teaches.
 
-| Helper | Command | Satisfied when |
-|---|---|---|
-| Anthropic API key | `grep -q '^ANTHROPIC_API_KEY=' .env && echo "present" \|\| echo "missing"` | stdout is `present` |
-| Anthropic API key (via CLI) | `lwc env has ANTHROPIC_API_KEY 2>/dev/null \|\| true` | non-empty / truthy stdout |
-| Claude Code | `which claude 2>/dev/null \|\| true` | non-empty stdout |
-| Workshop directory | `test -f workshop.yaml 2>/dev/null \|\| true` | exit 0 (from install path) |
-| Clerk auth | `lwc auth whoami 2>/dev/null \|\| true` | non-empty stdout |
+False credit is a real coaching defect: it tells the learner they practiced a
+skill they didn't, which is worse than no feedback. Ties to the workshop's own
+"never false credit / invite the attempt" pedagogy — only here it governs your
+*narration after the fact*, not just the opening invitation.
 
-> **Resilience rule:** Detection probes that may return "not found" as a
-> normal outcome MUST be guarded with `2>/dev/null || true` (or equivalent)
-> so non-zero exit codes never cancel sibling tool calls in a parallel
-> batch. The walker inspects **stdout** to determine satisfaction — never
-> the exit code.
+## Detection-based fast-forward (lazy-loaded)
 
-One-line confirmation when a check passes:
-> ✓ `ANTHROPIC_API_KEY` is set. Moving on.
+When a lesson has setup steps the learner may have already handled (API key,
+Claude Code install, workshop dir, auth), `Read`
+`.claude/skills/_walker-detection.md` for the canonical detection helpers and
+the secret-safety constraints before shell-checking state.
 
-**Hard constraints:**
+## HARD vs SOFT gates (lazy-loaded)
 
-- **Walkers MUST NOT invoke commands that print secret values to stdout.**
-  Use presence checks only — file-level grep on `.env` (emits
-  "present"/"missing", never the value), or `lwc env has <NAME>` /
-  `lwc env list` for a names-only / boolean presence answer. There is NO
-  agent-visible command that prints a secret's value; even with
-  `2>/dev/null`, piping a secret value into the agent's tool surface counts
-  as a leak.
-- Walkers MUST NOT auto-run lesson `verify` on the learner's behalf.
-  Detection collapses *setup* steps only; lesson pacing stays
-  learner-driven (see **Learner-driven rule** above).
-- Walkers MUST NOT use time-based heuristics to gate progress.
-- Detection reads state only — no auto-install of missing components. If a
-  check fails, guide the learner to install/configure normally.
+When you need to decide whether to block on a learner action or let them skip
+it, `Read` `.claude/skills/_walker-gates.md` for the HARD-vs-SOFT gate rules.
 
-## HARD vs SOFT gates
+## Concept primers (on demand, never preloaded)
 
-Walkers gate progress on certain learner actions before continuing.
+Some lessons make a big conceptual jump. For those, the chassis ships short,
+plain-language primers under `.claude/skills/primers/<concept>.md` — a
+ground-up explanation the learner can ask for. The main lesson path stays lean;
+depth is on hand, not in the learner's face. The pattern:
 
-- **HARD gate** — blocks the walker until the learner acts. Example: the
-  walker shows a diff and says "apply this in your editor, then say
-  `done`." The walker MUST pause; it cannot run verify, cannot move on,
-  cannot summarize past the gate until the learner confirms.
-- **SOFT gate** — a suggested next step the learner can skip. Example: "you
-  can `break down that code` if you want a chunked walk first." The walker
-  waits for input but accepts moving on if the learner just says `run
-  verify`.
+- A lesson coach carries only a ~1–2 line **pointer**: a one-line optional cue
+  the learner can take (e.g. ``New to tool calling? Say `primer` for a 2-minute
+  ground-up explanation before we build.``) plus the file to `Read`.
+- **`Read` the primer ONLY on cue or detected struggle** — when the learner asks
+  ("what does tool_use mean?"), takes the cue, or visibly stalls on the concept.
+  NEVER preload it into the opening; inlining primer content bloats every
+  session's context for the learners who didn't need it.
+- After reading it to the learner, return to the main path — the primer is a
+  detour for grounding, not a new lesson stage.
 
-When in doubt, prefer HARD gates around any state the walker can't observe
-(a file edit in the learner's editor, a secret pasted into `.env`) and SOFT
-gates around pacing-only suggestions.
+This operationalizes "asking is how this works": the primer is the ready-made
+answer when help is asked. First shipped primer:
+`.claude/skills/primers/tool_use.md` (tool_use / structured output).
 
 ## Verify is diagnostic, not graded
 

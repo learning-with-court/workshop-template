@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v10",
+  "version": "base-v12",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",
@@ -14,10 +14,14 @@
     ".feature-workflow.yml",
     "lefthook.yml",
     ".gitignore",
+    "base/scripts/try.ts",
     "base/vitest.config.ts",
     "base/.claude/settings.json",
     "base/.claude/hooks/block-edits.sh",
     "base/.claude/skills/_walker-base.md",
+    "base/.claude/skills/_walker-detection.md",
+    "base/.claude/skills/_walker-gates.md",
+    "base/.claude/skills/primers/tool_use.md",
     ".github/workflows/ci.yml",
     ".github/workflows/manifest-lint.yml",
     ".github/workflows/validate-base.yml"

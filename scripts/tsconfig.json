@@ -1,10 +1,15 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": ".",
+    // rootDir spans both the authoring scripts and the served base/scripts/ runner
+    // so scripts/try.test.ts can import ../base/scripts/try.ts and the served runner
+    // gets typechecked here (it has no tsconfig of its own — base/tsconfig.json only
+    // covers src/). noEmit makes rootDir/outDir advisory only.
+    "rootDir": "..",
     "outDir": "dist",
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["**/*.ts"]
+  "include": ["**/*.ts", "../base/scripts/**/*.ts"]
 }

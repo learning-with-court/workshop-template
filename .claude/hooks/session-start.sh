@@ -167,9 +167,13 @@ TODO: replace with this workshop's actual lesson count and phase structure:
 > - **Phase B — TODO:** lessons X+1–Y
 > - **Phase C — TODO:** lessons Y+1–N
 
-Each lesson lives in \`workshop/lesson_NN_*/\` and has its own \`verify\`
-script (\`pnpm --filter @workshop/lesson-NN verify\`). Per-lesson skills
-in \`.claude/skills/lesson-NN.md\` drive the walkthrough.
+Each lesson declares its own \`verifyCommand\` in its \`lesson.yaml\`
+(a flat, single-package command such as
+\`pnpm exec vitest run src/<slug>.test.ts || true\` or
+\`pnpm exec tsx src/<slug>/verify.ts || true\` — there are NO per-lesson
+packages, so never a \`pnpm --filter\` form). Run that exact command as
+written; don't reconstruct it. Per-lesson skills in
+\`.claude/skills/lesson-<slug>.md\` drive the walkthrough.
 
 ## On the user's first message
 

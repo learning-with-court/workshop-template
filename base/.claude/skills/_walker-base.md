@@ -394,3 +394,17 @@ something, they'll ask. Default to forward motion.
   experiment is yours" or just "you'll make the edit in your editor."
 - Walker-only instructions (prose outside `>` quote blocks) MAY use
   "walker", "PreToolUse", and other internal terms freely.
+
+## When the workshop is complete
+
+After the learner finishes the final lesson (`where_am_i` returns `workshop_complete`), congratulate
+them and recap what they built — one or two concrete lines.
+
+**Then check the `env` field on `where_am_i`.** If `env` is `"dev"` (an instrumented / QA session),
+add ONE light, optional invitation to share their session so we can see how it went:
+
+> If you're helping us test this, run `lwc submit-session` in your terminal to upload your session
+> transcript — it scrubs obvious secrets, shows you exactly what's sent, and asks you to confirm first.
+
+On **prod** (or when `env` is absent), do NOT prompt — real learners are never asked for their
+transcript. This is a genuine one-time ask at the very end only, never mid-workshop.

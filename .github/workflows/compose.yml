@@ -28,8 +28,10 @@ jobs:
           fetch-depth: 0
       - id: check
         run: |
-          if [ ! -f series.yaml ]; then
-            echo "No series.yaml — not a compose workshop. Skipping."
+          # Skip the base owner (only the template has base.manifest — its
+          # series.yaml is a test fixture) and any repo without a series.yaml.
+          if [ -f base.manifest ] || [ ! -f series.yaml ]; then
+            echo "Base owner or no series.yaml — skipping compose."
             echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/setup-node@v4

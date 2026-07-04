@@ -77,21 +77,21 @@ beforeAll(() => {
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
-  execFileSync(TSX, ["scripts/compose.ts"], { cwd: repo, encoding: "utf8" });
+  execFileSync(TSX, ["scripts/compose.ts", "--env", "dev"], { cwd: repo, encoding: "utf8" });
 }, 60000);
 
 describe("unified compose generator", () => {
   it("emits a tag per lesson + per-ws v1 + series/v0", () => {
     const tags = git(["tag"]).split("\n").filter(Boolean).sort();
     expect(tags).toEqual([
-      "s/series/v0",
-      "s/w1/v1", "s/w1/w1a", "s/w1/w1b",
-      "s/w2/v1", "s/w2/w2a", "s/w2/w2b",
+      "dev/s/series/v0",
+      "dev/s/w1/v1", "dev/s/w1/w1a", "dev/s/w1/w1b",
+      "dev/s/w2/v1", "dev/s/w2/w2a", "dev/s/w2/w2b",
     ].sort());
   });
 
   it("serves prose + coach for ALL lessons at every tag (uniform)", () => {
-    const t = showTree("s/w1/w1a");
+    const t = showTree("dev/s/w1/w1a");
     expect(t).toContain(".workshop/series.yaml");
     expect(t).toContain(".workshop/w2/lesson_w2b/README.md");        // other-ws prose present
     expect(t).toContain(".claude/skills/w2-w2b.md");                  // other-ws coach present
@@ -100,11 +100,11 @@ describe("unified compose generator", () => {
 
   it("a lesson's STARTING tree excludes its own solution, includes prior ones (cumulative across the series)", () => {
     // w1a is first → no solutions yet
-    expect(showTree("s/w1/w1a")).not.toContain("src/w1a.ts");
+    expect(showTree("dev/s/w1/w1a")).not.toContain("src/w1a.ts");
     // w1b starts after w1a → has w1a's solution
-    expect(showTree("s/w1/w1b")).toContain("src/w1a.ts");
+    expect(showTree("dev/s/w1/w1b")).toContain("src/w1a.ts");
     // w2a (workshop 2, lesson 1) starts with ALL of w1's solutions (cumulative across workshops)
-    const w2a = showTree("s/w2/w2a");
+    const w2a = showTree("dev/s/w2/w2a");
     expect(w2a).toContain("src/w1a.ts");
     expect(w2a).toContain("src/w1b.ts");
     expect(w2a).not.toContain("src/w2a.ts");
@@ -112,51 +112,51 @@ describe("unified compose generator", () => {
 
   it("allows a later lesson to evolve an earlier lesson's file (same path, different content)", () => {
     // w1b's starting tree holds w1a's version of src/shared.ts (the learner edits it forward)
-    expect(showFile("s/w1/w1b", "src/shared.ts")).toContain('"v1"');
+    expect(showFile("dev/s/w1/w1b", "src/shared.ts")).toContain('"v1"');
     // w1 finished holds w1b's evolved version
-    expect(showFile("s/w1/v1", "src/shared.ts")).toContain('"v2"');
+    expect(showFile("dev/s/w1/v1", "src/shared.ts")).toContain('"v2"');
   });
 
   it("ships each lesson's test from its own position onward (sticky)", () => {
-    expect(showTree("s/w1/w1a")).toContain("src/w1a.test.ts");        // own test present at start
-    expect(showTree("s/w1/w1b")).toContain("src/w1a.test.ts");        // and later
+    expect(showTree("dev/s/w1/w1a")).toContain("src/w1a.test.ts");        // own test present at start
+    expect(showTree("dev/s/w1/w1b")).toContain("src/w1a.test.ts");        // and later
   });
 
   it("series/v0 == base only; ws/v1 == workshop finished", () => {
-    expect(showTree("s/series/v0")).not.toContain("src/w1a.ts");
-    expect(showTree("s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
+    expect(showTree("dev/s/series/v0")).not.toContain("src/w1a.ts");
+    expect(showTree("dev/s/w1/v1")).toContain("src/w1b.ts");              // w1 finished has all w1 solutions
   });
 
   it("serves per-workshop + per-lesson fixtures uniformly", () => {
-    const t = showTree("s/w1/w1a");
+    const t = showTree("dev/s/w1/w1a");
     expect(t).toContain(".workshop/w1/fixtures/diffs/sample.diff");           // per-workshop
     expect(t).toContain(".workshop/w1/lesson_w1a/fixtures/case.json");        // per-lesson
     // uniform: also present at a later tag
-    expect(showTree("s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
+    expect(showTree("dev/s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
   });
 
   it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {
     // w1/v1 must not carry w2's first lesson's test
-    expect(showTree("s/w1/v1")).not.toContain("src/w2a.test.ts");
+    expect(showTree("dev/s/w1/v1")).not.toContain("src/w2a.test.ts");
     // w1/v1 must carry w1's own last solution
-    expect(showTree("s/w1/v1")).toContain("src/w1b.ts");
+    expect(showTree("dev/s/w1/v1")).toContain("src/w1b.ts");
     // w2/v1 must carry w2's own last test
-    expect(showTree("s/w2/v1")).toContain("src/w2b.test.ts");
+    expect(showTree("dev/s/w2/v1")).toContain("src/w2b.test.ts");
   });
 
   it("layers settings: chassis <- series overlay <- per-workshop overlay", () => {
-    const w1 = JSON.parse(showFile("s/w1/w1a", ".claude/settings.json"));
+    const w1 = JSON.parse(showFile("dev/s/w1/w1a", ".claude/settings.json"));
     expect(w1.model).toBe("opus");                      // w1 overlay wins over series + base
     expect(w1.telemetry).toBe(false);                   // series overlay applies
     expect(w1.permissions.allow).toEqual(["Read"]);     // base preserved (no overlay touches it)
-    const w2 = JSON.parse(showFile("s/w2/w2a", ".claude/settings.json"));
+    const w2 = JSON.parse(showFile("dev/s/w2/w2a", ".claude/settings.json"));
     expect(w2.model).toBe("haiku");                     // series overlay applies (no w2 overlay)
     expect(w2.telemetry).toBe(false);                   // series overlay applies
     expect(w2.permissions.allow).toEqual(["Read"]);     // base preserved
   });
 
   it("applies the series overlay to series/v0 (which has no workshop)", () => {
-    const v0 = JSON.parse(showFile("s/series/v0", ".claude/settings.json"));
+    const v0 = JSON.parse(showFile("dev/s/series/v0", ".claude/settings.json"));
     expect(v0.model).toBe("haiku");                     // series overlay applies
     expect(v0.telemetry).toBe(false);                   // series overlay applies
     expect(v0.permissions.allow).toEqual(["Read"]);     // base preserved

@@ -1,0 +1,44 @@
+name: compose
+# Cut env-namespaced compose tags automatically on branch push:
+#   dev  → dev/<short>/…   (feeds dev.workshop.institute + `lwc setup` dev)
+#   main → prod/<short>/…  (feeds workshop.institute + `lwc setup` prod)
+# Replaces the manual `compose.ts --push` operator step. Synced from the base;
+# no-ops in repos without a series.yaml (e.g. the template itself). Pushes tags
+# to its OWN repo with the built-in GITHUB_TOKEN (contents: write) — no App
+# credential needed for a same-repo tag push.
+on:
+  push:
+    branches: [dev, main]
+
+concurrency:
+  group: compose-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: check
+        run: |
+          if [ ! -f series.yaml ]; then
+            echo "No series.yaml — not a compose workshop. Skipping."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != '1'
+        with:
+          node-version: 22
+      - name: Cut env-namespaced compose tags
+        if: steps.check.outputs.skip != '1'
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          npm i -g tsx
+          ENV=$([ "$REF_NAME" = "main" ] && echo prod || echo dev)
+          tsx scripts/compose.ts --env "$ENV" --push

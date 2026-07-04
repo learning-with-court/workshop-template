@@ -25,7 +25,7 @@
 //                         + Σ solution(through ws's last lesson) + sticky tests
 //
 // Determinism: fixed ident/dates → stable SHAs. Self-verifies before moving refs.
-// Usage: tsx scripts/compose.ts [--dry-run] [--push]
+// Usage: tsx scripts/compose.ts --env <dev|prod> [--dry-run] [--push]
 
 import { execFileSync } from "node:child_process";
 import { readFileSync, existsSync, readdirSync, statSync, rmSync } from "node:fs";
@@ -35,9 +35,10 @@ const args = process.argv.slice(2);
 if (args.includes("-h") || args.includes("--help")) {
   console.log(`compose — generate per-lesson cumulative tags for a workshop series.
 
-Usage: tsx scripts/compose.ts [--dry-run] [--push]
+Usage: tsx scripts/compose.ts --env <dev|prod> [--dry-run] [--push]
 
-  (default)   generate tags locally (<short>/<ws>/<slug>, <short>/<ws>/v1, <short>/series/v0)
+  --env       REQUIRED. Namespaces every tag by env: <env>/<short>/<ws>/<slug>.
+  (default)   generate tags locally (<env>/<short>/<ws>/<slug>, <env>/<short>/<ws>/v1, <env>/<short>/series/v0)
   --dry-run   plan + self-verify only; move no refs
   --push      force-push generated tags to origin
 
@@ -49,6 +50,12 @@ The source branch is never rewritten — only <short>/* tags move.`);
 
 const dryRun = args.includes("--dry-run");
 const doPush = args.includes("--push");
+const envArg = args[args.indexOf("--env") + 1];
+if (!args.includes("--env") || (envArg !== "dev" && envArg !== "prod")) {
+  console.error("compose: --env <dev|prod> is required.");
+  process.exit(1);
+}
+const ENV = envArg as "dev" | "prod";
 const REPO = process.cwd();
 
 type GitEnv = Record<string, string>;
@@ -175,6 +182,8 @@ function hashContent(s: string): string {
 // --- flat ordered lesson list across the whole series ---
 type L = { ws: string; slug: string };
 const SHORT = seriesShort();
+// Every tag is namespaced by env so dev and prod content never collide.
+const NS = `${ENV}/${SHORT}`;
 const workshops = seriesWorkshops();
 const flat: L[] = [];
 const wsLastIdx: Record<string, number> = {};
@@ -285,13 +294,13 @@ const built: Built[] = [];
 // per-lesson tags: tree = base + prose(all) + Σ solution(0..idx-1) + sticky tests(0..idx)
 flat.forEach((l, idx) => {
   const { tree, entries } = buildTree(idx, `L${idx}`, idx, l.ws);
-  built.push({ tag: `${SHORT}/${l.ws}/${l.slug}`, tree, entries });
+  built.push({ tag: `${NS}/${l.ws}/${l.slug}`, tree, entries });
 });
 
 // series/v0 = first lesson's starting tree (base + prose + coach + that lesson's test; no solutions).
 {
   const { tree, entries } = buildTree(0, "v0");
-  built.push({ tag: `${SHORT}/series/v0`, tree, entries });
+  built.push({ tag: `${NS}/series/v0`, tree, entries });
 }
 
 // <ws>/v1 = base + prose + Σ solution(0..lastIdxOfWs) + sticky tests(0..lastIdxOfWs)
@@ -299,7 +308,7 @@ flat.forEach((l, idx) => {
 for (const { ws } of workshops) {
   const e = wsLastIdx[ws]!;
   const { tree, entries } = buildTree(e + 1, `v1-${ws}`, e, ws);
-  built.push({ tag: `${SHORT}/${ws}/v1`, tree, entries });
+  built.push({ tag: `${NS}/${ws}/v1`, tree, entries });
 }
 
 // --- self-verify ---
@@ -335,7 +344,7 @@ flat.forEach((l, idx) => {
 // self-verify <ws>/v1: ws's own last solution present; next-ws first lesson's test absent
 for (let wi = 0; wi < workshops.length; wi++) {
   const ws = workshops[wi]!.ws;
-  const v1Tag = `${SHORT}/${ws}/v1`;
+  const v1Tag = `${NS}/${ws}/v1`;
   const v1Built = built.find((b) => b.tag === v1Tag);
   if (!v1Built) throw new Error(`self-verify: ${v1Tag} not found in built`);
 
@@ -366,15 +375,15 @@ for (let wi = 0; wi < workshops.length; wi++) {
 // self-verify series/v0: must not contain any COMPLETED solution work. A base/** file at the same
 // path as a solution file is fine (base provides a starting version the lesson evolves) — only an
 // IDENTICAL blob is a true leak (the lesson's finished work already present at the series start).
-const v0Built = built.find((b) => b.tag === `${SHORT}/series/v0`);
-if (!v0Built) throw new Error(`self-verify: ${SHORT}/series/v0 not found in built`);
+const v0Built = built.find((b) => b.tag === `${NS}/series/v0`);
+if (!v0Built) throw new Error(`self-verify: ${NS}/series/v0 not found in built`);
 for (const { ws, slug } of flat) {
   const solDir = solDirFor(ws, slug);
   for (const abs of walk(solDir)) {
     const rel = posix.relative(solDir, abs);
     const present = v0Built.entries.get(rel);
     if (present && present.blob === hashFile(abs))
-      throw new Error(`self-verify: ${SHORT}/series/v0 already contains solution work ${rel} (identical content)`);
+      throw new Error(`self-verify: ${NS}/series/v0 already contains solution work ${rel} (identical content)`);
   }
 }
 

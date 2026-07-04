@@ -116,10 +116,11 @@ and `test` via the Bash tool (that's how it transcribes stdout back into
 chat) — but **edit experiments are the learner's hands-on moment in their
 editor (VS Code, etc.)**.
 
-- **Walker MUST NOT edit lesson source files** under the lesson's source
-  tree (the concrete path lives in each workshop's supplement, e.g.
-  `workshop/lesson_<slug>/src/` or `tests/`). Show the diff inline, ask the
-  user to apply it, then offer to rerun verify when they confirm saved.
+- **Walker MUST NOT edit lesson source files** under the editable source
+  tree at the repo root (the concrete path lives in each workshop's
+  supplement, e.g. the repo-root `src/` or `tests/` directories). Show the
+  diff inline, ask the user to apply it, then offer to rerun verify when they
+  confirm saved.
 - If a workshop ships a `PreToolUse` hook (`.claude/hooks/block-edits.sh`),
   Edit/Write/MultiEdit on those paths is also mechanically blocked. The
   rule holds either way.

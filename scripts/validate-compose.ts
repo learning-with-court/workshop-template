@@ -129,7 +129,7 @@ if (errors.length === 0) {
   const hasPnpm = existsSync(join(REPO, "pnpm-workspace.yaml")) || existsSync(join(REPO, "pnpm-lock.yaml"));
   const tsxCmd = hasPnpm ? ["pnpm", "exec", "tsx"] : ["npx", "-y", "tsx"];
   try {
-    const out = execFileSync(tsxCmd[0]!, [...tsxCmd.slice(1), "scripts/compose.ts", "--dry-run"], {
+    const out = execFileSync(tsxCmd[0]!, [...tsxCmd.slice(1), "scripts/compose.ts", "--env", "dev", "--dry-run"], {
       cwd: REPO, encoding: "utf8",
     });
     if (!/self-verify:.*OK/.test(out))

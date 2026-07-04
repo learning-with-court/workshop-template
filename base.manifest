@@ -24,6 +24,7 @@
     "base/.claude/skills/primers/tool_use.md",
     ".github/workflows/ci.yml",
     ".github/workflows/manifest-lint.yml",
-    ".github/workflows/validate-base.yml"
+    ".github/workflows/validate-base.yml",
+    ".github/workflows/compose.yml"
   ]
 }

@@ -3,9 +3,14 @@ name: compose
 #   dev  → dev/<short>/…   (feeds dev.workshop.institute + `lwc setup` dev)
 #   main → prod/<short>/…  (feeds workshop.institute + `lwc setup` prod)
 # Replaces the manual `compose.ts --push` operator step. Synced from the base;
-# no-ops in repos without a series.yaml (e.g. the template itself). Pushes tags
-# to its OWN repo with the built-in GITHUB_TOKEN (contents: write) — no App
-# credential needed for a same-repo tag push.
+# no-ops in repos without a series.yaml (e.g. the template itself).
+#
+# Uses the shared learning-with-court GitHub App token: the compose tags carry
+# workshop workflow files (.github/workflows/*), and GitHub forbids the built-in
+# GITHUB_TOKEN from pushing any ref that touches .github/workflows/. The App
+# token (with contents + workflows write) is what the manual PAT push relied on.
+# Requires org-level secrets LWC_GH_APP_ID / LWC_GH_APP_PRIVATE_KEY and the App
+# to have Workflows: Read and write.
 on:
   push:
     branches: [dev, main]
@@ -13,9 +18,6 @@ on:
 concurrency:
   group: compose-${{ github.ref }}
   cancel-in-progress: false
-
-permissions:
-  contents: write
 
 jobs:
   compose:
@@ -26,19 +28,30 @@ jobs:
           fetch-depth: 0
       - id: check
         run: |
-          if [ ! -f series.yaml ]; then
-            echo "No series.yaml — not a compose workshop. Skipping."
+          # Skip the base owner (only the template has base.manifest — its
+          # series.yaml is a test fixture) and any repo without a series.yaml.
+          if [ -f base.manifest ] || [ ! -f series.yaml ]; then
+            echo "Base owner or no series.yaml — skipping compose."
             echo "skip=1" >> "$GITHUB_OUTPUT"
           fi
       - uses: actions/setup-node@v4
         if: steps.check.outputs.skip != '1'
         with:
           node-version: 22
+      - id: app-token
+        if: steps.check.outputs.skip != '1'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.LWC_GH_APP_ID }}
+          private-key: ${{ secrets.LWC_GH_APP_PRIVATE_KEY }}
       - name: Cut env-namespaced compose tags
         if: steps.check.outputs.skip != '1'
         env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REF_NAME: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
           npm i -g tsx
           ENV=$([ "$REF_NAME" = "main" ] && echo prod || echo dev)
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
           tsx scripts/compose.ts --env "$ENV" --push

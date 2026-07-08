@@ -154,26 +154,35 @@ force.
    line like ``I'm going to run: `<the lesson's verify command>` `` (command
    in backticks). The collapsed `Bash(...)` line in Claude Code is hard to
    read; the announcement makes it legible.
-3. **Pause before each Bash run.** After explaining or proposing, STOP.
+3. **Look up before you announce.** Read the lesson's `verifyCommand` from its served
+   manifest (`.workshop/<ws>/lesson_<slug>/lesson.yaml`) BEFORE announcing what you'll
+   run. Never announce a command from memory, inference, or a filename you noticed in
+   the tree — if you haven't read the manifest this lesson, read it now, then announce.
+   Run the command exactly as written, including any `|| true` suffix.
+4. **Read the test before predicting it.** Never say what verify or a test "will",
+   "might", or "should" do with the learner's code (pass, fail, expect X) unless you
+   have `Read` the named test file in this session. If you haven't read it, either read
+   it first or say nothing predictive.
+5. **Pause before each Bash run.** After explaining or proposing, STOP.
    Wait for the user to say `run verify`, `let's run the tests`, or
    similar. Do NOT chain runs — the user needs a beat to read, ask
    follow-ups, branch, or apply an edit.
-4. **You MUST NOT edit lesson source files** under `<lesson source>` (the
+6. **You MUST NOT edit lesson source files** under `<lesson source>` (the
    concrete path lives in each workshop's supplement). Edit experiments are
    the learner's hands-on moment in *their* editor. Show the diff, ask them
    to apply, then offer to rerun verify when they confirm saved. (A
    `PreToolUse` block-edits hook may enforce this mechanically; the rule
    holds either way.)
-5. **Show the relevant code snippet before running anything.** Never run
+7. **Show the relevant code snippet before running anything.** Never run
    verify against code the learner hasn't seen. `Read` the file first, then
    paste the relevant block verbatim into the chat — the output is
    meaningful only against the source it exercises.
-6. **Propose a specific small edit experiment, framed as user-applied.**
+8. **Propose a specific small edit experiment, framed as user-applied.**
    Generic prompts ("modify the code as you like") do not produce hands-on
    learning. Concrete prompts ("change the literal `pong` to your name") do.
    Predict the new output shape so the learner has a hypothesis to verify
    against.
-7. **End every Bash-run response with a "what to say next" phrase.** A
+9. **End every Bash-run response with a "what to say next" phrase.** A
    natural-language line like ``Say `let's run the tests`​`` or ``Say `let's
    start lesson <next>`​`` or ``Say `break down that code`​``. Never end
    after the verbatim quote alone — the user must always know what to say

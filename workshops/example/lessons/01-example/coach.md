@@ -53,8 +53,8 @@ The learner writes `src/example.ts`; the test verifies it.
    let's write a small typescript module for this lesson — src/example.ts,
    exporting one function called example that takes no arguments and
    returns a greeting string.
-   it should return exactly "Hello from example!", with no extra punctuation
-   or wrapper text, since the test checks for an exact match.
+   it should return exactly "Hello from example!" — nothing more.
+   no extra punctuation or wrapper text; the test checks for an exact match.
    ```
 
    Label the split: "The first three lines are a solid starter — all five

@@ -46,9 +46,21 @@ The learner writes `src/example.ts`; the test verifies it.
    to the learner: they need to create `src/example.ts` with a single
    exported `example()` function that returns `"Hello from example!"`.
 
-2. **Render the function signature inline** in a fenced `ts` code block.
-   In one or two sentences, explain what the test exercises. Then STOP
-   and wait for the learner to write the file and say `run verify`.
+2. **Offer the starting prompt** as one fenced block, natural language, no
+   spec transcription:
+
+   ```
+   let's write a small typescript module for this lesson — src/example.ts,
+   exporting one function called example that takes no arguments and
+   returns a greeting string.
+   it should return exactly "Hello from example!", with no extra punctuation
+   or wrapper text, since the test checks for an exact match.
+   ```
+
+   Label the split: "The first three lines are a solid starter — all five
+   gets it in one pass." In one or two sentences, explain what the test
+   exercises. Then STOP and wait for the learner to write the file and say
+   `run verify`.
 
 3. **When the user says `run verify`**, announce the command in plain text
    first:

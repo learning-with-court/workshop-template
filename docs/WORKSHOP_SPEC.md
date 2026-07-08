@@ -704,6 +704,44 @@ the answer — over-specifying kills the refine-loop. Close the offer with
 
 ---
 
+## Layered starter prompts (the copy/paste contract)
+
+Every lesson opening (and every mid-lesson artifact transition) offers ONE fenced
+prompt block per artifact, written the way a person actually types — natural
+sentences, no spec transcription, no YAML-ish structure.
+
+The block is layered:
+
+- The **starter** (first ~3 lines — flexible): a genuinely good rough prompt that
+  stands alone. Its last line must end a complete sentence.
+- The **completion** (remaining ~2 lines — flexible): natural continuation lines that
+  close the remaining gaps against the lesson's spec. Each must read as a standalone
+  sentence — never depend on being mid-sentence.
+
+The copy/paste contract: pasting only the starter lines gives a good prompt to
+iterate from; pasting the whole block lands the artifact in one pass. The coach
+labels the split in prose, e.g.:
+
+> The first three lines are a solid starter — all five gets it in one pass.
+
+Presentation rules:
+
+- Default: show the full block with the split labeled. The learner picks 3 or all.
+- Iteration-skill lessons ONLY (where prompting/iteration IS the skill being taught):
+  show the starter first; after the learner's first pass lands, surface the
+  completion lines ("here's what your refining prompt is converging on").
+- Never fade to "no prompt offered" — every artifact keeps its layered block.
+
+Authoring checklist per block:
+
+- [ ] Reads like something you'd type (contractions fine, lowercase fine)
+- [ ] The starter alone would produce a recognizable first pass
+- [ ] The completion lines close every remaining gap the spec/verify names
+- [ ] The whole block pastes as one coherent prompt
+- [ ] No literal spec headings, no "frontmatter:" transcription
+
+---
+
 ## 23. Plan mode — coach plan-critique, encourage pushback
 
 Once a workshop introduces plan mode, every design-heavy lesson encourages it

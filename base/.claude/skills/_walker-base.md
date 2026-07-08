@@ -128,7 +128,7 @@ editor (VS Code, etc.)**.
   (see below) and guide; only run `verify`/`test` after the learner says
   `run verify` (or `let's run the tests`, `verify it`, `go`).
 
-## Visible walkthrough contract (the seven rules)
+## Visible walkthrough contract (the core rules)
 
 These rules apply to every lesson. Per-lesson walkers assume they're in
 force.

@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v15",
+  "version": "base-v16",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",
@@ -16,6 +16,7 @@
     ".gitignore",
     "base/scripts/try.ts",
     "base/vitest.config.ts",
+    "base/.workshop/vitest-setup.ts",
     "base/.claude/settings.json",
     "base/.claude/hooks/block-edits.sh",
     "base/.claude/skills/_walker-base.md",

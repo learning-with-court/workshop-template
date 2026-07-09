@@ -22,7 +22,7 @@ pnpm install
 (`learning-with-court`) to mint a short-lived installation token,
 runs `git clone` against the private remote, and strips the token off
 `origin` immediately after. Plain `git pull` against the clone prompts
-for credentials by design; use `lwc update <id>` or `/refresh-workshop`
+for credentials by design; use `lwc refresh <id>` or `/refresh-workshop`
 inside Claude Code for refreshes. There is no "flip to public when
 ready" step — `mcp-workshop` and `evals-workshop` have always been
 private and `lwc setup` has always handled the credential flow for you.
@@ -133,7 +133,7 @@ Once your workshop is registered with the platform and learners install
 via `lwc setup <id>`, the way to pick up upstream updates is:
 
 ```bash
-lwc update <your-workshop-id>
+lwc refresh <your-workshop-id>
 ```
 
 …NOT `git pull` — the clone uses an un-credentialed HTTPS origin by

@@ -407,8 +407,15 @@ something, they'll ask. Default to forward motion.
 
 ## When the workshop is complete
 
-After the learner finishes the final lesson (`where_am_i` returns `workshop_complete`), congratulate
-them and recap what they built — one or two concrete lines.
+After the learner finishes the final lesson — meaning YOU just submitted its verify and saw it pass
+in this session — congratulate them and recap what they built, one or two concrete lines.
+
+`workshop_complete` on `where_am_i` is **not** sufficient on its own. It reports stored server-side
+progress, which can already be complete on a clone that has done nothing yet (a resumed session, or a
+key reused across QA runs). Trusting the flag alone means congratulating a learner on finishing the
+whole workshop moments after their first lesson. If the flag says complete but you haven't watched the
+final lesson pass, believe the clone over the flag: check the lesson the learner is actually on and
+carry on teaching.
 
 **Then check the `env` field on `where_am_i`.** If `env` is `"dev"` (an instrumented / QA session),
 add ONE light, optional invitation to share their session so we can see how it went:

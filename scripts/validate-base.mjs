@@ -10,13 +10,44 @@ export function sha256(s) {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
 
+/** Marks the start of a member-owned section in an otherwise-synced file.
+ *  Everything ABOVE is shared and overwritten by sync-base; everything BELOW
+ *  belongs to the member and is preserved across syncs.
+ *
+ *  Exists because a verbatim file cannot hold local additions: the next sync
+ *  silently drops them. `.gitignore` is the case that forced it — ignore rules
+ *  describe the artifacts a workshop's OWN toolchain leaves behind, so they are
+ *  legitimately local, but the file still carries shared rules worth syncing.
+ *
+ *  Keep this string byte-identical to LOCAL_SENTINEL in the workspace's
+ *  scripts/sync-base.ts — the two live in different repos and cannot import
+ *  each other, so they agree by convention. Changing it is a base cut. */
+export const LOCAL_SENTINEL =
+  "# ── sync-base: local rules below this line are preserved ──";
+
+/** The synced portion of a file: everything through the sentinel, or the whole
+ *  file when there is no sentinel. Hashing only this lets a member edit its
+ *  local section freely while still catching edits to shared content. */
+export function sharedPart(content) {
+  const i = content.indexOf(LOCAL_SENTINEL);
+  if (i === -1) return content;
+  return content.slice(0, i + LOCAL_SENTINEL.length) + "\n";
+}
+
+/** The member-owned portion: everything after the sentinel. "" when absent. */
+export function localPart(content) {
+  const i = content.indexOf(LOCAL_SENTINEL);
+  if (i === -1) return "";
+  return content.slice(i + LOCAL_SENTINEL.length).replace(/^\n/, "");
+}
+
 export function checkDrift(lock, readFile) {
   const out = [];
   for (const [path, expected] of Object.entries(lock.hashes)) {
     const content = readFile(path);
     if (content == null) {
       out.push({ path, reason: "missing" });
-    } else if (sha256(content) !== expected) {
+    } else if (sha256(sharedPart(content)) !== expected) {
       out.push({ path, reason: "content drift" });
     }
   }

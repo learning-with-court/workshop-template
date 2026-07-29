@@ -8,6 +8,34 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v19 — 2026-07-29
+Members can now hold local additions to a synced file. Until now they could
+not: `.gitignore` is verbatim, so anything a member added was silently dropped
+by the next sync. That is why base-v18 absorbed workshop-nexus's JupyterLab
+ignore rules into the shared base — the wrong fix, recorded there as a known
+wart. This is the right one.
+
+- **`LOCAL_SENTINEL` convention.** A marker line splits a synced file:
+
+  ```
+  # ── sync-base: local rules below this line are preserved ──
+  ```
+
+  Above it is shared and overwritten every sync. Below it belongs to the member
+  and survives. `sync-base` writes `shared(base) + local(member)`;
+  `base.lock` records the hash of the **shared portion only**, and
+  `validate-base` hashes only that portion — so a member edits its local
+  section freely while any edit above the line is still caught as drift.
+- **`scripts/validate-base.mjs`** gains `sharedPart` / `localPart` /
+  `LOCAL_SENTINEL` and hashes `sharedPart(content)`. Files with no sentinel
+  hash whole, so this is a no-op for the other 24 verbatim paths.
+- **`.gitignore`** carries the sentinel and **drops the nexus-specific
+  JupyterLab rules** added in base-v18. Nexus keeps them in its own local
+  section.
+- The sentinel string is duplicated in the workspace's `scripts/sync-base.ts`
+  (different repos, no shared import). Both files say so; changing it is a base
+  cut.
+
 ## base-v18 — 2026-07-28
 Upstreams a fix that `workshop-nexus` had been carrying locally. Nexus's
 `scripts/compose.ts` was 14 lines ahead of the base; a verbatim `sync-base`

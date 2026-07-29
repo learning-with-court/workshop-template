@@ -146,14 +146,28 @@ function testDirFor(ws: string, slug: string): string {
   return join(lessonDirFor(ws, slug), "test");
 }
 
+// Build junk that must never reach a served tree. This walks the FILESYSTEM, not
+// git, so .gitignore does not protect us: running the lessons or a py_compile check
+// leaves bytecode next to the sources and it lands in every tag.
+export const EXCLUDED_DIRS = new Set([
+  "__pycache__", ".ipynb_checkpoints", ".pytest_cache", ".ruff_cache", "node_modules",
+]);
+export const isExcludedFile = (name: string): boolean =>
+  name.endsWith(".pyc") || name.endsWith(".pyo") || name === ".DS_Store";
+export const isExcludedDir = (name: string): boolean =>
+  EXCLUDED_DIRS.has(name) || name.endsWith(".egg-info");
+
 // recursively list absolute file paths
 function walk(absDir: string): string[] {
   const out: string[] = [];
   if (!existsSync(absDir)) return out;
   for (const name of readdirSync(absDir)) {
     const abs = join(absDir, name);
-    if (statSync(abs).isDirectory()) out.push(...walk(abs));
-    else out.push(abs);
+    if (statSync(abs).isDirectory()) {
+      if (!isExcludedDir(name)) out.push(...walk(abs));
+    } else if (!isExcludedFile(name)) {
+      out.push(abs);
+    }
   }
   return out;
 }

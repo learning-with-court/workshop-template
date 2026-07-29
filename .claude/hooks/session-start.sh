@@ -239,6 +239,6 @@ note that the server progress is unaffected by local resets.
 ## Refreshing the workshop
 
 Tell the user: to pick up upstream updates to this workshop, run
-\`lwc update <workshop-id>\` from inside the workshop dir (NOT \`git
+\`lwc refresh <workshop-id>\` from inside the workshop dir (NOT \`git
 pull\` — the clone uses an un-credentialed HTTPS origin by design).
 EOF

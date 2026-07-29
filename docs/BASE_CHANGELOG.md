@@ -4,6 +4,43 @@ The shared base is the set of files in `base.manifest`, synced into Code
 workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 `base.lock`.
 
+> **Gap:** v13–v16 shipped without changelog entries. Reconstruct from
+> `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
+> are deliberately not backfilled here rather than guessed at.
+
+## base-v17 — 2026-07-28
+Guide-side hardening from the NEXUS live QA walk, all in
+`base/.claude/skills/_walker-base.md` (prose only — no code, no scripts).
+
+- **Completion requires a witnessed pass.** The trigger is now "you just
+  submitted the final lesson's verify and saw it pass **in this session**".
+  `workshop_complete` on `where_am_i` is explicitly insufficient on its own:
+  stored progress can already read complete on a clone that has done nothing
+  (a resumed session, or a key reused across QA runs). When the flag and the
+  clone disagree, believe the clone and carry on teaching. The live walk hit
+  exactly this — all nine lessons marked complete at lesson 4 of 9, on a clone
+  that had run nothing. Server-side gating is the primary fix
+  (`platform` #244); this is the backstop.
+- **Never assert the learner's history from a workshop tool.** Broadened past
+  the recap to *any* claim about what they've done. Every workshop tool reads
+  the same stored record, so a second tool is not a second opinion — three
+  tools agreeing is one source three times. The guide instead checks two things
+  written by the learner's own work and therefore incapable of corroborating a
+  bad record: executed-cell counts across the notebooks (or the files a code
+  lesson produces), and `git log --oneline`. Cold-start placement now happens
+  from the clone before the guide says anything about history.
+- **Decisions are not quizzes.** New section separating three things that look
+  alike: comprehension questions (banned — pure assessment), decisions (ask
+  them; deciding for the learner steals the lesson), and predictions before a
+  reveal (offer, never require). Keep them scarce — one real decision per
+  lesson, and if you've asked more questions than you've run cells you've
+  stopped teaching. The word "commit" is banned as a demand phrasing. Render a
+  decision as two to four labelled options rather than open prose, and do
+  **not** mark a recommendation when the choice itself is the lesson.
+
+Already live and exercised in `workshop-nexus`, whose copy of the file is
+byte-identical to this cut.
+
 ## base-v12 — 2026-06-28
 Shared chassis affordances from the CCA Claude Code walkthrough notes
 (`docs/2026-06-28-cca-cc-walkthrough-notes.md` #11, #8).

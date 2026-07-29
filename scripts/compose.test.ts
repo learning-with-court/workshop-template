@@ -74,6 +74,17 @@ beforeAll(() => {
     `export const shared = "v1"\n`);
   writeFileSync(join(repo, "workshops", "w1", "lessons", "02-w1b", "solution", "src", "shared.ts"),
     `export const shared = "v2"\n`);
+  // Build junk planted where a real run would leave it: bytecode beside the
+  // sources, notebook checkpoints, an egg-info dir, macOS cruft. The generator
+  // walks the FILESYSTEM, so .gitignore cannot protect the served tree.
+  mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", "__pycache__"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", "__pycache__", "mod.pyc"), "JUNK");
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", "stray.pyo"), "JUNK");
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", ".DS_Store"), "JUNK");
+  mkdirSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", ".ipynb_checkpoints"), { recursive: true });
+  writeFileSync(join(repo, "workshops", "w1", "lessons", "01-w1a", "solution", "src", ".ipynb_checkpoints", "nb.ipynb"), "JUNK");
+  mkdirSync(join(repo, "base", "src", "mypkg.egg-info"), { recursive: true });
+  writeFileSync(join(repo, "base", "src", "mypkg.egg-info", "PKG-INFO"), "JUNK");
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
@@ -81,6 +92,25 @@ beforeAll(() => {
 }, 60000);
 
 describe("unified compose generator", () => {
+  // Upstreamed from workshop-nexus (base-v18), which shipped the fix untested.
+  // The generator walks the filesystem, so a py_compile check or a notebook run
+  // leaves artifacts beside the sources that would otherwise land in every tag.
+  it("never lets build junk reach a served tree", () => {
+    for (const tag of ["dev/s/w1/w1a", "dev/s/w1/v1", "dev/s/series/v0"]) {
+      const t = showTree(tag);
+      const junk = t.filter((f) =>
+        f.includes("__pycache__") || f.includes(".ipynb_checkpoints") ||
+        f.includes(".egg-info") || f.endsWith(".pyc") || f.endsWith(".pyo") ||
+        f.endsWith(".DS_Store"));
+      expect(junk, `${tag} served build junk`).toEqual([]);
+    }
+  });
+
+  it("still serves the real sources sitting beside that junk", () => {
+    const t = showTree("dev/s/w1/w1b");
+    expect(t.some((f) => f.endsWith("src/shared.ts"))).toBe(true);
+  });
+
   it("emits a tag per lesson + per-ws v1 + series/v0", () => {
     const tags = git(["tag"]).split("\n").filter(Boolean).sort();
     expect(tags).toEqual([

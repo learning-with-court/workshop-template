@@ -8,6 +8,28 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v18 — 2026-07-28
+Upstreams a fix that `workshop-nexus` had been carrying locally. Nexus's
+`scripts/compose.ts` was 14 lines ahead of the base; a verbatim `sync-base`
+would have silently overwritten it and reintroduced the bug.
+
+- **Build junk never reaches a served tree (`scripts/compose.ts`).** The
+  generator walks the FILESYSTEM, not git, so `.gitignore` does not protect the
+  served tree — running a lesson or a `py_compile` check leaves bytecode beside
+  the sources and it lands in every cut tag. `walk()` now skips `__pycache__`,
+  `.ipynb_checkpoints`, `.pytest_cache`, `.ruff_cache`, `node_modules`, any
+  `*.egg-info` directory, and `.pyc` / `.pyo` / `.DS_Store` files.
+- **Tests for it (`scripts/compose.test.ts`).** Nexus shipped this untested. The
+  fixture now plants bytecode, a checkpoints dir, an egg-info dir and `.DS_Store`
+  before composing, and asserts no tag serves them while the real sources beside
+  them survive. Verified to fail with the fix reverted.
+- **`.gitignore` carries nexus's JupyterLab build-intermediate rules.** Not
+  because they are general — they name `extensions/*/lwc_scroll_on_run/` — but
+  because `.gitignore` is a verbatim base file, so a member cannot hold local
+  additions to it: every sync would silently drop them. They are inert in a repo
+  with no `extensions/` directory. A known wart; the alternative is recurring
+  silent loss.
+
 ## base-v17 — 2026-07-28
 Guide-side hardening from the NEXUS live QA walk, all in
 `base/.claude/skills/_walker-base.md` (prose only — no code, no scripts).

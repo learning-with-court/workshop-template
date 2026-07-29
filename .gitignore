@@ -13,3 +13,13 @@ logs/
 
 # Auto-generated locally by hooks — not committed
 docs/features/DASHBOARD.md
+
+# Build intermediates for workshops that ship a JupyterLab extension (nexus).
+# Carried in the shared base on purpose: .gitignore is a verbatim base file, so
+# a member cannot hold local additions here — a sync would silently drop them.
+# These are inert in a repo with no extensions/ directory. The committed PREBUILT
+# artifact under base/.workshop/labextensions/ is deliberate: learners have Python
+# but no guaranteed node toolchain, so they get the built bundle.
+extensions/*/lib/
+extensions/*/tsconfig.tsbuildinfo
+extensions/*/lwc_scroll_on_run/

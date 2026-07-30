@@ -62,3 +62,28 @@ describe("local section", () => {
     expect(sharedPart(f) + localPart(f)).toBe(f);
   });
 });
+
+describe("sentinel must begin a line", () => {
+  // Regression: this file defines the sentinel, so it contains the literal
+  // indented inside a string assignment. An unanchored indexOf matched it, and
+  // sync-base spliced sharedPart(source) + localPart(target) mid-literal —
+  // producing an unterminated string and a SyntaxError at line 26. It also meant
+  // only the first ~26 lines of this validator were ever hash-protected.
+  const definingFile =
+    `export const LOCAL_SENTINEL =\n  "${LOCAL_SENTINEL}";\n\nexport function f() {}\n`;
+
+  it("treats a sentinel inside a string literal as absent", () => {
+    expect(sharedPart(definingFile)).toBe(definingFile);
+    expect(localPart(definingFile)).toBe("");
+  });
+
+  it("hashes the whole defining file, not just its first lines", () => {
+    expect(sha256(sharedPart(definingFile))).toBe(sha256(definingFile));
+  });
+
+  it("still splits a real opt-in file whose sentinel owns its line", () => {
+    const gitignore = `node_modules/\n${LOCAL_SENTINEL}\nlocal/\n`;
+    expect(sharedPart(gitignore)).toBe(`node_modules/\n${LOCAL_SENTINEL}\n`);
+    expect(localPart(gitignore)).toBe("local/\n");
+  });
+});

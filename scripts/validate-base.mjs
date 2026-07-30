@@ -28,15 +28,37 @@ export const LOCAL_SENTINEL =
 /** The synced portion of a file: everything through the sentinel, or the whole
  *  file when there is no sentinel. Hashing only this lets a member edit its
  *  local section freely while still catching edits to shared content. */
+/** Index of the sentinel, but ONLY where it begins a line.
+ *
+ *  Without the line-start requirement, this splitting corrupts the very files
+ *  that DEFINE the sentinel: this file and the workspace's sync-base.ts both
+ *  contain the literal string, indented inside a string assignment. sync-base's
+ *  mergeLocal would then write sharedPart(source) + localPart(target), splicing
+ *  the halves together mid string-literal and emitting an unterminated string.
+ *  Observed for real on the base-v20 sync: SyntaxError at line 26 of this file.
+ *  Real opt-in usage (.gitignore) always puts the sentinel on its own line, so
+ *  line-start matching keeps that working and excludes the self-match.
+ *
+ *  Keep this behaviour identical to sentinelIndex in the workspace's
+ *  scripts/sync-base.ts — the two cannot import each other. */
+function sentinelIndex(content) {
+  for (let from = 0; ; ) {
+    const i = content.indexOf(LOCAL_SENTINEL, from);
+    if (i === -1) return -1;
+    if (i === 0 || content[i - 1] === "\n") return i;
+    from = i + 1;
+  }
+}
+
 export function sharedPart(content) {
-  const i = content.indexOf(LOCAL_SENTINEL);
+  const i = sentinelIndex(content);
   if (i === -1) return content;
   return content.slice(0, i + LOCAL_SENTINEL.length) + "\n";
 }
 
 /** The member-owned portion: everything after the sentinel. "" when absent. */
 export function localPart(content) {
-  const i = content.indexOf(LOCAL_SENTINEL);
+  const i = sentinelIndex(content);
   if (i === -1) return "";
   return content.slice(i + LOCAL_SENTINEL.length).replace(/^\n/, "");
 }

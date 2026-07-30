@@ -30,6 +30,14 @@ There is no `/mcp` equivalent to hand the learner. Never invent one. Degrade by
 handing them the wheel and confirming through the workshop state file and the
 lesson verify.
 
+## Reconnecting a restarted MCP server
+
+If a workshop restarts an MCP server process (or the service it talks to),
+this client keeps holding the dead handle — the new process can be perfectly
+healthy while this session's tool calls hang. The reconnect gesture here is to
+toggle the server off and back on in MCP settings, or reload the window. Then
+confirm with the cheapest read the server offers before relying on it again.
+
 ## Process lifetime
 
 A backgrounded process started from a tool call may be killed with the tool's

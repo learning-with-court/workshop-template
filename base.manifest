@@ -22,6 +22,8 @@
     "base/.claude/skills/_walker-base.md",
     "base/.claude/skills/_walker-detection.md",
     "base/.claude/skills/_walker-gates.md",
+    "base/.claude/skills/_walker-surface-claude-code.md",
+    "base/.claude/skills/_walker-surface-cursor.md",
     "base/.claude/skills/primers/tool_use.md",
     ".github/workflows/ci.yml",
     ".github/workflows/manifest-lint.yml",

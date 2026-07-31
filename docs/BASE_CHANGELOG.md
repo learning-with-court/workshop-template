@@ -8,6 +8,33 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v22 — 2026-07-31
+Gates are now defined per workshop MODE, declared as `mode:` in
+`.workshop/mechanics.yaml`. `mode: builder` (the default when unset) is the
+existing behaviour, unchanged: the learner drives, and HARD gates block until
+they act. `mode: presented` is new: the GUIDE drives — running notebook cells
+through a live kernel, for example — and the learner watches, directs and
+decides.
+
+**A presented workshop has no HARD gates.** A HARD gate blocks until the
+learner acts, and in this mode the learner is not the one acting, so there is
+nothing to block on. The doctrine had only ever described the builder case —
+its examples are "apply this diff in your editor" and "a secret pasted into
+`.env`" — so a presented workshop had to bend the vocabulary to fit. Nexus
+ended up with 31 HARD gates covering exactly three real learner actions, and
+eleven of them asserted GUIDE behaviour ("the idea is actually explained"),
+which a walker cannot wait for because it cannot wait on itself.
+
+Presented workshops name three things instead: **preconditions** the guide
+checks by reading state, **teaching requirements** the judge scores, and
+**decisions** — the one place a presented walker genuinely waits, because a
+knob that changes what happens next must be offered with evidence and answered
+by the learner. Offering a decision is not quizzing; no right answer is being
+withheld.
+
+Purely additive: `mode` is absent everywhere today, absence means `builder`,
+and no existing workshop changes behaviour.
+
 ## base-v19 — 2026-07-29
 Members can now hold local additions to a synced file. Until now they could
 not: `.gitignore` is verbatim, so anything a member added was silently dropped

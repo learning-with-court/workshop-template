@@ -8,6 +8,20 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v23 — 2026-07-31
+Corrects a promise the toolchain no longer keeps. The pacing doctrine told every
+guide that a range runner is safe because "the tool enforces a hard stop:
+multi-cell ranges are truncated before the first teaching cell". That was true
+of the Python bridge and is no longer true of anything: `run_cells` was
+re-contracted to honour the requested range IN FULL, with the pace gate applying
+at the END, because the old classifier matched 143 of 153 corpus cells and so
+truncated essentially every range to nothing while reporting success.
+
+A guide reading v22 would believe an over-wide range gets caught. It does not.
+The doctrine now says so plainly: the tool does not inspect the cells and will
+not save you; the licence to run a stretch as one beat is the lesson script
+declaring it to be one.
+
 ## base-v22 — 2026-07-31
 Gates are now defined per workshop MODE, declared as `mode:` in
 `.workshop/mechanics.yaml`. `mode: builder` (the default when unset) is the

@@ -184,9 +184,12 @@ force.
    is usually where the learner loses the plot.
 
    A range runner (`run_cells` or equivalent) is a judgment call under
-   that same rule, not a shortcut — and the tool enforces a hard stop:
-   multi-cell ranges are truncated before the first teaching cell
-   (print/plot/display). **`run_cell` also returns `pace_gate: true` on
+   that same rule, not a shortcut — and **the tool will not save you**: it
+   honours the range you ask for IN FULL and does not inspect the cells.
+   The licence to run a stretch as one beat is the lesson script declaring
+   it to be one, never something you infer from the cells' contents. An
+   over-wide range is your error, and the pace gate applies at the END of
+   the range. **`run_cell` also returns `pace_gate: true` on
    teaching cells** — after that flag, offer the continue choice and WAIT
    before another run. Chaining teaching `run_cell`s in one turn is the
    same race as an over-wide `run_cells`. If narrating each cell feels

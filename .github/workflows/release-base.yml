@@ -1,0 +1,74 @@
+name: release-base
+# Cuts the base-v<N> tag automatically when the shared base changes on main.
+#
+# This tag is what `scripts/sync-base.ts --tag base-v<N>` (in the workspace
+# repo) reads to push the base out to member workshops. It used to be created
+# by hand, which failed exactly the way hand steps fail: base.manifest declared
+# base-v24 while the newest tag in the repo was still base-v23, so a sync would
+# have silently kept every member on the old base. Nothing surfaced it — the
+# sync script happily syncs whichever tag you name.
+#
+# BASE-OWNER ONLY. This workflow lives in workshop-template and no member. It
+# is deliberately NOT listed in base.manifest, so `sync-base` never copies it
+# into a member. A workshop scaffolded with `gh repo create --template` does
+# get a copy, so the guard below no-ops anywhere without base.manifest.
+on:
+  push:
+    branches: [main]
+    paths:
+      - base.manifest
+      - base/**
+      - .github/workflows/**
+      - scripts/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cut base-v<N> if the declared version has no tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f base.manifest ]; then
+            echo "No base.manifest — not the base owner, nothing to tag."
+            echo "### release-base: skipped (not the base owner)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          VERSION=$(python3 -c 'import json;print(json.load(open("base.manifest"))["version"])')
+          echo "base.manifest declares $VERSION"
+
+          if ! printf '%s' "$VERSION" | grep -Eq '^base-v[0-9]+$'; then
+            echo "::error::base.manifest version %s is not of the form base-v<N>." "$VERSION"
+            exit 1
+          fi
+
+          # Already tagged at THIS commit — a re-run or an unrelated push.
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            TAGGED=$(git rev-list -n1 "$VERSION")
+            if [ "$TAGGED" = "$GITHUB_SHA" ]; then
+              echo "$VERSION already points here. Nothing to do."
+              echo "### release-base: $VERSION already current." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            # Tag exists elsewhere: the base changed without bumping the
+            # version. Moving a published base tag would silently change what
+            # every member syncs, so refuse and make the operator bump it.
+            echo "::error::$VERSION is already tagged at $TAGGED but the base changed in $GITHUB_SHA. Bump the version in base.manifest (and add a docs/BASE_CHANGELOG.md entry) instead of moving a published base tag."
+            exit 1
+          fi
+
+          gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$VERSION" -f sha="$GITHUB_SHA" >/dev/null
+          echo "Cut $VERSION at $GITHUB_SHA."
+          echo "### release-base: cut \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Members pick it up with \`sync-base.ts --tag $VERSION\` from the workspace repo." >> "$GITHUB_STEP_SUMMARY"

@@ -1,9 +1,19 @@
 name: compose
-# Cut env-namespaced compose tags automatically on branch push:
+# Cut env-namespaced compose tags:
 #   dev  → dev/<short>/…   (feeds dev.workshop.institute + `lwc setup` dev)
 #   main → prod/<short>/…  (feeds workshop.institute + `lwc setup` prod)
-# Replaces the manual `compose.ts --push` operator step. Synced from the base;
-# no-ops in the base owner (has base.manifest) and any repo without series.yaml.
+# Replaces the manual `compose.ts --push` operator step. Synced from the base.
+#
+# Runs automatically on a push to dev/main, and can be triggered by hand from
+# the Actions tab or with `gh workflow run compose -R <repo> --ref <branch>`
+# — a re-cut must never require inventing a commit to push.
+#
+# SKIPPING is deliberately narrow. This workflow no-ops only in the base OWNER
+# (base.manifest AND no base.lock) or a repo with no series.yaml to compose.
+# It is NOT enough to test base.manifest alone: a workshop scaffolded by
+# copying the template carries a stray base.manifest, and that silently turned
+# compose into a no-op in workshop-nexus for its entire life — every run green,
+# not one tag ever cut. Members always carry base.lock; the owner never does.
 #
 # The compose tags carry .github/workflows/ files, which the built-in
 # GITHUB_TOKEN is barred from pushing. We generate the shared learning-with-court
@@ -13,6 +23,14 @@ name: compose
 on:
   push:
     branches: [dev, main]
+  workflow_dispatch:
+    inputs:
+      env:
+        description: "Which tag family to cut (defaults to the branch: main→prod, else dev)"
+        required: false
+        type: choice
+        options: ["", dev, prod]
+        default: ""
 
 concurrency:
   group: compose-${{ github.ref }}
@@ -33,9 +51,20 @@ jobs:
           fetch-depth: 0
       - id: check
         run: |
-          if [ -f base.manifest ] || [ ! -f series.yaml ]; then
-            echo "Base owner or no series.yaml — skipping compose."
+          # Base OWNER = declares the base (base.manifest) and does not consume
+          # it (no base.lock). A member with a stray base.manifest is still a
+          # member and must compose.
+          if [ -f base.manifest ] && [ ! -f base.lock ]; then
+            REASON="base owner (base.manifest, no base.lock)"
+          elif [ ! -f series.yaml ]; then
+            REASON="no series.yaml"
+          fi
+          # A skip is legitimate, but it must never be invisible: an
+          # unexplained green compose run is what hid the nexus bug.
+          if [ -n "$REASON" ]; then
             echo "skip=1" >> "$GITHUB_OUTPUT"
+            echo "Skipping compose — $REASON. No tags cut."
+            echo "### compose: SKIPPED — $REASON. No tags cut." >> "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/setup-node@v4
         if: steps.check.outputs.skip != '1'
@@ -45,7 +74,24 @@ jobs:
         if: steps.check.outputs.skip != '1'
         env:
           REF_NAME: ${{ github.ref_name }}
+          ENV_INPUT: ${{ inputs.env }}
         run: |
           npm i -g tsx
-          ENV=$([ "$REF_NAME" = "main" ] && echo prod || echo dev)
+          # Explicit dispatch input wins; otherwise the branch decides.
+          if [ -n "$ENV_INPUT" ]; then
+            ENV="$ENV_INPUT"
+          else
+            ENV=$([ "$REF_NAME" = "main" ] && echo prod || echo dev)
+          fi
+          echo "Cutting \"$ENV\" tags from $REF_NAME."
           tsx scripts/compose.ts --env "$ENV" --push
+          # Floor check, not a freshness check: it catches a repo that has NEVER
+          # cut a tag for this env (the nexus case) rather than proving this run
+          # moved anything. compose.ts exits 0 having composed nothing, so
+          # without this such a repo reports success having published nothing.
+          COUNT=$(git tag --list "$ENV/*" | wc -l | tr -d ' ')
+          echo "Cut $COUNT tag(s) under \"$ENV/\"." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::compose produced no $ENV/* tags — refusing to report success."
+            exit 1
+          fi

@@ -48,8 +48,31 @@ jobs:
           echo "base.manifest declares $VERSION"
 
           if ! printf '%s' "$VERSION" | grep -Eq '^base-v[0-9]+$'; then
-            echo "::error::base.manifest version %s is not of the form base-v<N>." "$VERSION"
+            echo "::error::base.manifest version $VERSION is not of the form base-v<N>."
             exit 1
+          fi
+
+          # Did this push actually touch the BASE? The paths: filter above is a
+          # cheap pre-screen only — it matches whole directories, so an
+          # owner-only file (this very workflow, for one) trips it while
+          # changing nothing a member consumes. Decide from base.manifest
+          # itself: a base file is one listed in `verbatim`, anything under
+          # base/, or the manifest. Without this the job demands a version bump
+          # for changes that aren't part of the base at all — which is exactly
+          # what it did on the commit that introduced it.
+          BEFORE="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] \
+             && git rev-parse -q --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            # Kept to one line on purpose: a multi-line python -c inside a YAML
+            # block scalar has to start at column 0, which breaks the scalar.
+            TOUCHED=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" | python3 -c "import json,sys; v=set(json.load(open('base.manifest')).get('verbatim',[])); print('\n'.join(p for p in (l.strip() for l in sys.stdin) if p and (p in v or p.startswith('base/') or p=='base.manifest')))")
+            if [ -z "$TOUCHED" ]; then
+              echo "No base files changed in this push — nothing to tag."
+              echo "### release-base: no base files changed; \`$VERSION\` left alone." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Base files changed:"
+            printf '  %s\n' $TOUCHED
           fi
 
           # Already tagged at THIS commit — a re-run or an unrelated push.

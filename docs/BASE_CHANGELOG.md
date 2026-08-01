@@ -8,6 +8,25 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v24 — 2026-07-31
+Re-cutting a workshop is now a one-command operation, and a compose run that
+cuts nothing can no longer report success.
+
+`compose.yml` gains `workflow_dispatch` (with an optional `env` input that
+overrides the branch default), so an operator re-cuts with
+`gh workflow run compose -R <repo> --ref main` instead of inventing a commit to
+push. A re-cut is routine and should never require faking a change.
+
+The skip guard is also corrected. It tested `base.manifest` alone to detect the
+base owner, but a workshop scaffolded by copying this template carries a stray
+`base.manifest` — so it looked like the owner and no-opped. That is exactly what
+happened to `workshop-nexus`: every compose run since the workflow landed
+skipped and reported success, and not one tag was ever cut. The guard now
+requires `base.manifest` AND no `base.lock` (members always carry the lock, the
+owner never does), a skip states its reason in the log and the job summary, and
+the compose step fails outright if it ends with zero tags for the env rather
+than going green having published nothing.
+
 ## base-v23 — 2026-07-31
 Corrects a promise the toolchain no longer keeps. The pacing doctrine told every
 guide that a range runner is safe because "the tool enforces a hard stop:

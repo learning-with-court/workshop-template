@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v24",
+  "version": "base-v25",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",
@@ -19,6 +19,7 @@
     "base/.workshop/vitest-setup.ts",
     "base/.claude/settings.json",
     "base/.claude/hooks/block-edits.sh",
+    "base/.claude/hooks/live-assist.sh",
     "base/.claude/skills/_walker-base.md",
     "base/.claude/skills/_walker-detection.md",
     "base/.claude/skills/_walker-gates.md",

@@ -1,5 +1,7 @@
 {
-  "enabledMcpjsonServers": ["lwc-WORKSHOP_ID"],
+  "enabledMcpjsonServers": [
+    "lwc-WORKSHOP_ID"
+  ],
   "hooks": {
     "PreToolUse": [
       {
@@ -28,6 +30,28 @@
           {
             "type": "command",
             "command": ".claude/hooks/block-edits.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/live-assist.sh UserPromptSubmit",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/live-assist.sh Stop",
             "timeout": 5
           }
         ]

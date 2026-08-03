@@ -1,0 +1,23 @@
+{
+  "surface": "code-notebook",
+  "version": "notebook-base-v1",
+  "sourceRoot": "notebook-base",
+  "verbatim": [
+    "base/jupytext.toml",
+    "base/.workshop/jupyter-overrides.json",
+    "base/.workshop/labextensions/lwc-scroll-on-run/package.json",
+    "base/.workshop/labextensions/lwc-scroll-on-run/static/509.bb9306e5f9f9944c6f50.js",
+    "base/.workshop/labextensions/lwc-scroll-on-run/static/remoteEntry.77e32dc814723489d479.js",
+    "base/.workshop/labextensions/lwc-scroll-on-run/static/style.js",
+    "base/.workshop/labextensions/lwc-scroll-on-run/static/third-party-licenses.json",
+    "base/.workshop/labextensions/lwc-scroll-on-run/schemas/lwc-scroll-on-run/plugin.json",
+    "base/.workshop/labextensions/lwc-scroll-on-run/schemas/lwc-scroll-on-run/package.json.orig",
+    "base/tests/notebook_verify.py",
+    "extensions/scroll-on-run/package.json",
+    "extensions/scroll-on-run/package-lock.json",
+    "extensions/scroll-on-run/tsconfig.json",
+    "extensions/scroll-on-run/README.md",
+    "scripts/validate-notebook-base.mjs",
+    ".github/workflows/validate-notebook-base.yml"
+  ]
+}

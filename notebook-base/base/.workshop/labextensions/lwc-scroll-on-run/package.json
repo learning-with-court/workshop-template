@@ -1,0 +1,47 @@
+{
+  "name": "lwc-scroll-on-run",
+  "version": "0.1.0",
+  "description": "Scroll the notebook to whichever cell just ran, including cells driven from outside the browser (the workshop's notebook bridge).",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension"
+  ],
+  "license": "BSD-3-Clause",
+  "author": "learning-with-court",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*.{d.ts,js,js.map}",
+    "schema/*.json"
+  ],
+  "scripts": {
+    "build": "tsc && jupyter labextension build --development True .",
+    "build:prod": "tsc && jupyter labextension build .",
+    "clean": "rm -rf lib tsconfig.tsbuildinfo lwc_scroll_on_run"
+  },
+  "dependencies": {
+    "@jupyter/ydoc": "^4.1.1",
+    "@jupyterlab/application": "^4.6.2",
+    "@jupyterlab/cells": "^4.6.2",
+    "@jupyterlab/notebook": "^4.6.2",
+    "@jupyterlab/settingregistry": "^4.6.2",
+    "@jupyterlab/ui-components": "^4.6.2"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.5.10",
+    "typescript": "~5.5.4"
+  },
+  "sideEffects": [
+    "style/*.css"
+  ],
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "lwc_scroll_on_run/labextension",
+    "schemaDir": "schema",
+    "_build": {
+      "load": "static/remoteEntry.77e32dc814723489d479.js",
+      "extension": "./extension"
+    }
+  }
+}

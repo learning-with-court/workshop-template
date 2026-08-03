@@ -1,0 +1,23 @@
+name: validate-notebook-base
+# Synced into every notebook workshop by sync-notebook-base. Bare `node`, no
+# install: notebook workshops are Python and have no node_modules, so the
+# validator is deliberately dependency-free.
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+jobs:
+  validate-notebook-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - name: Check synced notebook base files have not drifted
+        run: |
+          if [ ! -f notebook-base.lock ]; then
+            echo "No notebook-base.lock — repo is not on the notebook base. Skipping."
+            exit 0
+          fi
+          node scripts/validate-notebook-base.mjs

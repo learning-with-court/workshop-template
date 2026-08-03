@@ -1,0 +1,192 @@
+# REFERENCE ONLY — this file is NOT synced into members.
+#
+# It is deliberately absent from notebook-base.manifest's `verbatim` list.
+# `.workshop/mechanics.yaml` mixes two kinds of thing, and only one of them
+# belongs to the template:
+#
+#   MECHANICAL (the template's business, validated by validate-notebook-base):
+#     medium, env.*, verify.*, scaffolding
+#
+#   PEDAGOGICAL (yours alone, and the validator must never assert on it):
+#     mode, judgeNotes, contentNotes, learnerBrief, gates, whether you quiz
+#
+# A byte-for-byte sync cannot express that split, and the LOCAL_SENTINEL trick
+# is a bad fit for YAML: a mis-split yields invalid YAML rather than a visible
+# error. So the template shares the SHAPE and validates conformance, while each
+# workshop owns its own file.
+#
+# Copy this to base/.workshop/mechanics.yaml, fill in the mechanical parts, and
+# write your own pedagogy. `validate-notebook-base` checks the mechanical keys
+# and is silent about the rest.
+
+version: 1
+
+# REQUIRED, and it is the switch everything else hangs off. `pyenv.Medium()` in
+# the lwc CLI reads this to decide whether to register the notebook tools; the
+# walker harness reads it to adapt its scaffold gate and personas. Absence
+# safely means "not a notebook workshop", which is why no other workshop
+# declares a medium and none needs to.
+medium: python-notebook
+
+# PEDAGOGY, NOT MECHANICS. Who drives the work.
+#   presented — the GUIDE executes cells; the learner directs and decides.
+#               Per _walker-gates.md a presented workshop has NO HARD gates.
+#   builder   — the LEARNER edits and runs; HARD/SOFT gates apply.
+# The template has no opinion here and the validator does not check it. Nexus
+# is `presented`; a notebook workshop that wants the learner's hands on the
+# keyboard should say `builder` and is entirely free to.
+mode: presented
+
+env:
+  # Pin the interpreter. uv otherwise picks the newest interpreter on the
+  # machine, and a private SDK's numba/llvmlite chain typically lags the newest
+  # CPython by a release or two. uv will download the pinned version.
+  python: "3.12"
+
+  # Env vars that must be present for the BUILD to succeed. Note this is
+  # distinct from keys a lesson needs at RUN time: a token for a private index
+  # is required to build the environment at all, on every lesson, even ones
+  # that make no API calls. Do not conflate the two when describing costs to
+  # learners.
+  requires: []
+
+  # Rebuild the env only when these files change between lesson trees.
+  cacheKey:
+    - "pyproject.toml"
+
+  # Safe to carry across per-lesson checkouts. NEVER list notebooks/ — those
+  # are re-materialized per lesson by the build, and reusing them would carry a
+  # previous lesson's outputs forward.
+  reuse:
+    - ".venv"
+
+  # Ordered build steps. Recognized keys, all validated by
+  # validate-notebook-base:
+  #   name        (required) human-readable step label
+  #   install     list of package specs
+  #   indexUrl    alternate index for THIS step only
+  #   noDeps      resolve without dependencies
+  #   editable    install the local project editable
+  #   probeImport import a module to check a system dep; pair with note/remedy
+  #   note        lines printed when a probe fails
+  #   remedy      per-platform fix strings (darwin / linux / default)
+  #   optional    a failure here does not fail the build
+  #   fatal       a probe failure DOES fail the build (default false)
+  #   mkdir       create a directory
+  #   run         argv list to execute
+  #   copy / copyTree + to   copy a path into the built env
+  build:
+    # If your SDK lives on a private index, install it from that index ONLY and
+    # without deps. Consulting no public index for it is what avoids
+    # dependency confusion.
+    #
+    # - name: "Installing the SDK from the private index"
+    #   install: ["your-sdk>=1.0,<2"]
+    #   indexUrl: "https://example.invalid/${YOUR_TOKEN}/simple/"
+    #   noDeps: true
+
+    # Then resolve workshop deps AND the SDK's deps in ONE solve. A split
+    # install lets the first phase pin numpy/pandas past what the SDK's numba
+    # chain supports, driving the resolver into unbuildable ancient sdists.
+    - name: "Installing workshop dependencies"
+      editable: true
+      install:
+        - "."
+
+    # System libraries no Python package manager can install. Probe them here
+    # so the failure lands at setup rather than thirty cells into a lesson.
+    #
+    # Set `fatal: true` when the library is load-bearing for the workshop.
+    # Nexus leaves its OpenMP probe non-fatal because xgboost sits behind one
+    # OPTIONAL benchmark there, so a miss costs part of one lesson. A workshop
+    # where xgboost is core must make it fatal instead, or learners discover
+    # the problem mid-lesson.
+    #
+    # - name: "Checking optional system deps (OpenMP, for xgboost)"
+    #   probeImport: "xgboost"
+    #   fatal: false
+    #   note:
+    #     - "This workshop's benchmark needs the OpenMP runtime,"
+    #     - "which pip/uv cannot install. Fix with:"
+    #   remedy:
+    #     darwin: "brew install libomp"
+    #     linux: "sudo apt-get install -y libgomp1   # or: dnf install libgomp"
+    #     default: "install your platform's OpenMP runtime (libomp / libgomp)"
+
+    # Materialize notebooks from the git-tracked py:percent sources. Required
+    # for any notebook workshop: src/ is what git sees, notebooks/ is what the
+    # learner opens, and jupytext.toml pairs them.
+    - name: "Materializing lesson notebooks (jupytext src/ -> notebooks/)"
+      mkdir: "notebooks"
+      run:
+        - "jupytext"
+        - "--quiet"
+        - "--sync"
+        - "src/*.py"
+
+    # JupyterLab settings. overrides.json is strict JSON and cannot carry
+    # comments, so the non-obvious setting is explained here: `fetchNews`
+    # defaults to "none", which means ASK, and that default is what pops
+    # "Would you like to receive official Jupyter news?" at a learner a minute
+    # into their first lesson. "false" means never. It is a string enum, not a
+    # boolean, so the quoted value is deliberate. `doNotDisturbMode` is
+    # deliberately NOT set: it would silence every toast including the ones
+    # that matter, like a failed save.
+    - name: "Installing JupyterLab settings (autosave, jupytext pairing, no news popup)"
+      copy: ".workshop/jupyter-overrides.json"
+      to: ".venv/share/jupyter/lab/settings/overrides.json"
+
+    # The guide runs cells through a kernel client rather than through the
+    # browser, so JupyterLab's own scroll-to-the-cell-I-just-ran never fires
+    # and output would appear offscreen. This extension follows the cell
+    # instead. Shipped prebuilt, so installing it is a copy.
+    - name: "Installing JupyterLab extensions (follow the cell being run)"
+      copyTree: ".workshop/labextensions"
+      to: ".venv/share/jupyter/labextensions"
+      optional: true
+
+verify:
+  # Ships-broken probe: a collection failure means the shipped tests or chassis
+  # are broken independent of learner progress, which is a different diagnosis
+  # from "the learner has not done the work yet".
+  collect: ".venv/bin/pytest --collect-only -q tests/"
+
+  # Verify output classification. Notebook verify PRINTS diagnostics by design
+  # (see tests/notebook_verify.py), so the harness needs patterns to tell
+  # "not built yet" apart from "ships broken" apart from real failure.
+  notBuiltPatterns:
+    - "not materialized"
+    - "No .venv found"
+    - "does not exist yet"
+    - "no cells executed yet"
+  shipsBrokenPatterns:
+    - "ImportError"
+    - "ModuleNotFoundError"
+    - "SyntaxError"
+    - "jupytext sync failed"
+
+# Chassis files, never learner deliverables. A guide editing one of these
+# mid-walk is a "guide repaired scaffolding" finding rather than progress.
+scaffolding:
+  - "pyproject.toml"
+  - "jupytext.toml"
+  - "scripts/**"
+  - "tests/**"
+  - ".workshop/**"
+  - ".vscode/**"
+  - ".env.example"
+
+# ── Below here is PEDAGOGY. The validator ignores all of it, on purpose. ──
+
+# learnerBrief: ".workshop/learner-brief.md"
+
+# contentNotes: |
+#   How to read this workshop's artifacts as COURSEWARE rather than as source
+#   files. Injected into the content reviewer's prompts.
+
+# judgeNotes: |
+#   Medium- and mode-specific guide behaviour, so the walk judge scores it
+#   correctly instead of penalizing it. A presented workshop MUST say that
+#   guide-driven cell execution is the delivery contract, not a pedagogy
+#   violation. If your workshop quizzes, say so here; if it bans quizzing, say
+#   that instead. The template deliberately carries neither.

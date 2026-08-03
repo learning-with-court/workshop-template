@@ -1,0 +1,35 @@
+{
+  "title": "Scroll on run",
+  "description": "Follow cells that are executed from outside the browser.",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "title": "Enabled",
+      "description": "Scroll the notebook to a cell when its output changes.",
+      "type": "boolean",
+      "default": true
+    },
+    "alignment": {
+      "title": "Where to place the cell",
+      "description": "Vertical placement of the cell being scrolled to. The default, 'smart', only scrolls when the cell is out of view, so running a cell you are already looking at does not move the page.",
+      "type": "string",
+      "enum": ["smart", "center", "top-center", "start", "end", "auto"],
+      "default": "smart"
+    },
+    "scrollOnSourceChange": {
+      "title": "Also follow cells as they are written",
+      "description": "Scroll when a cell's SOURCE changes, not just its output. Off by default: with jupytext pairing, a round-trip through the .py file can rewrite many cells at once and cause scroll storms.",
+      "type": "boolean",
+      "default": false
+    },
+    "debounceMs": {
+      "title": "Coalescing window (ms)",
+      "description": "Streaming output fires many changes per cell. Only one scroll happens per window.",
+      "type": "number",
+      "default": 300,
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false,
+  "jupyter.lab.setting-icon-label": "Scroll on run"
+}

@@ -1,0 +1,11 @@
+# Pair every lesson source in src/ (py:percent, git-tracked) with a real
+# notebook in notebooks/ (learner working files, gitignored).
+#
+# JupyterLab (with the jupytext extension, installed by the env build) keeps
+# the pair in sync automatically on save. In VS Code, the lesson verify
+# command runs `jupytext --sync` before pytest, so the src/ mirror is
+# current whenever verification runs.
+
+[formats]
+"src/" = "py:percent"
+"notebooks/" = "ipynb"

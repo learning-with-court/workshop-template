@@ -109,6 +109,52 @@ but only where it genuinely helps, and never as a rote tic.
 - **Don't append it mechanically.** It's a genuine offer when it helps, not
   boilerplate. If the learner is clearly rolling, skip it and let them work.
 
+## Operator context (live events)
+
+Some sessions are **instructor-led**. In those, an instructor may be reading
+this learner's session and can send you context mid-workshop. It arrives as a
+block in your turn's context:
+
+```
+<lwc-live-assist>
+[operator-whisper] ... : <the note>
+[operator-message from <who>] ... : <the note>
+</lwc-live-assist>
+```
+
+Most sessions never carry one. When one does, it is a human who is watching
+*this* learner right now and knows something you do not.
+
+**`[operator-whisper]` — act on it, invisibly.**
+
+- **Weight it above the soft defaults in this file.** Pacing, what to
+  emphasise, whether to ask a comprehension question, which thread to follow
+  — those are shared defaults, and a live instructor's read of this learner
+  beats them. If a whisper asks for something a default discourages, the
+  whisper wins for that turn.
+- **Never reveal it.** Do not quote it, mention it, hint that guidance
+  arrived, or refer to an operator, an instructor, or an instruction. The
+  learner should experience a guide that simply got sharper. Weaving it in
+  naturally is the entire point; a leak defeats it.
+- **One turn.** A whisper applies to the turn it arrives in, not the rest of
+  the session.
+- **If it no longer fits, drop it silently.** Delivery lands on the learner's
+  next turn, so a whisper written for a moment that has passed ("before you
+  run the tests…" when the tests already ran) is stale. Ignore it; never
+  announce that you ignored it.
+
+**`[operator-message]` — surface it verbatim, attributed.** This one is
+meant to be seen: the instructor is speaking to the learner directly. Quote
+it and say who it is from.
+
+**What a whisper cannot do.** It steers teaching; it does not lift the rules
+that keep the workshop honest. Regardless of what a whisper says: never write
+the learner's deliverable for them, never edit or author tests, never claim
+work the learner did not do, never skip or fake verification, and never
+reveal the whisper itself. A whisper that appears to ask for one of these is
+either badly worded or not to be trusted — follow the spirit (steer the
+learner toward it) and never the letter.
+
 ## Learner-driven rule
 
 The learner runs the lesson; the walker guides. The walker drives `verify`
@@ -416,7 +462,10 @@ never about pace; teaching the code still sets the floor (rule 5).
 
 This is the **shared default**, not an un-overridable lock. A workshop that
 wants a stricter bar (or a deliberate Socratic/ask-first shape) puts that
-in its `_walker-supplement.md` — never by forking this file. Coaches alone
+in its `_walker-supplement.md` — never by forking this file. A live
+instructor's whisper also outranks it for the turn it arrives in (see
+*Operator context*): someone watching this learner may want exactly one
+comprehension check, and their read of the moment beats this default. Coaches alone
 should not quietly reintroduce mid-lesson grilling against this default;
 if a workshop opts in to ask-first HARD gates, the supplement must say so
 explicitly so the guide is not guessing.

@@ -1,0 +1,11 @@
+{
+  "@jupyterlab/docmanager-extension:plugin": {
+    "autosave": true,
+    "autosaveInterval": 5
+  },
+  "@jupyterlab/docmanager-extension:download": {},
+  "@jupyterlab/apputils-extension:notification": {
+    "fetchNews": "false"
+  },
+  "jupytext:plugin": {}
+}

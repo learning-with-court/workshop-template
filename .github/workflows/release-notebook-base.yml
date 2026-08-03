@@ -1,0 +1,93 @@
+name: release-notebook-base
+# Cuts the notebook-base-v<N> tag automatically when the notebook base changes
+# on main. Sibling of release-base.yml, with an independent version line.
+#
+# This tag is what `scripts/sync-notebook-base.ts --tag notebook-base-v<N>` (in
+# the workspace repo) reads to push the notebook chassis out to notebook
+# workshops. Hand-cut tags failed exactly the way hand steps fail: base.manifest
+# once declared base-v24 while the newest tag was still base-v23, so a sync
+# would have silently kept every member on the old base. The sync script happily
+# syncs whichever tag you name, so nothing surfaces it.
+#
+# OWNER ONLY. This workflow lives at the template root, NOT under
+# notebook-base/, so sync-notebook-base can never copy it into a member. A
+# workshop scaffolded with `gh repo create --template` does get a copy, so the
+# guard below no-ops anywhere without notebook-base.manifest.
+on:
+  push:
+    branches: [main]
+    paths:
+      - notebook-base.manifest
+      - notebook-base/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Cut notebook-base-v<N> if the declared version has no tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f notebook-base.manifest ]; then
+            echo "No notebook-base.manifest — not the notebook base owner, nothing to tag."
+            echo "### release-notebook-base: skipped (not the owner)" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          VERSION=$(python3 -c 'import json;print(json.load(open("notebook-base.manifest"))["version"])')
+          echo "notebook-base.manifest declares $VERSION"
+
+          if ! printf '%s' "$VERSION" | grep -Eq '^notebook-base-v[0-9]+$'; then
+            echo "::error::notebook-base.manifest version $VERSION is not of the form notebook-base-v<N>."
+            exit 1
+          fi
+
+          # Did this push actually touch the notebook base? The paths: filter
+          # above is a cheap pre-screen only. Everything a member consumes lives
+          # under the manifest's sourceRoot, so the check is simpler than
+          # release-base's: a notebook-base file is one under that root, or the
+          # manifest itself.
+          ROOT=$(python3 -c 'import json;print(json.load(open("notebook-base.manifest")).get("sourceRoot","notebook-base"))')
+          BEFORE="${{ github.event.before }}"
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$BEFORE" ] \
+             && git rev-parse -q --verify "$BEFORE^{commit}" >/dev/null 2>&1; then
+            TOUCHED=$(git diff --name-only "$BEFORE" "$GITHUB_SHA" \
+              | grep -E "^($ROOT/|notebook-base\.manifest$)" || true)
+            if [ -z "$TOUCHED" ]; then
+              echo "No notebook base files changed in this push — nothing to tag."
+              echo "### release-notebook-base: no notebook base files changed; \`$VERSION\` left alone." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Notebook base files changed:"
+            printf '  %s\n' $TOUCHED
+          fi
+
+          # Already tagged at THIS commit — a re-run or an unrelated push.
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            TAGGED=$(git rev-list -n1 "$VERSION")
+            if [ "$TAGGED" = "$GITHUB_SHA" ]; then
+              echo "$VERSION already points here. Nothing to do."
+              echo "### release-notebook-base: $VERSION already current." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            # Tag exists elsewhere: the notebook base changed without bumping the
+            # version. Moving a published tag would silently change what every
+            # notebook workshop syncs, so refuse and make the operator bump it.
+            echo "::error::$VERSION is already tagged at $TAGGED but the notebook base changed in $GITHUB_SHA. Bump the version in notebook-base.manifest (and add a docs/NOTEBOOK_BASE_CHANGELOG.md entry) instead of moving a published tag."
+            exit 1
+          fi
+
+          gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$VERSION" -f sha="$GITHUB_SHA" >/dev/null
+          echo "Cut $VERSION at $GITHUB_SHA."
+          echo "### release-notebook-base: cut \`$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Notebook workshops pick it up with \`sync-notebook-base.ts --tag $VERSION\` from the workspace repo." >> "$GITHUB_STEP_SUMMARY"

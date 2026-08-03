@@ -29,8 +29,28 @@ import { z } from "zod";
 
 export const NOTEBOOK_MEDIUM = "python-notebook";
 
-/** Step keys the env builder understands. An unknown key is almost always a
- *  typo that silently does nothing, which is the failure this catches. */
+/** Step keys the env builder understands.
+ *
+ *  SOURCE OF TRUTH: `parseStep`'s switch in lwc-cli's `internal/pyenv/build.go`.
+ *  Keep this list byte-for-byte in step with those `case` labels. Different
+ *  repos and different languages, so they cannot import each other; they agree
+ *  by convention, and the convention has already failed once.
+ *
+ *  Get it wrong in either direction and it is worse than having no linter:
+ *
+ *  - A key HERE that pyenv does not accept: the linter passes a config that
+ *    aborts the entire env build with `unknown key "..."`, so learners get no
+ *    Python environment at all — no notebooks, no verify. This is not
+ *    hypothetical. `fatal` was written into this list and into
+ *    notebook-base/mechanics.reference.yaml from the reference doc rather than
+ *    from pyenv, before pyenv implemented it, and it shipped that way to
+ *    ml-foundations.
+ *  - A key MISSING here that pyenv does accept: the linter rejects a valid
+ *    workshop and the author has to work around their own tooling.
+ *
+ *  When pyenv gains or loses a key, change this list in the same PR and update
+ *  the reference mechanics.yaml's documented key comment too. `fatal` requires
+ *  a lwc-cli build that includes learning-with-court/lwc-cli#35. */
 export const KNOWN_BUILD_KEYS = [
   "name",
   "install",

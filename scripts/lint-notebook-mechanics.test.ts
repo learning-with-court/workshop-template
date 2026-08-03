@@ -138,3 +138,58 @@ describe("the shipped reference file", () => {
     expect(lintText(text)).toEqual([]);
   });
 });
+
+// The linter's key list mirrors pyenv's parseStep switch across a repo and a
+// language boundary, so nothing can enforce the coupling automatically. Pinning
+// the exact set at least makes a drift a deliberate edit with a failing test,
+// rather than a silent divergence that ships a broken env build to learners.
+//
+// Re-derive with, from the lwc-cli checkout:
+//   grep -oE '^\t\tcase "[a-zA-Z]+"' internal/pyenv/build.go
+describe("KNOWN_BUILD_KEYS provenance", () => {
+  it("matches pyenv's parseStep switch exactly", () => {
+    // Sorted for comparison; declaration order in the linter is pyenv's order.
+    expect([...KNOWN_BUILD_KEYS].sort()).toEqual([
+      "copy",
+      "copyTree",
+      "editable",
+      "fatal",
+      "indexUrl",
+      "install",
+      "mkdir",
+      "name",
+      "noDeps",
+      "note",
+      "optional",
+      "probeImport",
+      "remedy",
+      "run",
+      "to",
+    ]);
+  });
+
+  it("still rejects a key pyenv would abort the build on", () => {
+    // The concrete failure mode: a typo that pyenv refuses. Left unlinted it
+    // aborts the whole env build, so learners get no Python environment.
+    const withTypo = `
+version: 1
+medium: python-notebook
+env:
+  python: "3.12"
+  build:
+    - name: "Checking OpenMP"
+      probeImport: "xgboost"
+      fatel: true
+      remedy:
+        darwin: "brew install libomp"
+    - name: "Materializing notebooks"
+      run: ["jupytext", "--sync", "src/*.py"]
+verify:
+  collect: "pytest"
+  notBuiltPatterns: ["x"]
+  shipsBrokenPatterns: ["y"]
+`;
+    const issues = lintText(withTypo);
+    expect(issues.some((i) => /unknown build step key "fatel"/.test(i.message))).toBe(true);
+  });
+});

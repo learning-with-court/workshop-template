@@ -71,7 +71,12 @@ env:
   #   note        lines printed when a probe fails
   #   remedy      per-platform fix strings (darwin / linux / default)
   #   optional    a failure here does not fail the build
-  #   fatal       a probe failure DOES fail the build (default false)
+  #   fatal       a probeImport miss FAILS the build (default false).
+  #               Needs a lwc-cli including lwc-cli#35. This key was documented
+  #               here BEFORE pyenv implemented it, and declaring it against an
+  #               older CLI aborts the whole env build with `unknown key
+  #               "fatal"` — no Python environment at all. If setup reports
+  #               that, the CLI is too old: `lwc update`.
   #   mkdir       create a directory
   #   run         argv list to execute
   #   copy / copyTree + to   copy a path into the built env

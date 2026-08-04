@@ -1,0 +1,34 @@
+name: lint-notebook-base
+# BASE-OWNER ONLY. Guards notebook-base/mechanics.reference.yaml, the file
+# authors copy when standing up a notebook workshop: if it stops passing its
+# own linter, every workshop scaffolded from it starts out broken.
+#
+# Deliberately NOT in manifest-lint.yml. That workflow IS a synced base file,
+# so adding a step there ships it to every member, and `lint-notebook-mechanics`
+# lives only here (it is in neither manifest, by design: it needs a YAML parser,
+# while the member-side validator must run under bare `node`). A member running
+# it would fail CI on a missing script. This file is not synced, so it cannot.
+on:
+  pull_request:
+    paths:
+      - notebook-base/**
+      - notebook-base.manifest
+      - scripts/lint-notebook-mechanics.ts
+  push:
+    branches: [main, dev]
+    paths:
+      - notebook-base/**
+      - notebook-base.manifest
+      - scripts/lint-notebook-mechanics.ts
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint-notebook-mechanics

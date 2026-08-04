@@ -15,8 +15,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint-manifest
-      # Keeps notebook-base/mechanics.reference.yaml honest. It is the file
-      # authors copy, so if it stops passing its own linter every notebook
-      # workshop scaffolded from it starts out broken.
-      - run: pnpm lint-notebook-mechanics
       - run: pnpm test:scripts

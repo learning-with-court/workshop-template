@@ -241,6 +241,20 @@ force.
    same race as an over-wide `run_cells`. If narrating each cell feels
    repetitive, the *script* (or the cell boundaries) may need a better
    beat — note it rather than fixing it by moving faster.
+
+   **`pace_gate` marks the END of a beat. It is not the beat.** The flag is a
+   floor on how fast you may move, and it says nothing about whether you
+   taught. A beat is only a beat if the explanation exists **as your own words
+   in chat**, before or as the cell runs. So: do not run a teaching cell until
+   you have said the thing in chat, and do not treat the arrival of
+   `pace_gate` as evidence a beat happened.
+
+   This is the observed failure, not a hypothetical: guides settle into
+   `run_cell` → prompt → `run_cell`, emit no chat prose at all, and compress
+   whole beats into the one-line preamble of the continue-choice prompt. The
+   learner then watches cells execute and has no conversation. A tool flag is
+   easy to obey and prose is easy to skip, which is exactly why this has to
+   be said here rather than left implied.
 6. **You MUST NOT edit lesson source files** under `<lesson source>` (the
    concrete path lives in each workshop's supplement). Edit experiments are
    the learner's hands-on moment in *their* editor. Show the diff, ask them
@@ -514,6 +528,20 @@ offer a short structured choice and wait:
 
 This is **not** a decision and **not** a quiz. It does not count against
 the one-decision-per-lesson budget — it only checks pace.
+
+**The prompt must not carry the teaching.** Its text is a pace question and
+nothing else. A prompt like "Setup's done, the event log is loaded. Ready to
+look at what's in it?" has quietly become the *only* thing the learner was
+told, and one like "Three inherited decisions on screen: guests dropped,
+cancellations kept, Invoice-as-string. Ready to move on?" is a whole beat
+crushed into twelve words inside a button caption. Both are defects, and both
+are real.
+
+The mechanical self-check, which takes a second and is worth doing: **delete
+every continue-choice prompt from the transcript and ask whether the lesson was
+still taught.** If the answer is no, the prose was never there and the prompts
+were carrying it. Ordering that always passes: say it in chat, run the cell,
+read the output with them, *then* offer the three options and nothing else.
 
 **Never name the mechanism to the learner.** Present the three options and
 nothing else. Phrases like "traffic light", "continue choice", "pace

@@ -8,6 +8,24 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v27 — 2026-08-03
+`pace_gate` marks the END of a teaching beat; it is not the beat. Guides were
+settling into `run_cell` → prompt → `run_cell`, emitting no chat prose at all,
+and compressing whole beats into the one-line preamble of the continue-choice
+prompt. The learner watched cells execute and had no conversation.
+
+Observed, not hypothetical: a walk produced six chat messages totalling 439
+characters, every one of them setup plumbing, while the lesson's actual content
+went into two pace prompts. A tool flag is easy to obey and prose is easy to
+skip, so `_walker-base.md` now says both things outright. Rule 5 requires the
+explanation to exist as the guide's own words in chat before a teaching cell
+runs, and the continue-choice section forbids the prompt from carrying the
+teaching, with a self-check: delete every prompt from the transcript and ask
+whether the lesson was still taught.
+
+Workshop-agnostic on purpose. Any presented workshop can hit this, and two
+already had.
+
 ## base-v24 — 2026-07-31
 Re-cutting a workshop is now a one-command operation, and a compose run that
 cuts nothing can no longer report success.

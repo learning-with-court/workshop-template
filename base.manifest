@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v26",
+  "version": "base-v27",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",

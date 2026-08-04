@@ -8,6 +8,19 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v28 — 2026-08-03
+Fixes a v27 mistake before it shipped. `manifest-lint.yml` IS a synced base
+file, and v27 added `pnpm lint-notebook-mechanics` to it. That script lives only
+in the template and is in neither manifest by design (it needs a YAML parser,
+while the member-side validator must run under bare `node`). Syncing v27 would
+therefore have failed CI in every member on a missing script. Caught by reading
+the `sync-base --dry-run` output rather than by a gate.
+
+The step moves to a new owner-only `lint-notebook-base.yml`, which is not in
+`verbatim` and so cannot travel. The lesson generalises: a step added to a
+SYNCED workflow ships to every member, so it may only call something every
+member has.
+
 ## base-v27 — 2026-08-03
 `pace_gate` marks the END of a teaching beat; it is not the beat. Guides were
 settling into `run_cell` → prompt → `run_cell`, emitting no chat prose at all,

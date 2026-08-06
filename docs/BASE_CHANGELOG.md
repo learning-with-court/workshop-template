@@ -8,6 +8,36 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v29 — 2026-08-05
+`compose.ts` wrote its temp index to `join(REPO, ".git", "compose-index-<label>")`.
+In a linked worktree `<REPO>/.git` is a FILE holding a `gitdir:` pointer, not a
+directory, so that path is invalid and compose fails. It now resolves the real
+git dir with `git rev-parse --absolute-git-dir` and writes there.
+
+CI never saw this because `actions/checkout` produces a normal clone. It bites
+exactly where this workspace actually works: worktrees under `.worktrees/`, which
+is the documented convention, and which `sync-base` itself uses to isolate each
+member.
+
+**A second fix in the same area does NOT travel, and members must be patched by
+hand.** `scripts/compose.test.ts` built its fixtures with `cwd` set to a tmpdir
+but did not sanitise the environment. Git exports `GIT_DIR` and friends to hook
+subprocesses, in a linked worktree `GIT_DIR` is an absolute path, and `GIT_DIR`
+outranks `cwd` — so under a pre-push run every fixture `git init`, `git config
+user.*`, tag and object landed in the developer's real clone. One run left a main
+clone converted to bare. The test now strips
+`GIT_(DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|COMMON_DIR|NAMESPACE|PREFIX)`
+into an `ENV` it passes to every `execFileSync`.
+
+That file is not in `verbatim`, because the base ships scripts and never their
+tests (`validate-base.mjs` yes, `validate-base.test.mjs` no). The consequence is
+worth stating plainly: **member copies of template tests are fossils from fork
+time that no sync will ever update.** `workshop-nexus` carried a vulnerable copy
+and was patched directly alongside this cut. Any future member forked before this
+version has the same landmine, and the standing question — put tests of synced
+scripts in the manifest, or delete the fossils so the template is sole owner — is
+still open.
+
 ## base-v28 — 2026-08-03
 Fixes a v27 mistake before it shipped. `manifest-lint.yml` IS a synced base
 file, and v27 added `pnpm lint-notebook-mechanics` to it. That script lives only

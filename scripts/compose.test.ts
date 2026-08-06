@@ -13,13 +13,31 @@ const SCRIPT = join(__dirname, "compose.ts");
 // Use the workspace-installed tsx (absolute path) — never `npx -y tsx`, which downloads to the
 // shared ~/.npm/_npx cache and races across parallel test files (esbuild ENOTEMPTY corruption).
 const TSX = join(__dirname, "..", "node_modules", ".bin", "tsx");
+// Git exports GIT_DIR (and friends) to hook subprocesses — in a linked worktree it
+// is an ABSOLUTE path, so under a pre-push run every fixture git call (and every git
+// call inside the scripts under test, which inherit this env through tsx) would
+// silently target the REAL repo: fixture tags, `git config user.*`, and objects land
+// in the developer's clone instead of the tmpdir. Strip the redirection vars so cwd
+// alone decides which repo git sees.
+const ENV: NodeJS.ProcessEnv = { ...process.env };
+for (const k of Object.keys(ENV))
+  if (/^GIT_(DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|COMMON_DIR|NAMESPACE|PREFIX)$/.test(k)) delete ENV[k];
+// Env redirection is only half of the inherited state. Fixtures also read the
+// developer's git CONFIG, which lives in ~/.gitconfig rather than the environment.
+// A global `tag.gpgsign = true` makes the fixture's `git tag -f <name> <sha>` try to
+// create a SIGNED ANNOTATED tag and die on "fatal: no tag message?" — so this suite
+// failed on a maintainer's machine while CI, which has no such config, stayed green.
+// Every fixture sets user.name/user.email at repo level, so nothing here needs the
+// global file. Point both at /dev/null and the fixtures become hermetic.
+ENV.GIT_CONFIG_GLOBAL = "/dev/null";
+ENV.GIT_CONFIG_SYSTEM = "/dev/null";
 let repo: string;
-const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" }).trim();
+const git = (a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8", env: ENV }).trim();
 const showTree = (ref: string) =>
-  execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8" })
+  execFileSync("git", ["ls-tree", "-r", "--name-only", ref], { cwd: repo, encoding: "utf8", env: ENV })
     .split("\n").filter(Boolean).sort();
 const showFile = (ref: string, filePath: string) =>
-  execFileSync("git", ["show", `${ref}:${filePath}`], { cwd: repo, encoding: "utf8" });
+  execFileSync("git", ["show", `${ref}:${filePath}`], { cwd: repo, encoding: "utf8", env: ENV });
 function writeLesson(ws: string, nn: string, slug: string, body: string) {
   const d = join(repo, "workshops", ws, "lessons", `${nn}-${slug}`);
   mkdirSync(join(d, "solution", "src"), { recursive: true });
@@ -88,7 +106,7 @@ beforeAll(() => {
   // copy the generator under test into the fixture so relative paths resolve
   mkdirSync(join(repo, "scripts"), { recursive: true });
   execFileSync("cp", [SCRIPT, join(repo, "scripts", "compose.ts")]);
-  execFileSync(TSX, ["scripts/compose.ts", "--env", "dev"], { cwd: repo, encoding: "utf8" });
+  execFileSync(TSX, ["scripts/compose.ts", "--env", "dev"], { cwd: repo, encoding: "utf8", env: ENV });
 }, 60000);
 
 describe("unified compose generator", () => {
@@ -199,7 +217,7 @@ describe("validate-compose", () => {
   it("passes on a well-formed canonical repo", () => {
     execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
     const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
-      cwd: repo, encoding: "utf8",
+      cwd: repo, encoding: "utf8", env: ENV,
     } as ExecFileSyncOptions);
     expect(out).toMatch(/validate-compose:\s*OK/i);
   }, 30000);
@@ -213,7 +231,7 @@ describe("validate-compose", () => {
     // re-copy to ensure it's the latest version under test.
     execFileSync("cp", [VALIDATE_SCRIPT, join(repo, "scripts", "validate-compose.ts")]);
     const out = execFileSync(TSX, ["scripts/validate-compose.ts"], {
-      cwd: repo, encoding: "utf8",
+      cwd: repo, encoding: "utf8", env: ENV,
     } as ExecFileSyncOptions);
     expect(out).toMatch(/validate-compose:\s*OK/i);
   }, 30000);
@@ -221,7 +239,7 @@ describe("validate-compose", () => {
   it("rejects a malformed settings.overlay.json", () => {
     // Build a minimal well-formed repo with a bad overlay
     const badRepo = mkdtempSync(join(tmpdir(), "compose-overlay-bad-"));
-    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8", env: ENV }).trim();
     badGit(["init", "-q"]);
     badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
 
@@ -251,7 +269,7 @@ describe("validate-compose", () => {
     let threw = false;
     try {
       execFileSync(TSX, ["scripts/validate-compose.ts"], {
-        cwd: badRepo, encoding: "utf8",
+        cwd: badRepo, encoding: "utf8", env: ENV,
       } as ExecFileSyncOptions);
     } catch {
       threw = true;
@@ -263,7 +281,7 @@ describe("validate-compose", () => {
 
   it("rejects a malformed series.settings.overlay.json", () => {
     const badRepo = mkdtempSync(join(tmpdir(), "compose-series-overlay-bad-"));
-    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8", env: ENV }).trim();
     badGit(["init", "-q"]);
     badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
 
@@ -289,7 +307,7 @@ describe("validate-compose", () => {
     let threw = false;
     try {
       execFileSync(TSX, ["scripts/validate-compose.ts"], {
-        cwd: badRepo, encoding: "utf8",
+        cwd: badRepo, encoding: "utf8", env: ENV,
       } as ExecFileSyncOptions);
     } catch {
       threw = true;
@@ -302,7 +320,7 @@ describe("validate-compose", () => {
   it("fails when a lesson is missing coach.md", () => {
     // Build a minimal bad repo
     const badRepo = mkdtempSync(join(tmpdir(), "compose-bad-"));
-    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8" }).trim();
+    const badGit = (a: string[]) => execFileSync("git", a, { cwd: badRepo, encoding: "utf8", env: ENV }).trim();
     badGit(["init", "-q"]);
     badGit(["config", "user.email", "t@t"]); badGit(["config", "user.name", "t"]);
 
@@ -330,7 +348,7 @@ describe("validate-compose", () => {
     let threw = false;
     try {
       execFileSync(TSX, ["scripts/validate-compose.ts"], {
-        cwd: badRepo, encoding: "utf8",
+        cwd: badRepo, encoding: "utf8", env: ENV,
       } as ExecFileSyncOptions);
     } catch {
       threw = true;

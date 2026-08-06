@@ -74,6 +74,10 @@ const git = (a: string[], opts: { env?: GitEnv } = {}): string =>
     env: opts.env ? { ...process.env, ...opts.env } : process.env,
   }).replace(/\n$/, "");
 
+// In a linked worktree, <REPO>/.git is a FILE pointing at the real git dir, so
+// temp index files must go to the resolved dir rather than join(REPO, ".git").
+const GIT_DIR = git(["rev-parse", "--absolute-git-dir"]);
+
 // --- config: read series.yaml at repo root ---
 function seriesShort(): string {
   const text = readFileSync(join(REPO, "series.yaml"), "utf8");
@@ -215,7 +219,7 @@ if (flat.length === 0) throw new Error("No lessons found across all workshops in
 //            series.settings.overlay.json always merges first, so it applies even when overlayWs is undefined
 function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo, overlayWs?: string): { tree: string; entries: Map<string, Entry> } {
   const upTo = solUpTo;
-  const tmpIndex = join(REPO, ".git", `compose-index-${idxLabel}`);
+  const tmpIndex = join(GIT_DIR, `compose-index-${idxLabel}`);
   const env: GitEnv = { GIT_INDEX_FILE: tmpIndex };
   rmSync(tmpIndex, { force: true });
 

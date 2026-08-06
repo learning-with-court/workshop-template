@@ -65,6 +65,13 @@ want to do?". Four beats, in order:
    convention as rule #1, so the learner sees a distinct, boxed "copy this
    literal text" cue rather than tinted prose that blends into the chat.
 
+**In a `mode: presented` workshop, fold in one more offer here, not as a
+fifth beat.** Once, as part of this same opening, say plainly that the
+learner can walk through the lesson together (the default) or hear it
+played through. See "A fourth option, in presented workshops only" further
+down for what "played through" means and what still stops it regardless.
+In a `mode: builder` workshop this opening is unchanged.
+
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
 supply the lesson's objective/skill/spec/prompt; they don't re-derive this
 structure. Make asking for help feel normal and low-stakes (see below) —
@@ -587,10 +594,12 @@ The mechanical self-check, which takes a second and is worth doing: **delete
 every continue-choice prompt from the transcript and ask whether the lesson was
 still taught.** If the answer is no, the prose was never there and the prompts
 were carrying it. Ordering that always passes: say it in chat, run the cell,
-read the output with them, *then* offer the three options and nothing else.
+read the output with them, *then* offer the options, three normally or four
+in a presented workshop, and nothing else.
 
-**Never name the mechanism to the learner.** Present the three options and
-nothing else. Phrases like "traffic light", "continue choice", "pace
+**Never name the mechanism to the learner.** Present the options, three
+normally or four in a presented workshop, and nothing else. Phrases like
+"traffic light", "continue choice", "pace
 check", or "teaching beat" are internal vocabulary and belong in this file,
 not in what the learner reads (same rule as "walker", below). Purely
 mechanical stretches (bare imports, pure `def` blocks with nothing to
@@ -609,7 +618,8 @@ the tool call. Example shape for the pace check:
 
 - prompt: short beat summary + "ready to continue?"
 - options: `Keep going (default)` / `Explain this more` / `Pause here`
-  (plus a free-text escape if the tool supports it)
+  (plus a free-text escape if the tool supports it). In a `mode: presented`
+  workshop, add a fourth: `Play the rest through`.
 
 If — and only if — that invocation errors, fall back to a **numbered**
 list in the message and wait — silently, without announcing the fallback
@@ -622,8 +632,19 @@ a single digit:
 3. Pause here
 ```
 
-Same shape for real decisions: `1. …` / `2. …` / `3. …`, not bare bullets.
-Do not ask them to type the full option text.
+In a `mode: presented` workshop, the fallback list carries the fourth
+option too:
+
+```
+1. Keep going (default)
+2. Explain this more
+3. Pause here
+4. Play the rest through
+```
+
+Same shape for real decisions, which never carry the fourth option (a
+decision is the learner's call to make, not a pace setting): `1. …` / `2. …`
+/ `3. …`, not bare bullets. Do not ask them to type the full option text.
 
 **Render a decision as options, not as open prose.** An open question ("what
 should the cadence be, and what would make you pick differently?") asks a

@@ -8,6 +8,30 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v30 (2026-08-06)
+Presented workshops gain a fourth continue-choice option, **Play the rest
+through**, offered once in the lesson opening and available at any later pace
+check. It is a learner-only choice: the guide keeps narrating every cell and
+stops asking permission between beats, and it passes the pacing argument on the
+cell tools so the reply stops marking a pause.
+
+The point of putting this in the tool rather than only here is worth stating,
+because the alternative looks cheaper and is not. Prose alone would have to tell
+a guide to ignore a flag that fires on most teaching cells, in the same file
+that says "A tool flag is easy to obey and prose is easy to skip". With the
+argument the flag simply does not arrive, and the reply instead carries the four
+conditions that still stop: a decision the learner owns, a cell that errors, the
+learner taking the wheel, and verify.
+
+It resets at every lesson boundary, and the opening offer is made again rather
+than inherited. Agreeing to hear one lesson played through is not agreeing to
+the next. `mode: builder` workshops do not offer it, since the learner is the
+one running things there.
+
+Needs `lwc` with the pacing argument. An older CLI keeps marking the pause; the
+prose says to honour the learner's request regardless and never to mention a
+version.
+
 ## base-v29 — 2026-08-05
 `compose.ts` wrote its temp index to `join(REPO, ".git", "compose-index-<label>")`.
 In a linked worktree `<REPO>/.git` is a FILE holding a `gitdir:` pointer, not a

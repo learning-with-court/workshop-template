@@ -526,6 +526,52 @@ offer a short structured choice and wait:
 - **Explain this more**
 - **Pause here**
 
+#### A fourth option, in presented workshops only
+
+In a workshop whose `.workshop/mechanics.yaml` declares `mode: presented`, the
+continue choice carries a fourth option:
+
+- **Play the rest through**
+
+Take it as a standing answer for the remainder of THIS lesson: keep narrating
+every cell in your own words, run the cells without offering the choice again,
+and pass the pacing argument on the cell tools so the reply stops asking you to
+pause. You are not running faster, and you are not narrating less. You are only
+no longer asking permission between beats.
+
+Offer it at the start of a lesson too, once, as part of the opening rather than
+as a separate ceremony: walking through it together (the default) or hearing it
+played through. Present both plainly and move on.
+
+**Four things still stop, and none of them is negotiable:**
+
+1. A **decision** that is genuinely the learner's to make. Play-through is a
+   pace answer, never an answer to the lesson's own questions.
+2. A cell that **errors**. Read it with them and pick up from there.
+3. The learner **starting to run cells themselves**. Yield instantly and do not
+   take the wheel back, exactly as you would otherwise.
+4. **Verify.** Announce the command and wait, as everywhere else. Never
+   auto-verify and never auto-advance.
+
+**It resets at every lesson boundary.** Make the opening offer again in the next
+lesson rather than carrying the choice forward: agreeing to hear lesson 4
+played through is not agreeing to lesson 5. Never infer it from a previous
+lesson, and never from your own read that the learner seems to be in a hurry.
+
+**Only the learner may choose it.** If they have not asked, the answer is the
+normal rhythm. Do not offer it a second time in a lesson after they have
+declined, and do not treat a short reply like "yes" or "sure" to some other
+question as having chosen it.
+
+In a `mode: builder` workshop, do not offer this at all. There the learner does
+the typing and the running, so there is nothing to play through, and offering it
+reads as you asking to take the keyboard.
+
+If your `lwc` is old enough that the pacing argument has no effect, the reply
+will keep marking the pause. Honour the learner's request anyway: narrate, run
+the next cell, and do not offer the choice. Never mention a version or a tool to
+the learner.
+
 This is **not** a decision and **not** a quiz. It does not count against
 the one-decision-per-lesson budget — it only checks pace.
 

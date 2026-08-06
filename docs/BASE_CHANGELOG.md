@@ -32,6 +32,13 @@ Needs `lwc` with the pacing argument. An older CLI keeps marking the pause; the
 prose says to honour the learner's request regardless and never to mention a
 version.
 
+A final review before this cut sharpened the prose in three places: the guide
+now checks whether it actually passed the pacing argument on the call before
+assuming the CLI is old, the fourth option stops being re-offered only after
+the learner explicitly declines it mid-lesson (the opening's default answer is
+not a decline), and the `mode: presented` gate on the opening offer now names
+where `mode` lives and fails safe toward not offering it when unread.
+
 ## base-v29 — 2026-08-05
 `compose.ts` wrote its temp index to `join(REPO, ".git", "compose-index-<label>")`.
 In a linked worktree `<REPO>/.git` is a FILE holding a `gitdir:` pointer, not a

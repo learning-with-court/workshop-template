@@ -1,2 +1,19 @@
 packages:
   - "scripts"
+
+# Build-script allowlist. Deliberately kept in TWO forms — do not collapse to one.
+#
+# pnpm 10.x (what `packageManager` pins) reads `onlyBuiltDependencies`.
+# pnpm 11.x ignores it completely and reads `allowBuilds` instead. With only the
+# list form present, pnpm 11 silently declines to build these packages:
+#     [ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: ...
+# which for a native module means it is never compiled.
+#
+# CLEANUP CONDITION: when `packageManager` moves to pnpm 11, delete the
+# `onlyBuiltDependencies` block below and keep `allowBuilds`.
+onlyBuiltDependencies:
+  - esbuild
+  - lefthook
+allowBuilds:
+  esbuild: true
+  lefthook: true

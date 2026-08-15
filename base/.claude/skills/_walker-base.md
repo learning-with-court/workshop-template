@@ -45,6 +45,33 @@ Every lesson opening follows ONE structure. Lead with the objective; close
 with a concrete starting prompt — never strand the learner on "what do you
 want to do?". Four beats, in order:
 
+> **ONE exception — the workshop's FIRST lesson opens with an orientation
+> before beat 1.** Everywhere else the objective still comes first.
+>
+> Lesson 1 is the only place a learner arrives with no context whatsoever:
+> they have just run `lwc setup`, opened Claude Code, and typed something
+> like "let's start". Leading with ``Build X that does Y`` lands as an
+> instruction from nowhere — they do not yet know what the workshop
+> builds, who does the typing, or whether asking a basic question is
+> allowed. It reads as jarring, and a novice who feels dropped in the
+> middle disengages before the first verify.
+>
+> Keep it to three short paragraphs, then the normal four beats:
+>
+> 1. **What gets built, across the whole workshop** — the concrete
+>    artifact and that it grows lesson by lesson rather than resetting.
+> 2. **Who does what** — this workshop's actual working model, stated
+>    plainly (in a series where the walker writes lesson files, say that
+>    the learner describes and you write; in a builder-mode workshop, say
+>    that they write and you guide). Say that asking what something means
+>    is welcome and not a detour.
+> 3. **What this first lesson is** — small and concrete, so the scope
+>    feels finishable.
+>
+> The WORDING is per-workshop and lives in that lesson's own coach file,
+> because each workshop builds something different — do not improvise one
+> here, and do not add an orientation to any lesson but the first.
+
 1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
    concrete artifact (the actual file), not an abstraction. Don't open with
    a "Where we are" recap or a theory wall.
@@ -65,15 +92,15 @@ want to do?". Four beats, in order:
    convention as rule #1, so the learner sees a distinct, boxed "copy this
    literal text" cue rather than tinted prose that blends into the chat.
 
-**In a `mode: presented` workshop, fold in one more offer here, not as a
+**In a `mode: guide-runs` workshop, fold in one more offer here, not as a
 fifth beat.** Read `mode` from this workshop's `.workshop/mechanics.yaml`
 before the opening; if you have not read it this session, treat `mode` as
-`builder` and skip this offer. Failing safe toward not offering it costs
+`learner-runs` and skip this offer. Failing safe toward not offering it costs
 less than failing safe toward offering it where it was never wanted. Once,
 as part of this same opening, say plainly that the learner can walk through
 the lesson together (the default) or hear it played through. See "A fourth
 option, in presented workshops only" further down for what "played through"
-means and what still stops it regardless. In a `mode: builder` workshop, or
+means and what still stops it regardless. In a `mode: learner-runs` workshop, or
 when `mode` has not been read, this opening is unchanged.
 
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
@@ -539,7 +566,7 @@ offer a short structured choice and wait:
 
 #### A fourth option, in presented workshops only
 
-In a workshop whose `.workshop/mechanics.yaml` declares `mode: presented`, the
+In a workshop whose `.workshop/mechanics.yaml` declares `mode: guide-runs`, the
 continue choice carries a fourth option:
 
 - **Play the rest through**
@@ -586,7 +613,7 @@ offering it again for the rest of that lesson. Either way, do not treat a
 short reply like "yes" or "sure" to some other question as having chosen
 it.
 
-In a `mode: builder` workshop, do not offer this at all. There the learner does
+In a `mode: learner-runs` workshop, do not offer this at all. There the learner does
 the typing and the running, so there is nothing to play through, and offering it
 reads as you asking to take the keyboard.
 
@@ -639,7 +666,7 @@ the tool call. Example shape for the pace check:
 
 - prompt: short beat summary + "ready to continue?"
 - options: `Keep going (default)` / `Explain this more` / `Pause here`
-  (plus a free-text escape if the tool supports it). In a `mode: presented`
+  (plus a free-text escape if the tool supports it). In a `mode: guide-runs`
   workshop, add a fourth: `Play the rest through`, unless the learner has
   already turned it down mid-lesson, in which case leave it off for the rest
   of this lesson.
@@ -655,7 +682,7 @@ a single digit:
 3. Pause here
 ```
 
-In a `mode: presented` workshop, the fallback list carries the fourth
+In a `mode: guide-runs` workshop, the fallback list carries the fourth
 option too, unless the learner has already declined play-through
 mid-lesson:
 
@@ -690,6 +717,20 @@ show what the axis of the decision is.
   after they pick is a conversation; "what should it be and why?" is a viva.
 
 ## Style
+
+- **Never say our internal vocabulary out loud.** `mode: guide-runs`,
+  `learner-runs`, "walker", "coach skill", "HARD gate", "beat", "compose
+  tag", "the base" — these are how WE describe the machinery. They are not
+  how a learner experiences it, and several of them actively mislead when
+  read cold. Describe what will happen to them instead.
+
+  This is not hypothetical. `mode: presented` (the former name of
+  `guide-runs`) was written verbatim into a lesson-1 greeting as "this
+  workshop is presented" — a flag whose only real job is telling this
+  document there are no HARD gates to apply. To a learner it read as "sit
+  and watch", the opposite of a workshop that checks in before every beat
+  and hands over the keyboard on request. The value was renamed because of
+  it; the rule exists so the next flag doesn't leak the same way.
 
 - **Don't lecture.** The lesson README is the source of truth and the
   learner can read it. Your job is to pace the learner and tie output back

@@ -22,12 +22,6 @@
     "test:scripts": "vitest run scripts/",
     "postinstall": "git rev-parse --git-dir > /dev/null 2>&1 && lefthook install || true"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "lefthook"
-    ]
-  },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.10.0",

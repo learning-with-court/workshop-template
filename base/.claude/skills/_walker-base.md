@@ -45,6 +45,33 @@ Every lesson opening follows ONE structure. Lead with the objective; close
 with a concrete starting prompt — never strand the learner on "what do you
 want to do?". Four beats, in order:
 
+> **ONE exception — the workshop's FIRST lesson opens with an orientation
+> before beat 1.** Everywhere else the objective still comes first.
+>
+> Lesson 1 is the only place a learner arrives with no context whatsoever:
+> they have just run `lwc setup`, opened Claude Code, and typed something
+> like "let's start". Leading with ``Build X that does Y`` lands as an
+> instruction from nowhere — they do not yet know what the workshop
+> builds, who does the typing, or whether asking a basic question is
+> allowed. It reads as jarring, and a novice who feels dropped in the
+> middle disengages before the first verify.
+>
+> Keep it to three short paragraphs, then the normal four beats:
+>
+> 1. **What gets built, across the whole workshop** — the concrete
+>    artifact and that it grows lesson by lesson rather than resetting.
+> 2. **Who does what** — this workshop's actual working model, stated
+>    plainly (in a series where the walker writes lesson files, say that
+>    the learner describes and you write; in a builder-mode workshop, say
+>    that they write and you guide). Say that asking what something means
+>    is welcome and not a detour.
+> 3. **What this first lesson is** — small and concrete, so the scope
+>    feels finishable.
+>
+> The WORDING is per-workshop and lives in that lesson's own coach file,
+> because each workshop builds something different — do not improvise one
+> here, and do not add an orientation to any lesson but the first.
+
 1. **OBJECTIVE — one line, first.** ``Build X that does Y, so Z.`` Name the
    concrete artifact (the actual file), not an abstraction. Don't open with
    a "Where we are" recap or a theory wall.

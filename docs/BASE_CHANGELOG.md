@@ -8,6 +8,25 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v31 (2026-08-15)
+The workshop's FIRST lesson now opens with a short orientation before the
+objective. Every other lesson still leads with the objective, unchanged.
+
+Lesson 1 is the only place a learner arrives with no context at all: they have
+just run `lwc setup`, opened Claude Code, and typed "let's start". The
+objective-first rule — right everywhere else — makes that moment land as an
+instruction from nowhere, because they do not yet know what the workshop
+builds, who does the typing, or whether asking a basic question is allowed.
+Reported as jarring, and a novice who feels dropped mid-stream disengages
+before reaching the first verify.
+
+The rule is here rather than per-workshop because the cold start is universal:
+every workshop's lesson 1 had the same gap. The WORDING stays per-workshop, in
+each lesson-1 coach, because each one builds something different — "a `review`
+CLI across six workshops" means nothing in sql-intro. Three short paragraphs:
+what gets built across the workshop, who does what (this workshop's real
+working model), and that the first lesson is small.
+
 ## base-v30 (2026-08-06)
 Presented workshops gain a fourth continue-choice option, **Play the rest
 through**, offered once in the lesson opening and available at any later pace

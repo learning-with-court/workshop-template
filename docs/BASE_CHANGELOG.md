@@ -9,7 +9,35 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > are deliberately not backfilled here rather than guessed at.
 
 ## base-v31 (2026-08-15)
-The workshop's FIRST lesson now opens with a short orientation before the
+
+Two changes, both from the same root cause: a learner arriving at lesson 1 was
+met with an instruction from nowhere, and when we fixed that we leaked an
+internal flag into the fix.
+
+**`mode` values renamed: `builder` -> `learner-runs`, `presented` ->
+`guide-runs`.** The old pair was not even one axis — "builder" described what
+the learner IS, "presented" described how content is DELIVERED — and
+"presented" invited exactly the wrong reading. It went straight into a lesson-1
+greeting as "this workshop is presented", which to a learner means sit and
+watch. What it actually denotes is which side presses go; those workshops check
+in before every beat, hand over the keyboard on request, leave the real
+decisions to the learner, and still wait at verify. They are not less
+interactive than a `learner-runs` workshop. The new names say who executes and
+imply nothing about the learner's experience.
+
+Nothing in code reads `mode` — the walker harness loads mechanics.yaml but
+never branches on the value; it is consumed by prose in `_walker-base.md` and
+`_walker-gates.md`. So this is a data-and-docs rename with nothing to
+recompile. Members declaring the old values must update
+`.workshop/mechanics.yaml`; unset still means `learner-runs`.
+
+**A Style rule: never say internal vocabulary out loud.** The rename fixes one
+label; the rule is what stops the next one. "walker", "coach skill", "HARD
+gate", "beat", "compose tag", "the base" are how we describe machinery, not how
+a learner experiences it, and the `presented` incident is recorded there as the
+worked example.
+
+**The workshop's FIRST lesson now opens with a short orientation before the
 objective. Every other lesson still leads with the objective, unchanged.
 
 Lesson 1 is the only place a learner arrives with no context at all: they have

@@ -8,14 +8,17 @@ user-invocable: false
 What a gate means depends on **who drives the work**, which a workshop
 declares as `mode:` in `.workshop/mechanics.yaml`.
 
-- `mode: builder` (the default when unset) — the LEARNER drives. They edit
+- `mode: learner-runs` (the default when unset) — the LEARNER drives. They edit
   files, paste secrets, run commands. The walker frequently needs to stop and
   wait for them. HARD and SOFT gates below apply.
-- `mode: presented` — the GUIDE drives. It executes the work itself (running
-  notebook cells through a live kernel, for example) and the learner watches,
-  directs and decides. See "Gates in a presented workshop" below.
+- `mode: guide-runs` — the GUIDE executes. It runs the work itself (notebook
+  cells through a live kernel, for example) and the learner reads each result,
+  asks about it, and makes the calls that are genuinely theirs. This is NOT a
+  less interactive workshop: the guide checks in before every beat, the learner
+  may take the keyboard at any point, and verify still waits. It only says who
+  presses go. See "Gates when the guide executes" below.
 
-## HARD vs SOFT gates (`mode: builder`)
+## HARD vs SOFT gates (`mode: learner-runs`)
 
 Walkers gate progress on certain learner actions before continuing.
 
@@ -32,7 +35,7 @@ When in doubt, prefer HARD gates around any state the walker can't observe
 (a file edit in the learner's editor, a secret pasted into `.env`) and SOFT
 gates around pacing-only suggestions.
 
-## Gates in a presented workshop (`mode: presented`)
+## Gates in a guide-runs workshop (`mode: guide-runs`)
 
 **A presented workshop has no HARD gates**, and adding one is a defect rather
 than extra rigour. A HARD gate blocks until the learner acts — and here the

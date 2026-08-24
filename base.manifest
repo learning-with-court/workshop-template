@@ -20,6 +20,7 @@
     "base/.claude/settings.json",
     "base/.claude/hooks/block-edits.sh",
     "base/.claude/hooks/live-assist.sh",
+    "base/.claude/hooks/drain-page-actions.sh",
     "base/.claude/skills/_walker-base.md",
     "base/.claude/skills/_walker-detection.md",
     "base/.claude/skills/_walker-gates.md",

@@ -44,7 +44,7 @@ Mirror lesson state as it changes: `page_set_lesson` on lesson start, `page_set_
 
 For verify, call `page_show_verify` with the command string exactly as returned by `start_lesson`/`verifyCommand` — matching is exact-string, so a paraphrase falls back to a plain list instead of the check/expected/actual table — and pass `output` raw, unparsed.
 
-A button press lands in `pending_actions` on a page tool result and, separately, as a `LEARNER PAGE ACTION` line from the prompt-submit hook; the same press can arrive on both in one turn by design. Treat it as a single learner statement and act on it once — never as an automatic advance or an automatic verify run.
+A button press lands in `pending_actions` on a page tool result and, separately, as a `Learner pressed: ...` line from the prompt-submit hook; the same press can arrive on both in one turn by design. Treat it as a single learner statement and act on it once — never as an automatic advance or an automatic verify run.
 
 `page_off` (with `persist: true` only on "always") turns the page off at the learner's request. If these tools are absent, or `page_open` returned `opened: false`, say nothing about the page at all.
 

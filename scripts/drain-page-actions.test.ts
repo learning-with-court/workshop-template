@@ -32,7 +32,7 @@ const HOOK = join(
  * about, stdout is the entire contract.
  *
  * MUST run async (execFile, not execFileSync): several tests below serve
- * /actions.json from an HTTP server running in this same Node process. A
+ * /actions/drain from an HTTP server running in this same Node process. A
  * synchronous child-process call blocks Node's single-threaded event loop
  * for its entire duration, which would starve that in-process server of the
  * chance to ever handle the hook's request — a self-deadlock, not a bug in
@@ -73,13 +73,50 @@ function buildBinDir(tools: string[]): string {
 
 let servers: Server[] = [];
 
-/** Starts a loopback HTTP server that always answers /actions.json with `body`. */
+/** Starts a loopback HTTP server that always answers POST /actions/drain with `body`. */
 function startActionsServer(body: string, status = 200): Promise<number> {
   return new Promise((resolve) => {
     const srv = createServer((req, res) => {
-      if (req.url === "/actions.json" && req.headers["x-lwc-page"] === "1") {
+      if (
+        req.url === "/actions/drain" &&
+        req.method === "POST" &&
+        req.headers["x-lwc-page"] === "1"
+      ) {
         res.writeHead(status, { "Content-Type": "application/json" });
         res.end(body);
+        return;
+      }
+      res.writeHead(400);
+      res.end();
+    });
+    servers.push(srv);
+    srv.listen(0, "127.0.0.1", () => {
+      const addr = srv.address();
+      resolve(typeof addr === "object" && addr ? addr.port : 0);
+    });
+  });
+}
+
+/**
+ * Starts a loopback HTTP server that mimics the REAL server.go drain
+ * semantics: the first POST /actions/drain returns `body` and clears it;
+ * every subsequent POST returns an empty queue. Used to prove the hook
+ * reports a press exactly once across consecutive invocations, the way the
+ * real lwc-cli server behaves — startActionsServer above is stateless and
+ * can't exercise this.
+ */
+function startDrainingActionsServer(body: string): Promise<number> {
+  let drained = false;
+  return new Promise((resolve) => {
+    const srv = createServer((req, res) => {
+      if (
+        req.url === "/actions/drain" &&
+        req.method === "POST" &&
+        req.headers["x-lwc-page"] === "1"
+      ) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(drained ? "[]" : body);
+        drained = true;
         return;
       }
       res.writeHead(400);
@@ -178,6 +215,27 @@ describe("drain-page-actions.sh", () => {
     expect(stdout.trim()).toBe('Learner pressed: "I\'m done with this step" (step_done)');
   });
 
+  it("drains: a press is reported once, not on every subsequent prompt", async () => {
+    // Regression test for the unbounded-repeat bug: the hook used to PEEK
+    // /actions.json, so a press the guide answered in prose (never calling a
+    // page_* tool) reprinted forever. Two consecutive hook invocations
+    // against a real-draining server must report the press on the FIRST
+    // call only.
+    const dir = portDir();
+    const port = await startDrainingActionsServer(
+      JSON.stringify([{ Kind: "hint", Note: "", At: "10:00" }]),
+    );
+    writeFileSync(join(dir, "demo.port"), String(port));
+
+    const first = await runHook(dir);
+    expect(first.code).toBe(0);
+    expect(first.stdout.trim()).toBe('Learner pressed: "Give me a hint" (hint)');
+
+    const second = await runHook(dir);
+    expect(second.code).toBe(0);
+    expect(second.stdout).toBe("");
+  });
+
   it("folds multiple queued actions into one line", async () => {
     const dir = portDir();
     const port = await startActionsServer(
@@ -191,7 +249,7 @@ describe("drain-page-actions.sh", () => {
     const lines = stdout.trim().split("\n");
     expect(lines.length).toBe(1);
     expect(lines[0]).toContain('"Give me a hint" (hint)');
-    expect(lines[0]).toContain('"Explain this step" (explain)');
+    expect(lines[0]).toContain('"Explain this more" (explain)');
   });
 
   it("drops an unrecognized action kind rather than surfacing it raw", async () => {

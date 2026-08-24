@@ -4,11 +4,12 @@
 # Learner-side transport for the lesson page's button presses. The `lwc` MCP
 # proxy runs a loopback HTTP server for an open lesson page (internal/page in
 # lwc-cli) and writes its port to ~/.lwc/pages/<workshopID>.port while the
-# page is open. This hook peeks that server's GET /actions.json — a
-# non-draining read; the actual drain happens when the guide next calls a
-# page_* MCP tool, which returns the same presses as `pending_actions` on
-# the tool result — so a learner's press reaches the guide's next turn even
-# when that turn doesn't happen to call a page tool.
+# page is open. This hook DRAINS that server's POST /actions/drain — every
+# press reported here is cleared from the queue, so it is reported exactly
+# once by this hook and never repeats on a later prompt. A page_* MCP tool
+# result carries the same queue as `pending_actions` for a press that
+# arrives mid-turn, after this hook already ran; that channel drains too, so
+# a press reported by this hook is never also reported there.
 #
 # Prints ONE line naming every queued press when there is at least one, and
 # NOTHING otherwise. Every failure path is silent and this always exits 0:
@@ -60,9 +61,9 @@ PORT=$(tr -d '[:space:]' < "$PORT_FILE" 2>/dev/null)
 # Sub-second connect timeout, short overall cap, bounded body size: a stale
 # port file must never make the learner wait or dump an unbounded response
 # into the conversation.
-RESPONSE=$(curl -s --connect-timeout 1 --max-time 2 \
+RESPONSE=$(curl -s -X POST --connect-timeout 1 --max-time 2 \
   -H "X-Lwc-Page: 1" \
-  "http://127.0.0.1:${PORT}/actions.json" 2>/dev/null | head -c 65536)
+  "http://127.0.0.1:${PORT}/actions/drain" 2>/dev/null | head -c 65536)
 
 [[ -n "$RESPONSE" ]] || exit 0
 
@@ -73,7 +74,7 @@ label_for_kind() {
   case "$1" in
     step_done) echo "I'm done with this step" ;;
     hint) echo "Give me a hint" ;;
-    explain) echo "Explain this step" ;;
+    explain) echo "Explain this more" ;;
     terminal_only) echo "Switch to terminal only" ;;
     banner_dismissed) echo "Dismissed the banner" ;;
     *) echo "" ;;

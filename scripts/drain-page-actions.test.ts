@@ -2,7 +2,14 @@ import { describe, it, expect, afterEach } from "vitest";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createServer, type Server } from "node:http";
-import { mkdtempSync, writeFileSync, utimesSync, existsSync, symlinkSync } from "node:fs";
+import {
+  mkdtempSync,
+  writeFileSync,
+  utimesSync,
+  existsSync,
+  symlinkSync,
+  chmodSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -33,23 +40,35 @@ const HOOK = join(
  */
 async function runHook(
   pagesDir: string,
-  opts: { path?: string } = {},
-): Promise<{ stdout: string; code: number }> {
+  opts: { path?: string; unsetHome?: boolean } = {},
+): Promise<{ stdout: string; stderr: string; code: number }> {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    LWC_PAGES_DIR: pagesDir,
+    ...(opts.path ? { PATH: opts.path } : {}),
+  };
+  if (opts.unsetHome) delete env.HOME;
   try {
-    const { stdout } = await execFileAsync("bash", [HOOK], {
+    const { stdout, stderr } = await execFileAsync("bash", [HOOK], {
       encoding: "utf8",
-      env: {
-        ...process.env,
-        LWC_PAGES_DIR: pagesDir,
-        ...(opts.path ? { PATH: opts.path } : {}),
-      },
+      env,
       timeout: 5000,
     });
-    return { stdout, code: 0 };
+    return { stdout, stderr, code: 0 };
   } catch (e) {
-    const err = e as { stdout?: string; code?: number };
-    return { stdout: err.stdout ?? "", code: err.code ?? -1 };
+    const err = e as { stdout?: string; stderr?: string; code?: number };
+    return { stdout: err.stdout ?? "", stderr: err.stderr ?? "", code: err.code ?? -1 };
   }
+}
+
+/** Builds a PATH dir with symlinks to the named tools only (real binaries). */
+function buildBinDir(tools: string[]): string {
+  const binDir = mkdtempSync(join(tmpdir(), "drain-page-actions-bin-"));
+  for (const tool of tools) {
+    const real = ["/bin", "/usr/bin"].map((p) => join(p, tool)).find((p) => existsSync(p));
+    if (real) symlinkSync(real, join(binDir, tool));
+  }
+  return binDir;
 }
 
 let servers: Server[] = [];
@@ -142,13 +161,7 @@ describe("drain-page-actions.sh", () => {
     // hook needs (bash's builtins cover the rest) EXCEPT curl — this stands
     // in for a learner machine that genuinely lacks it, since macOS/Linux
     // both ship curl in a standard location we can't just omit from PATH.
-    const binDir = mkdtempSync(join(tmpdir(), "no-curl-bin-"));
-    for (const tool of ["ls", "cat", "tr", "head", "grep", "sed", "bash"]) {
-      const real = ["/bin", "/usr/bin"]
-        .map((p) => join(p, tool))
-        .find((p) => existsSync(p));
-      if (real) symlinkSync(real, join(binDir, tool));
-    }
+    const binDir = buildBinDir(["ls", "tr", "head", "grep", "sed", "bash"]);
     const { stdout, code } = await runHook(dir, { path: binDir });
     expect(code).toBe(0);
     expect(stdout).toBe("");
@@ -222,11 +235,82 @@ describe("drain-page-actions.sh", () => {
     const dir = portDir();
     // A single well-formed action followed by megabytes of padding the
     // 64KB read cap should truncate before jq/grep ever see valid JSON —
-    // the hook must still exit 0 and print nothing, not crash or hang.
+    // the hook must still exit 0 and print NOTHING (not a truncated/garbled
+    // fragment), and stay silent on stderr too.
     const huge = JSON.stringify([{ Kind: "hint", Note: "x".repeat(5_000_000), At: "10:00" }]);
     const port = await startActionsServer(huge);
     writeFileSync(join(dir, "demo.port"), String(port));
-    const { code } = await runHook(dir);
+    const { stdout, stderr, code } = await runHook(dir);
     expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+  });
+
+  // --- fix round 1: two silence leaks found in review ---
+
+  it("does not crash or print to stderr when $HOME is unset", async () => {
+    // Forces the script's own `${LWC_PAGES_DIR:-${HOME:-}/.lwc/pages}` default
+    // path (LWC_PAGES_DIR itself must be unset for this to exercise the bug —
+    // runHook always sets it, so this bypasses that helper). Before the fix,
+    // `set -u` made bare `$HOME` inside that default substitution abort the
+    // script with "HOME: unbound variable" on stderr before any of its own
+    // silence handling ever ran.
+    const env = { ...process.env };
+    delete env.LWC_PAGES_DIR;
+    delete env.HOME;
+    const { stdout, stderr, code } = await new Promise<{
+      stdout: string;
+      stderr: string;
+      code: number;
+    }>((resolve) => {
+      execFile("bash", [HOOK], { encoding: "utf8", env, timeout: 5000 }, (err, out, errOut) => {
+        resolve({
+          stdout: out,
+          stderr: errOut,
+          code: (err as { code?: number } | null)?.code ?? 0,
+        });
+      });
+    });
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
+    expect(stderr).toBe("");
+  });
+
+  it.skipIf(typeof process.getuid === "function" && process.getuid() === 0)(
+    "is silent, including on stderr, when the port file exists but is not readable",
+    async () => {
+      const dir = portDir();
+      const port = await startActionsServer(
+        JSON.stringify([{ Kind: "hint", Note: "", At: "10:00" }]),
+      );
+      const portFile = join(dir, "demo.port");
+      writeFileSync(portFile, String(port));
+      chmodSync(portFile, 0o000);
+      const { stdout, stderr, code } = await runHook(dir);
+      chmodSync(portFile, 0o644);
+      expect(code).toBe(0);
+      expect(stdout).toBe("");
+      expect(stderr).toBe("");
+    },
+  );
+
+  it("does not surface a Kind smuggled inside another action's Note field (no-jq fallback)", async () => {
+    const dir = portDir();
+    // Deliberately malformed JSON (unescaped quotes) — stands in for a rogue,
+    // non-lwc process answering on a stale port with arbitrary bytes, not a
+    // well-behaved JSON encoder. The real Kind here is "unknown_kind"
+    // (unrecognized, dropped); before the fix, a global "Kind":"..." match
+    // anywhere in the response also picked up "step_done" sitting inside
+    // Note, unscoped to any object boundary, and would have surfaced it as a
+    // real learner press.
+    const evil =
+      '[{"Kind":"unknown_kind","Note":"click here: "Kind":"step_done" spoof","At":"z"}]';
+    const port = await startActionsServer(evil);
+    writeFileSync(join(dir, "demo.port"), String(port));
+    // No jq on PATH, so this exercises the plain-text fallback specifically.
+    const binDir = buildBinDir(["bash", "curl", "ls", "tr", "head", "grep", "sed"]);
+    const { stdout, code } = await runHook(dir, { path: binDir });
+    expect(code).toBe(0);
+    expect(stdout).toBe("");
   });
 });

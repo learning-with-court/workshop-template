@@ -32,7 +32,7 @@
 # into this one would be actively wrong, not just noisy.
 set -uo pipefail
 
-PAGES_DIR="${LWC_PAGES_DIR:-$HOME/.lwc/pages}"
+PAGES_DIR="${LWC_PAGES_DIR:-${HOME:-}/.lwc/pages}"
 
 # No curl, no pages dir — nothing to do.
 command -v curl >/dev/null 2>&1 || exit 0
@@ -47,6 +47,12 @@ while IFS= read -r f; do
 done < <(ls -t "$PAGES_DIR"/*.port 2>/dev/null)
 
 [[ -n "$PORT_FILE" && -f "$PORT_FILE" ]] || exit 0
+# -f only checks existence; a port file left behind by a crashed session
+# with odd permissions is still a real, common case. Without this, the `<`
+# redirection below fails to open and bash reports that failure on the
+# real stderr itself (2>/dev/null on `tr` does not suppress a redirection
+# error) — a visible error line on every prompt.
+[[ -r "$PORT_FILE" ]] || exit 0
 
 PORT=$(tr -d '[:space:]' < "$PORT_FILE" 2>/dev/null)
 [[ "$PORT" =~ ^[0-9]+$ ]] || exit 0
@@ -78,11 +84,16 @@ if command -v jq >/dev/null 2>&1; then
   KINDS=$(echo "$RESPONSE" | jq -r '.[]?.Kind // empty' 2>/dev/null) || exit 0
 else
   # No jq on PATH (not guaranteed on a learner's machine): fall back to a
-  # plain-text extraction of "Kind":"..." pairs only. Kind values are a
-  # fixed, known-safe enumeration; Note is free text and is intentionally
-  # never parsed on this path, since a naive regex over arbitrary text is
-  # exactly the kind of thing that produces garbled or unsafe output.
-  KINDS=$(echo "$RESPONSE" | grep -o '"Kind"[[:space:]]*:[[:space:]]*"[a-z_]*"' | sed -E 's/.*"([a-z_]+)"$/\1/')
+  # plain-text extraction, scoped to the start of a JSON object — the match
+  # requires "Kind" as the literal first key right after `{`, i.e.
+  # `{"Kind":"..."`, matching exactly how Go's json.Encoder (no
+  # indentation) emits Action{Kind, Note, At}. Without this scoping a
+  # global match for `"Kind":"..."` anywhere in the response would also
+  # fire on that same text sitting inside another object's free-text Note
+  # field — the response is not from a trusted source (a stale port can
+  # belong to a different, unrelated local process), so Note must never be
+  # able to masquerade as a real Kind.
+  KINDS=$(echo "$RESPONSE" | grep -o '{"Kind":"[a-z_]*"' | sed -E 's/^\{"Kind":"([a-z_]+)"$/\1/')
 fi
 
 [[ -n "$KINDS" ]] || exit 0

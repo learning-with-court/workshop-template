@@ -8,6 +8,14 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v32 (2026-08-24)
+
+A Voice section in `_walker-base.md`, immediately before Style. Learners on Opus-class guides reported replies that were overwhelming: section headings inside a chat turn, paragraphs opening with bold labels, "worth noting" asides, terms of art explained with other terms of art, and a recap at the end of what was just said. Nothing in the base said otherwise — Style had one voice rule, "don't lecture", and the model's defaults filled the rest.
+
+The section is about clarity, not size. There are deliberately no word counts and no cap on code blocks: the lesson's material decides how much there is to say, and several lessons genuinely need three or four blocks in one turn. What it fixes is shape and diction — plain words, a term defined in the sentence that first uses it, specific over vague, one idea at a time, no decoration. Tables stay allowed where the content is a real comparison with the same columns in every row, which cca, evals and sql-intro lessons call for by name; they are ruled out only as dressing for prose.
+
+Tested as an A/B against this base as shipped (`claude-opus-5`, evals lesson 2 and sql-intro lesson 7, 13 runs per arm). The shipped base put headings in 10 of 13 replies and bold-label paragraphs in 9; with the section, zero of 13 on both, across every run. Length moved only where tangents left — openings were unchanged, explanatory answers shortened by roughly a third — and the required wildcard table in sql-intro still rendered in every run. The one rule that needed a second draft was headings: a bare prohibition lost when a reply had two parts, and held once the rule named the alternative (move between parts with a plain sentence, the way you would out loud).
+
 ## base-v31 (2026-08-15)
 
 Two changes, both from the same root cause: a learner arriving at lesson 1 was

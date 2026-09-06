@@ -1,5 +1,6 @@
 id: example-series
-short: example          # the <short> tag namespace
+# the <short> tag namespace
+short: example
 title: Example Workshop Series
 workshops:
   - id: example

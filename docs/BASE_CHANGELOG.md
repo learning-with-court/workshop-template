@@ -8,6 +8,14 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v33 (2026-08-24)
+
+Guide prose for the browser lesson page, in `_walker-surface-claude-code.md`: mirror lesson state to the page (`page_set_lesson`, `page_set_step`, `page_show_code`, `page_note`) as additive to terminal narration, never a replacement for it. Pairs with base-v32's `drain-page-actions.sh` hook (landed on this same commit range, version left unbumped until this prose was ready so the hook and its guide instructions ship as one chassis change).
+
+Three rules carried over from implementation, because getting any of them wrong breaks the page silently rather than loudly: `page_show_verify` needs the verify command passed exactly as `start_lesson`/`verifyCommand` returned it — matching is exact-string against the lesson manifest, so a paraphrase falls back to a plain list instead of the check/expected/actual table — and `output` passed raw, unparsed. A button press can arrive twice in one turn (`pending_actions` on a page tool result, and separately as a `LEARNER PAGE ACTION` line from the prompt-submit hook) by design, so it can't be lost; treat it as one learner statement and act on it once, never as an automatic lesson advance or automatic verify run. And when the page tools are absent or `page_open` reported `opened: false`, say nothing about the page at all — no apology, no "your page would show...".
+
+The matching plugin-side instructions landed in `learning-with-court/plugins/lwc-workshops/skills/lesson-runner/SKILL.md` (not part of this base — that repo has no code base to sync).
+
 ## base-v32 (2026-08-24)
 
 A Voice section in `_walker-base.md`, immediately before Style. Learners on Opus-class guides reported replies that were overwhelming: section headings inside a chat turn, paragraphs opening with bold labels, "worth noting" asides, terms of art explained with other terms of art, and a recap at the end of what was just said. Nothing in the base said otherwise — Style had one voice rule, "don't lecture", and the model's defaults filled the rest.

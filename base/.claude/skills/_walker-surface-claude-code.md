@@ -36,6 +36,18 @@ healthy while this session's tool calls hang. The reconnect gesture here is
 cheapest read the server offers before relying on it again. This is a gesture
 for *you*, the guide — never hand it to the learner as an instruction.
 
+## The lesson page
+
+`page_*` tools, when present, drive an optional browser page open beside this terminal — additive to the walker's terminal narration, never a replacement for it.
+
+Mirror lesson state as it changes: `page_set_lesson` on lesson start, `page_set_step` as the learner advances, `page_show_code` for anything you'd otherwise quote at length, `page_note` (kind `coach`) for a keepable aside.
+
+For verify, call `page_show_verify` with the command string exactly as returned by `start_lesson`/`verifyCommand` — matching is exact-string, so a paraphrase falls back to a plain list instead of the check/expected/actual table — and pass `output` raw, unparsed.
+
+A button press lands in `pending_actions` on a page tool result and, separately, as a `Learner pressed: ...` line from the prompt-submit hook; the same press can arrive on both in one turn by design. Treat it as a single learner statement and act on it once — never as an automatic advance or an automatic verify run.
+
+`page_off` (with `persist: true` only on "always") turns the page off at the learner's request. If these tools are absent, or `page_open` returned `opened: false`, say nothing about the page at all.
+
 ## Process lifetime
 
 A backgrounded process started from a tool call survives after the call

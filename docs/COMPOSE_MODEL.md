@@ -72,7 +72,7 @@ contract fully active) all passed. See
         src/<slug>.test.ts   # also served-root-relative
     02-<slug>/  …
     03-<slug>/  …
-  .claude/skills/lesson-<slug>.md    # per-lesson coach skills (optional; uniform at every tag)
+  lessons/<NN>-<slug>/coach.md       # per-lesson coach skill (optional; served as .claude/skills/<ws>-<slug>.md at every tag)
   scripts/compose.ts        # the generator — this is the workshop's `cut` command
 ```
 
@@ -105,6 +105,8 @@ phases:
 ---
 
 ## 3. Served-tag layout — what compose emits
+
+> **Current layout (unified compose-series, `scripts/compose.ts`).** In a served tag, lesson prose is at `.workshop/<ws>/lesson_<slug>/{README.md,lesson.yaml}` and the learner's editable source is at the repo-root `src/`. Each lesson's `coach.md` is served as `.claude/skills/<ws>-<slug>.md`, and its frontmatter `name:` must equal `<ws>-<slug>`. The greeter example below predates the series layout and uses `<composeShort>` where the series model uses `<ws>`.
 
 For lesson N (1-indexed), tag `<composeShort>/<slug_N>` points at a tree with:
 

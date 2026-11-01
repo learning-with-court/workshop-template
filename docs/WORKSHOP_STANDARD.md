@@ -117,8 +117,7 @@ The legacy template used a numeric scheme. The mapping, before → after:
 
 Every workshop tracks learner progress server-side through the `lwc` CLI
 acting as a stdio MCP proxy. To wire that in — and to avoid the failure mode
-where the agent has no progress tools and reaches for the global Cowork lwc
-connector ("these lwc tools are for Cowork mode") — every workshop must ship:
+where the agent has no progress tools — every workshop must ship:
 
 1. **A progress MCP server in `.mcp.json` at the repo root:**
    ```json
@@ -127,7 +126,7 @@ connector ("these lwc tools are for Cowork mode") — every workshop must ship:
    Bare `lwc` runs the stdio MCP proxy (serving `workshop_advance` /
    `workshop_state` / `workshop_reset` / `workshop_update`), resolving the
    active workshop from the cwd. The `lwc-` name prefix also marks the project
-   as a workshop so the Cowork-flow plugin skills stay silent. The template
+   as a workshop so the plugin's setup skill stays silent. The template
    ships `lwc-WORKSHOP_ID`; `build-workshop` substitutes the real id.
 2. **Pre-approval in committed `.claude/settings.json`:**
    ```json

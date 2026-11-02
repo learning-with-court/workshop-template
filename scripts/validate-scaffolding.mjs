@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Workshop runtime-scaffolding check. Enforces the standard that every lwc
 // workshop ships server-side progress wired correctly, so a learner never
-// hits the "these lwc tools are for Cowork mode" bleed or a stale walker path.
+// hits a session with no progress tools or a stale walker path.
 // No network. Run from a member repo root: `node scripts/validate-scaffolding.mjs`.
 //
 // Checks (see docs/WORKSHOP_STANDARD.md → "Runtime scaffolding"):
@@ -23,7 +23,7 @@ export function checkScaffolding(read) {
 
   const mcpRaw = read(".mcp.json");
   if (mcpRaw == null) {
-    problems.push(".mcp.json missing at repo root — no progress MCP server ships (Cowork-bleed risk)");
+    problems.push(".mcp.json missing at repo root — no progress MCP server ships");
     return problems; // nothing else to check without it
   }
   let mcp;

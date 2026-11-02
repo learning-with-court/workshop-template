@@ -42,11 +42,6 @@
             "type": "command",
             "command": ".claude/hooks/live-assist.sh UserPromptSubmit",
             "timeout": 5
-          },
-          {
-            "type": "command",
-            "command": ".claude/hooks/drain-page-actions.sh",
-            "timeout": 5
           }
         ]
       }

@@ -8,6 +8,12 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v34 (2026-11-02)
+
+The lesson page, for the split view (`lwc start` with the terminal and the page side by side). In `_walker-surface-claude-code.md`, the guide now passes `slug` to `page_set_lesson`, the lesson's id (its folder is `lesson_<slug>`); with it, `lwc` loads that lesson's README and shows its Walkthrough one step at a time. `page_set_step` indexes are the Walkthrough's numbered items, counted from 0. Without the slug, every lesson after the first showed no steps and no Send to Claude.
+
+`drain-page-actions.sh` and its `UserPromptSubmit` wiring in `settings.json` are retired, with their test. A press now reaches Claude through the `lwc-pages` plugin's mod, the only return path; the hook never reached a workshop.
+
 ## base-v33 (2026-08-24)
 
 Guide prose for the browser lesson page, in `_walker-surface-claude-code.md`: mirror lesson state to the page (`page_set_lesson`, `page_set_step`, `page_show_code`, `page_note`) as additive to terminal narration, never a replacement for it. Pairs with base-v32's `drain-page-actions.sh` hook (landed on this same commit range, version left unbumped until this prose was ready so the hook and its guide instructions ship as one chassis change).

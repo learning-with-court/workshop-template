@@ -40,7 +40,7 @@ for *you*, the guide — never hand it to the learner as an instruction.
 
 `page_*` tools, when present, drive an optional browser page open beside this terminal — additive to the walker's terminal narration, never a replacement for it.
 
-Mirror lesson state as it changes: `page_set_lesson` on lesson start, `page_set_step` as the learner advances, `page_show_code` for anything you'd otherwise quote at length, `page_note` (kind `coach`) for a keepable aside.
+Mirror lesson state as it changes: `page_set_lesson` on lesson start, passing `slug`, the lesson's id (its folder is `lesson_<slug>`), so the page shows that lesson's Walkthrough one step at a time; `page_set_step` as the learner advances, its index the Walkthrough's numbered item, counted from 0; `page_show_code` for anything you'd otherwise quote at length, `page_note` (kind `coach`) for a keepable aside.
 
 For verify, call `page_show_verify` with the command string exactly as returned by `start_lesson`/`verifyCommand` — matching is exact-string, so a paraphrase falls back to a plain list instead of the check/expected/actual table — and pass `output` raw, unparsed.
 

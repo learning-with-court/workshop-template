@@ -8,6 +8,10 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v36 (2026-11-03)
+
+With the lesson page open, a lesson opens in two or three sentences, in `_walker-base.md`'s Lesson opening structure. base-v35 shortened the guide's replies, but the opening still followed the four beats, which win for the first reply: on Court's dev walk of claude-code-basics lesson 6 it ran to about 200 words and offered its own starting prompt, different from the page's ("What conventions should anyone working in this project follow? ..." in the terminal, "What conventions has this project been running on?" on the page). The page shows the objective, step and prompt, so the opening now gives the objective in one line and points at the page. The four beats stay for sessions with no page.
+
 ## base-v35 (2026-11-03)
 
 With the lesson page open, the guide keeps the terminal short. `_walker-surface-claude-code.md` called the page additive to terminal narration, never a replacement, so on the split the guide wrote the full explanation on the left while the page showed the same step on the right. Court's prod walk of claude-code-basics lesson 6: "it's still putting a lot of text on the left." Since base-v34 the page shows each step and its prompt, so the terminal now carries only the conversation, and longer reading goes on the page. With no page, the guide says everything in the terminal, as before.

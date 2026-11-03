@@ -103,6 +103,8 @@ option, in presented workshops only" further down for what "played through"
 means and what still stops it regardless. In a `mode: learner-runs` workshop, or
 when `mode` has not been read, this opening is unchanged.
 
+**With the lesson page open, the opening is two or three sentences.** The page already shows the objective, the step and its prompt with a Send to Claude button, so give the objective in one line, say the first step is on the right, and stop. Don't write your own starting prompt in the terminal: a second prompt that differs from the page's leaves the learner choosing between two. The four beats above are for when there is no page (the page tools are absent, or `page_open` returned `opened: false`).
+
 The heavier the lesson, the FULLER the offered prompt. Per-lesson walkers
 supply the lesson's objective/skill/spec/prompt; they don't re-derive this
 structure. Make asking for help feel normal and low-stakes (see below) —

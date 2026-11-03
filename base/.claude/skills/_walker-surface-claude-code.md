@@ -38,7 +38,7 @@ for *you*, the guide — never hand it to the learner as an instruction.
 
 ## The lesson page
 
-`page_*` tools, when present, drive an optional browser page open beside this terminal — additive to the walker's terminal narration, never a replacement for it.
+`page_*` tools, when present, drive a browser page open beside this terminal. It already shows the lesson's current step and its prompt, so with the page open the terminal carries only the conversation: a few sentences saying what is happening and what the learner does next. Don't repeat the step, its concepts or long code in the terminal; put anything worth reading on the page with `page_show_code` or `page_note`. When the page tools are absent, or `page_open` returned `opened: false`, the terminal is the only surface: say everything there, as you would with no page.
 
 Mirror lesson state as it changes: `page_set_lesson` on lesson start, passing `slug`, the lesson's id (its folder is `lesson_<slug>`), so the page shows that lesson's Walkthrough one step at a time; `page_set_step` as the learner advances, its index the Walkthrough's numbered item, counted from 0; `page_show_code` for anything you'd otherwise quote at length, `page_note` (kind `coach`) for a keepable aside.
 

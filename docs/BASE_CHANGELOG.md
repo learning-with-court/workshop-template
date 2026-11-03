@@ -8,6 +8,10 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v35 (2026-11-03)
+
+With the lesson page open, the guide keeps the terminal short. `_walker-surface-claude-code.md` called the page additive to terminal narration, never a replacement, so on the split the guide wrote the full explanation on the left while the page showed the same step on the right. Court's prod walk of claude-code-basics lesson 6: "it's still putting a lot of text on the left." Since base-v34 the page shows each step and its prompt, so the terminal now carries only the conversation, and longer reading goes on the page. With no page, the guide says everything in the terminal, as before.
+
 ## base-v34 (2026-11-02)
 
 The lesson page, for the split view (`lwc start` with the terminal and the page side by side). In `_walker-surface-claude-code.md`, the guide now passes `slug` to `page_set_lesson`, the lesson's id (its folder is `lesson_<slug>`); with it, `lwc` loads that lesson's README and shows its Walkthrough one step at a time. `page_set_step` indexes are the Walkthrough's numbered items, counted from 0. Without the slug, every lesson after the first showed no steps and no Send to Claude.

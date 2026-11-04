@@ -80,6 +80,9 @@ beforeAll(() => {
   mkdirSync(join(repo, "workshops", "w1"), { recursive: true });
   writeFileSync(join(repo, "workshops", "w1", "settings.overlay.json"),
     JSON.stringify({ model: "opus" }, null, 2) + "\n");
+  // w1 has the lesson page's optional intro + terms; w2 has neither
+  writeFileSync(join(repo, "workshops", "w1", "intro.md"), "# Before lesson 1\n");
+  writeFileSync(join(repo, "workshops", "w1", "terms.yaml"), "terms:\n  - term: commit\n    means: A snapshot.\n");
   // per-workshop fixture for w1
   mkdirSync(join(repo, "workshops", "w1", "fixtures", "diffs"), { recursive: true });
   writeFileSync(join(repo, "workshops", "w1", "fixtures", "diffs", "sample.diff"), "DIFF\n");
@@ -181,6 +184,17 @@ describe("unified compose generator", () => {
     expect(t).toContain(".workshop/w1/lesson_w1a/fixtures/case.json");        // per-lesson
     // uniform: also present at a later tag
     expect(showTree("dev/s/w2/w2a")).toContain(".workshop/w1/fixtures/diffs/sample.diff");
+  });
+
+  it("serves a workshop's intro.md and terms.yaml beside landing.md when present", () => {
+    for (const tag of ["dev/s/w1/w1a", "dev/s/w2/w2b", "dev/s/series/v0"]) {
+      const t = showTree(tag);
+      expect(t).toContain(".workshop/w1/intro.md");
+      expect(t).toContain(".workshop/w1/terms.yaml");
+      expect(t).not.toContain(".workshop/w2/intro.md");
+      expect(t).not.toContain(".workshop/w2/terms.yaml");
+    }
+    expect(showFile("dev/s/w1/w1a", ".workshop/w1/intro.md")).toBe("# Before lesson 1\n");
   });
 
   it("ws/v1 does NOT leak next workshop's first test (M1 off-by-one)", () => {

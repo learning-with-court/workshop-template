@@ -10,6 +10,8 @@
 //   base/**                              uniform baseline (incl base/.claude/skills/)
 //   workshops/<ws>/workshop.yaml         { id, phases: [{id, lessons: [slug...]}] }
 //   workshops/<ws>/landing.md
+//   workshops/<ws>/intro.md              optional — the lesson page's intro screen before lesson 1
+//   workshops/<ws>/terms.yaml            optional — the lesson page's term list
 //   workshops/<ws>/lessons/<NN>-<slug>/
 //     lesson.yaml                        lesson manifest (prose)
 //     README.md                          lesson prose
@@ -276,7 +278,7 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
       add(`.workshop/${ws}/fixtures/${posix.relative(fixturesDir, abs)}`, abs);
   }
 
-  // 3) series.yaml → .workshop/series.yaml; per-ws workshop.yaml + landing.md
+  // 3) series.yaml → .workshop/series.yaml; per-ws workshop.yaml + landing.md (+ intro.md, terms.yaml)
   const seriesYaml = join(REPO, "series.yaml");
   if (existsSync(seriesYaml)) add(".workshop/series.yaml", seriesYaml);
   for (const { ws } of workshops) {
@@ -284,6 +286,10 @@ function buildTree(solUpTo: number, idxLabel: string, testUpTo: number = solUpTo
     if (existsSync(wsYaml)) add(`.workshop/${ws}/workshop.yaml`, wsYaml);
     const landing = join(REPO, "workshops", ws, "landing.md");
     if (existsSync(landing)) add(`.workshop/${ws}/landing.md`, landing);
+    for (const name of ["intro.md", "terms.yaml"]) {
+      const f = join(REPO, "workshops", ws, name);
+      if (existsSync(f)) add(`.workshop/${ws}/${name}`, f);
+    }
   }
 
   // 4) Σ solution(0..upTo-1) across the series (cumulative; later overrides earlier)

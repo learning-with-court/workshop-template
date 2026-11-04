@@ -116,6 +116,7 @@ package.json  tsconfig.json  vitest.config.ts
 .mcp.json  .claude/**
 .workshop/<composeShort>/workshop.yaml
 .workshop/<composeShort>/landing.md
+.workshop/<composeShort>/intro.md + terms.yaml                    # when the workshop has them
 .workshop/<composeShort>/lesson_hello/lesson.yaml + README.md     # ALL lessons present
 .workshop/<composeShort>/lesson_shout/lesson.yaml + README.md     # at EVERY position
 .workshop/<composeShort>/lesson_config/lesson.yaml + README.md

@@ -8,6 +8,10 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v36 (2026-11-04)
+
+The lesson page now shows each step's result and waits for the learner to press Next step. In `_walker-surface-claude-code.md`, after a step's commands the guide calls `page_step_result` for that step (its index counted from 0, like `page_set_step`; `ran` may be empty) and calls `page_set_step` to move on only when the Next step press arrives; a question keeps the step. Before, the guide called `page_set_step` as soon as the commands ran, and Court's walk of Git Basics found that "it runs the command and immediately moves on without explaining the results". `scripts/compose.ts` also copies a workshop's optional `intro.md` and `terms.yaml` into `.workshop/<ws>/` beside `landing.md`, so the page can show the intro screen before lesson 1 and underline the workshop's terms; a workshop without them composes as before.
+
 ## base-v35 (2026-11-03)
 
 With the lesson page open, the guide keeps the terminal short. `_walker-surface-claude-code.md` called the page additive to terminal narration, never a replacement, so on the split the guide wrote the full explanation on the left while the page showed the same step on the right. Court's prod walk of claude-code-basics lesson 6: "it's still putting a lot of text on the left." Since base-v34 the page shows each step and its prompt, so the terminal now carries only the conversation, and longer reading goes on the page. With no page, the guide says everything in the terminal, as before.

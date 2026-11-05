@@ -5,7 +5,8 @@
 // `pnpm lint-manifest` covers both. A lesson with no `steps:` passes.
 //
 // One entry per README Walkthrough item, in order; each may name a view
-// (`file <path>`, relative to the practice repo, `commits`, or `move <from> <to>`) and,
+// (`file <path>`, relative to the practice repo, `commits`, `move <from> <to>`, or
+// `none`, which draws nothing and keeps an earlier step's view from carrying on) and,
 // for a choose step, the choices whose prompts the buttons send. The views are
 // lwc's: it draws them from the practice repo named in .lwc/target-repo, never
 // from the workshop's own clone. See docs/LESSON_PAGE.md.
@@ -23,13 +24,13 @@ const View = z.string().refine(
   (v) => {
     const [kind, ...args] = v.trim().split(/\s+/);
     if (kind === "file") return args.length === 1;
-    if (kind === "commits") return args.length === 0;
+    if (kind === "commits" || kind === "none") return args.length === 0;
     if (kind === "move") {
       return args.length === 2 && args[0] !== args[1] && args.every((p) => Places.includes(p));
     }
     return false;
   },
-  `must be "file <path>", "commits", or "move <from> <to>" with from and to among ${Places.join(", ")}`,
+  `must be "file <path>", "commits", "none", or "move <from> <to>" with from and to among ${Places.join(", ")}`,
 );
 
 const Step = z

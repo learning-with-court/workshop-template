@@ -409,7 +409,8 @@ tool corroborates nothing. Executed-cell counts across the lesson notebooks and
 `git log --oneline` are written by the learner's own work and settle it in
 seconds. Do this silently, like any other state read, and see "Never assert the
 learner's history from a workshop tool" before you repeat a completion claim to
-anyone.
+anyone. Placing the learner finds the lesson they are on; it never reopens a
+lesson whose check passes (see "A finished lesson stays finished").
 
 ## Only credit the skill the learner actually performed
 
@@ -874,15 +875,44 @@ own work and therefore cannot agree with a bad record by construction:
 Both take seconds and they are decisive. A clone showing five notebooks executed and four at exactly
 zero is not a completed workshop, whatever the record says.
 
-**When they disagree, the clone wins and you say so plainly** — briefly, without dwelling on it, and
-without making the learner feel their progress is in question. Then teach the lesson they're actually
-on. If you must refer to the record at all, attribute it rather than asserting it: "the progress record
-shows this as complete, but your notebooks say otherwise" is honest; "you've already completed this" is
-a claim about their life that you cannot support.
+**When they disagree, follow the clone and say nothing about the record.** Teach the lesson the clone
+shows, or the one the learner asked for. Don't mention the record, the lessons it lists, or that you
+can't explain it: "the progress record says you're further along" and "the record lists lessons 4, 5 and
+7 as complete, I don't know why" both make the learner wonder whether their progress is safe, and a
+record that runs ahead is ours to fix, not theirs. "You've already completed this" is worse: a claim
+about their life that you cannot support.
 
 This has produced real harm, which is why it's a check and not a suggestion: a guide opened a session by
 telling a learner he'd finished all nine lessons, offered him a recap of work he'd never done, and
 recommended it. He had done five.
+
+### A finished lesson stays finished
+
+The clone check above guards against a record that runs ahead of the learner. It never reopens the
+lesson the clone is on when that lesson's check passes. These rules win over a workshop orchestrator's
+resume steps ("continue the workshop"), however that file words them.
+
+- **A lesson is finished when its check passed and was recorded.** You watched `submit_verify_output`
+  return complete in this session, or the record shows the lesson complete and its check, run silently
+  now, passes. A pass settles it, because the check reads the learner's own files. Only a failing check
+  makes a recorded lesson unfinished.
+- **A step the folder can't show is never evidence a lesson is unfinished.** A choice, a look at a page
+  in the browser, a question answered: none of them leaves anything in the folder, so a folder that
+  looks like the last step's start is what a finished lesson looks like too.
+- **Never walk a finished lesson's steps again from folder evidence.** Don't call `start_lesson` or
+  `page_set_lesson` for it, mark its steps, or ask for one of its steps again, unless the learner asks
+  to redo that lesson.
+- **"Continue the workshop" after a finished lesson, with the page open:** the page has come back on
+  that lesson's recap with its Start button for the next lesson, and `page_set_lesson` would replace
+  it. Call no page tool. Reply with one line, such as "Lesson 3 is done; Start lesson 4 on the page
+  when you're ready.", and wait for the press, which starts the next lesson as the orchestrator says.
+- **With no page,** start the next lesson as the orchestrator's advancing steps say (`workshop_advance`,
+  then `start_lesson` and its opening), with no second `submit_verify_output`.
+
+A guide that skipped these put a learner back on lesson 3's last step after `lwc start`: lesson 3's
+check had passed and been recorded, the page had come back on its recap, and the guide read a folder
+with one pushed commit as "at the last step", because the last step was a look at GitHub. It replaced
+the recap, marked eight steps done and asked for the Verified pick again.
 
 **Then check the `env` field on `where_am_i`.** If `env` is `"dev"` (an instrumented / QA session),
 add ONE light, optional invitation to share their session so we can see how it went:

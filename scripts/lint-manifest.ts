@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { spawnSync } from "node:child_process";
 import * as YAML from "js-yaml";
 import { z } from "zod";
+import { lintSteps, lintWorkshopTerms } from "./lint-steps.js";
 
 // Vendored schemas — keep in sync with
 // platform/packages/server/src/manifest/schema.ts.
@@ -291,12 +292,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   // Repo-level overlay check runs in every layout mode (computed once).
   const overlayErr = seriesOverlayError();
+  // Each lesson's optional steps: block and each workshop's optional terms.yaml
+  // (scripts/lint-steps.ts); nothing to check in a workshop without them.
+  const pageErrs = [...lintSteps(repoRoot), ...lintWorkshopTerms(repoRoot)];
 
   async function runLints(): Promise<void> {
     if (workshopRoot || fs.existsSync(rootWorkshopYaml)) {
       // Classic single-workshop or explicit --workshopRoot mode.
       const r = await lintManifest({ repoRoot, workshopRoot });
-      const errs = overlayErr ? [overlayErr, ...r.errors] : r.errors;
+      const errs = [...(overlayErr ? [overlayErr] : []), ...r.errors, ...pageErrs];
       if (errs.length === 0) {
         console.log("✔ manifest lint passed");
         process.exit(0);
@@ -313,8 +317,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
         console.warn("⚠ no workshop.yaml found at repo root or under workshops/ — nothing to lint");
         process.exit(0);
       }
-      let allErrors: string[] = [];
-      if (overlayErr) allErrors.push(overlayErr);
+      let allErrors: string[] = [...pageErrs];
+      if (overlayErr) allErrors.unshift(overlayErr);
       for (const ws of workshopDirs) {
         const r = await lintManifest({ repoRoot: path.join(workshopsDir, ws) });
         if (r.errors.length > 0) {
@@ -329,6 +333,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       process.exit(1);
     } else {
       if (overlayErr) { console.error(`✘ ${overlayErr}`); process.exit(1); }
+      if (pageErrs.length) { for (const e of pageErrs) console.error(`✘ ${e}`); process.exit(1); }
       console.warn("⚠ workshop.yaml missing at repo root — nothing to lint");
       process.exit(0);
     }

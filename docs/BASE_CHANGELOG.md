@@ -8,6 +8,16 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v37 (2026-11-05)
+
+What Git Basics learned about the lesson page, moved into the base so every workshop starts from it. Until now the rules lived in Git Basics' own `_walker-supplement.md` and its `scripts/lint-steps.ts`, so a workshop converting to the page had to copy them from a private file.
+
+`_walker-base.md` gains a section, "With the lesson page open", one rule per line with its reason: keeping the page in step (the slug, step indexes from 0, a result after each step's commands, moving on only at Next), the terminal (one sentence to open a lesson, commands named in one code line, about 80 words for an answer, no page bookkeeping or workshop bookkeeping shown, no line about the next step), a step's result (`ran` with a pasted `!` line tagged `by: you`, files Claude wrote as `Wrote …` with no `raw`, plain quotes, the parts of a command the first time it appears, `links` for anything made on a website), the end of a lesson (Next on the last step brings `page_recap` and the lesson check, one terminal sentence, a fix shown as a note on the recap), and checking an unrecorded previous lesson before starting the next. The section wins over the visible walkthrough contract while the page is open; with no page, nothing changes. It sits in `_walker-base.md` because that is the file every orchestrator reads at ENTER; `_walker-surface-claude-code.md`'s page prose moved into it, and the surface file now points there.
+
+`scripts/lint-steps.ts` joins the base, and `scripts/lint-manifest.ts` runs it after the manifest lint, so `pnpm lint-manifest` now also checks each lesson's optional `steps:` (views, choices, no more entries than Walkthrough items) and each workshop's optional `terms.yaml` (with `intro.md` beside it). A workshop with neither passes as before. A member whose `package.json` chains `tsx scripts/lint-steps.ts` after `lint-manifest` (Git Basics) can drop it.
+
+Template only, not synced: `docs/LESSON_PAGE.md` for authors, and the example workshop rewritten in the pattern (`intro.md`, `terms.yaml`, a four-step lesson with a choose step, its coach, and checks named in plain words).
+
 ## base-v36 (2026-11-04)
 
 The lesson page now shows each step's result and waits for the learner to press Next step. In `_walker-surface-claude-code.md`, after a step's commands the guide calls `page_step_result` for that step (its index counted from 0, like `page_set_step`; `ran` may be empty) and calls `page_set_step` to move on only when the Next step press arrives; a question keeps the step. Before, the guide called `page_set_step` as soon as the commands ran, and Court's walk of Git Basics found that "it runs the command and immediately moves on without explaining the results". `scripts/compose.ts` also copies a workshop's optional `intro.md` and `terms.yaml` into `.workshop/<ws>/` beside `landing.md`, so the page can show the intro screen before lesson 1 and underline the workshop's terms; a workshop without them composes as before.

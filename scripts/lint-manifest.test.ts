@@ -57,3 +57,42 @@ describe("lintManifest", () => {
     expect(threw).toBe(true);
   }, 30000);
 });
+
+// A one-lesson workshop that passes the manifest lint; `extra` is appended to its lesson.yaml.
+function runCli(extra: string): { ok: boolean; out: string } {
+  const repo = mkdtempSync(path.join(tmpdir(), "lint-cli-steps-"));
+  const d = path.join(repo, "workshops", "w1", "lessons", "01-w1a");
+  mkdirSync(d, { recursive: true });
+  writeFileSync(path.join(repo, "workshops", "w1", "workshop.yaml"),
+    `id: w1\ntitle: "w1"\nstatus: available\nrepo: x/y\ntagline: "t"\nsummary: "s"\n` +
+    `difficulty: beginner\ntags:\n  - t\ninstall: "i"\nyouWillBuild:\n  - "b"\n` +
+    `prerequisites: []\nphases:\n  - id: A\n    title: A\n    lessons:\n      - w1a\n`);
+  writeFileSync(path.join(repo, "workshops", "w1", "landing.md"), `# w1\n`);
+  writeFileSync(path.join(d, "lesson.yaml"),
+    `id: w1a\ntitle: "w1a"\nblurb: "b"\nprerequisites: []\ntargetFiles:\n  - src/x.ts\n` +
+    `verifyCommand: "true"\nverify:\n  description: "d"\n  mustInclude:\n    - "x"\n` +
+    `onPass:\n  feedback: "f"\n` + extra);
+  writeFileSync(path.join(d, "README.md"), `# w1a\n\n## Walkthrough\n\n1. **One**\n`);
+  writeFileSync(path.join(d, "coach.md"), `---\nname: w1-w1a\ndescription: coach\n---\nbody\n`);
+  try {
+    const out = execFileSync(TSX, [SCRIPT], { cwd: repo, encoding: "utf8", stdio: "pipe" });
+    return { ok: true, out };
+  } catch (e) {
+    const err = e as { stdout?: string; stderr?: string };
+    return { ok: false, out: `${err.stdout ?? ""}${err.stderr ?? ""}` };
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+describe("lint-manifest CLI runs the steps lint", () => {
+  it("passes a workshop whose lessons have no steps", () => {
+    expect(runCli("").ok).toBe(true);
+  }, 30000);
+
+  it("fails a lesson whose steps don't lint", () => {
+    const r = runCli("steps:\n  - view: diff src/x.ts\n");
+    expect(r.ok).toBe(false);
+    expect(r.out).toContain("steps[0].view");
+  }, 30000);
+});

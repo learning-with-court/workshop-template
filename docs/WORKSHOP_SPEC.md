@@ -180,6 +180,8 @@ Path: `workshop/lesson_<slug>/README.md`
 
 A reader who finds this lesson on GitHub *without ever installing the plugin* should be able to learn from it. The lesson README is the standalone teaching artifact; the walker skill is the live-coaching layer that sits on top of it.
 
+> **A lesson written for the lesson page** (`lwc start`, the page beside the terminal) is the title, a `**Goal:**` line and `## Walkthrough` only, one action per step and no "Run verify" step. `docs/LESSON_PAGE.md` gives that shape; the structure below is for a lesson read without the page.
+
 ### Required structure
 
 #### `# Lesson N — <name>`

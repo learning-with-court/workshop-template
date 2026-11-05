@@ -1,0 +1,16 @@
+# The words lwc underlines in a step's text, the first time each appears, with
+# what it means. Each entry is one or two plain sentences and uses no word that
+# an earlier entry (or plain English) hasn't explained. Order them by the lesson
+# that introduces them. `ask` replaces the card's "Tell me more about what a
+# <term> is." when that sentence would read badly.
+# lwc matches a term case-insensitively as a whole word, with -s/-es after it,
+# outside code. Don't pick a term that is also an everyday word in a step.
+terms:
+  # Lesson 1
+  - term: test
+    means: A small program that runs your code and checks it does what it should. It passes when every check holds, and names the one that doesn't when it fails.
+  - term: function
+    means: A named piece of code that does one job when it's called. It can hand back a value, like a line of text.
+  - term: export
+    means: Marks a function so code in another file can use it. The test can only call your function if it's exported.
+    ask: Tell me more about what export means.

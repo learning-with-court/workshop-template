@@ -1,12 +1,13 @@
 {
   "surface": "code",
-  "version": "base-v36",
+  "version": "base-v37",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",
     "scripts/add-workshop.ts",
     "scripts/validate-compose.ts",
     "scripts/lint-manifest.ts",
+    "scripts/lint-steps.ts",
     "scripts/validate-base.mjs",
     "scripts/setup-shared.ts",
     "scripts/tsconfig.json",

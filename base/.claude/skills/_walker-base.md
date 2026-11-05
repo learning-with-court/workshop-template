@@ -314,6 +314,77 @@ force.
    after the verbatim quote alone — the user must always know what to say
    next.
 
+## With the lesson page open
+
+`page_*` tools, when present, drive a browser page beside the terminal that shows the lesson's Walkthrough one step at a time, each with its ask, a Send to Claude button and a **Next step** button once it has a result. While it is open, the rules below win over the visible walkthrough contract above (quote full stdout, end with a say-next line, wait for `run verify`) and the lesson opening structure. When the page tools are absent, or `page_open` returned `opened: false`, the terminal is the only surface: say nothing about the page and follow the rest of this file. Each rule is one line, with its reason. `docs/LESSON_PAGE.md` in the template shows the lesson and coach shape these rules assume.
+
+**Keeping the page in step**
+
+- Call `page_set_lesson` on lesson start with `slug`, the lesson's id (its folder is `lesson_<slug>`), because without it the page shows no steps and no Send to Claude.
+- Count steps as the README's Walkthrough items from 0, for `page_set_step`, `page_step_result` and the coach's entries alike, because the page and the guide must point at the same step.
+- After a step's commands (or, on a step with none, once its action is done), call `page_step_result` for that step, because the result under the step is where the learner reads what changed.
+- Move a step on (`page_set_step`: that index `done`, the next `current`) only when the Next step press arrives as "I'm done with this step", because the learner keeps the result in front of them until they have read it.
+- A question, or a "Tell me more" from a term's card, keeps the step and its result where they are, because asking is not moving on.
+- A learner who types or sends the next step's ask instead of pressing Next has pressed Next: mark the step, then do the next one, because they have said they are ready.
+- A press arrives as the learner's next prompt (typed in by the `lwc-pages` plugin) and may also show in `pending_actions` on a page tool result; act on it once, because the same press comes both ways by design so it can't be lost.
+- Pass `page_show_verify` the check command exactly as the lesson's `verifyCommand` gives it, with `output` raw and unparsed, because matching is exact-string and a paraphrase loses the check table.
+- Use `page_show_code` for anything you would otherwise quote at length and `page_note` (kind `coach`) for an aside worth keeping, because longer reading belongs on the page.
+- `page_off` (with `persist: true` only on "always") turns the page off when the learner asks, because it is theirs to close.
+
+**The terminal**
+
+- Open a lesson with one sentence on what it is for and that the first step is on the page, because the page already shows the step and its ask.
+- Name each command you run in one short inline code line, with no fenced block and no pasted output, because Claude Code's tool line shows it running and the step's result shows what it did.
+- Keep a step's reply to one or two sentences, because the step's result carries the detail.
+- Answer a question in about 80 words; put the rest in a `page_note` (kind `coach`), or, when it explains the step's own result, in a longer `means` sent again with that result's other values, because the page is where longer reading goes.
+- Use the lesson's words: no term before the step that introduces it, and a one-line reminder the first time a term from an earlier lesson comes back, because the learner reads the page and the terminal in the same order.
+- Never narrate the page's bookkeeping (which steps you mark done or current, what a coach entry tells you to do), because the learner sees the page move.
+- The workshop's own bookkeeping (a command run only to record a value, look up a name or build a link) stays out of the terminal and out of `ran`, `happened` and `raw`, because the learner can't see or act on it.
+- Don't end a reply with a line about the next step, because the learner moves on with Next.
+
+**A step's result** (`page_step_result`: `ran`, `happened`, `means`, and `rows`, `raw` or `links` when they help)
+
+- `ran` lists the exact commands you ran for the step, in order, and is empty when you ran none, because the page shows it in place of the step's "Claude runs" list.
+- A line the learner pasted themselves (a `!` line) goes in `ran` as `{"command": "<the line>", "by": "you"}`, because the page tags it; never add "(you pasted this)" to the command.
+- A file you wrote or edited with your own file tool goes in `ran` as one entry, `Wrote README.md, package.json` (`Edited` for a file that existed), with the files listed in `happened` and no `raw`, because a file tool prints nothing worth showing.
+- Leave `raw` out whenever the commands printed nothing a learner would read, because an empty fold is noise.
+- `happened` is one plain sentence on what came back, and `means` one or two sentences on what that means for the learner, from this run's real values and never a coach's examples, because the learner checks them against what they see.
+- Pass every field as it should read, with plain quotes and no backslash escapes (only `raw` is output as printed), because the page shows `happened`, `rows` and `means` exactly as given.
+- The first time a command or flag appears in the workshop, `means` ends with its parts, one plain sentence each starting with the part as typed and no backticks ("--watch: keeps the tests running and runs them again when a file changes."), because a learner can't read a command whose pieces they have never seen.
+- Later uses don't repeat a part, and a part whose step was skipped is explained at the next step that uses it, because the parts are explained once, where they first show.
+- When a step makes or changes something the learner can open in a browser, its result carries it in `links` (`[{"label": "...", "url": "https://..."}]`, the label naming what it opens, the address from the command's own output where it prints one), because the link belongs next to the words that point at it.
+- Never put a step's link in a `page_note`, because a note sits away from the step, below its Next button.
+
+**The end of a lesson: the recap, then the lesson check**
+
+- A lesson whose last Walkthrough item is a real step (there is no "Run verify" item) ends on a recap, and the Next press on that last step is the learner asking for the recap and the lesson check, because pressing Next there is the ask that "wait for `run verify`" waits for.
+- First call `page_set_step` with the last index and `done`, then `page_recap`, because the recap takes the place of a current step.
+- `summary` is one or two sentences on what the lesson made true, in words the page has already used, because it is the lesson's last reading.
+- `did` has one entry per thing the learner did, most covering one or two steps, from this run's real names and numbers, because the recap is a record of their run, not of the coach.
+- A step that detection skipped gets its own `did` entry with `skipped: true` and a plain reason ("Skipped installing Node: this computer already had it."), and a choose step is left out unless the choice changed what happened, because the recap should match what they saw.
+- `now` has one row per place the lesson changed, as the coach or the workshop's supplement names them, and a last row `Next` saying what that makes possible, because it tells the learner where things stand.
+- Leave `terms` out, because the page lists the lesson's own terms.
+- Then run the lesson check (`I'm going to run: <command>`), call `page_show_verify` with that command and the raw output, and on a pass `submit_verify_output({ lesson_id, output })` right away, because the check under the recap is how the lesson is recorded.
+- Reply in the terminal with one sentence under 25 words and nothing else, because the page carries the recap, the check and any note.
+- On a pass that sentence is the coach's one thing to leave them with: no "Lesson N is done", no count of checks, no line about the next lesson, because the page offers it.
+- On a failure it is the first failed check in plain words and that the page's **Ask Claude to fix it** button sends it to you, with no cause and no output, because the fix is the next conversation.
+- Anything more worth saying (why a check failed, something that matters later) goes in one `page_note` (kind `coach`), which shows under the recap, because the terminal line stays short.
+- When "The lesson check says this isn't done yet: <check name>. Help me fix it." arrives, fix what that check names the way its step does, run the check again, `page_show_verify`, and submit on a pass, because the recap's check must pass before the next lesson opens.
+- Then show the fix as a `page_note` (kind `coach`): "**Fixed: <check name>.** <what was wrong and the command that fixed it>", and call `page_recap` again only when the fix changes its `did` or `now`, because a new `did` line alone doesn't show what was fixed.
+- In the last lesson, the coach's closing line takes the place of the pass sentence, because there is no next lesson to point at.
+- "run verify" typed by the learner still works at any point (run the check, `page_show_verify`, submit on a pass), and before the last step a ✘ is a status: say in one sentence which step makes it, because the lesson isn't over yet.
+- When the next lesson starts (the page's Start button or typed), run `workshop_advance` and `start_lesson` as the orchestrator says and don't call `submit_verify_output` again, because the recap already recorded the lesson.
+- With no page, the recap is a short reply (the summary, one line per thing done, the `now` rows), then the check command, its output verbatim, a submit on a pass and the one sentence, because the terminal is the only surface.
+- Name each check in the lesson's test in plain words a learner can read ("The greeting starts with Hello"), never a setting, a command or a timing, because the recap shows those names.
+
+**Starting a lesson when the one before isn't recorded**
+
+- When "let's start lesson N" arrives and lesson N-1 has no record, check lesson N-1 first, because lesson N rests on it.
+- Say one line in the terminal, "Lesson N-1 isn't recorded yet, so I'm checking it first; the result is on the page.", with no command shown, because the learner asked for lesson N and a raw test command is a surprise.
+- Run lesson N-1's check and call `page_show_verify` with its command and raw output, quoting none of it in the terminal, because the check shows on the page.
+- On a pass, `submit_verify_output` for lesson N-1, then start lesson N with its own opening, because the record now holds lesson N-1.
+- On a failure, say in one sentence which check, in plain words, and that you'll fix it first; fix it as a failed lesson check is fixed above, then start lesson N, because lesson N would fail on the same gap.
+
 ## Read the state silently
 
 The walker is allowed (and expected) to inspect state directly — read files

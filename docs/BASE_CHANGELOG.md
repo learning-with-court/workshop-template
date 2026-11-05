@@ -8,6 +8,18 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v38 (2026-11-05)
+
+A lesson whose check passed and was recorded stays finished when the learner comes back. Measuring Git Basics on lwc 0.44.0, the learner finished lesson 3 (12 of 12, recorded, the page on the recap with Start lesson 4), stopped lwc and ran `lwc start` again. On `continue the workshop` the guide read the practice folder, saw one pushed commit, and took it for lesson 3's last step, because that step is a look at GitHub that leaves nothing in the folder. It called `page_set_lesson` for lesson 3, marked eight steps done, asked for the Verified pick again, and told the learner "The progress record says this lesson is finished and you're further along, but your practice folder says otherwise". That sentence is the example the base gave for when the clone and the record disagree.
+
+`_walker-base.md` gains "A finished lesson stays finished", after "Never assert the learner's history from a workshop tool". A lesson is finished when its check passed and was recorded: watched this session, or recorded and passing again when run silently. A step the folder can't show (a choice, a look in the browser) is never evidence a lesson is unfinished, and a finished lesson's steps are never walked again from the folder. On "continue the workshop" after a finished lesson with the page open, the guide calls no page tool (the page came back on the recap with its Start button) and replies with one line. With no page, it starts the next lesson as the orchestrator's advancing steps say. These rules win over an orchestrator's own resume steps, which each workshop words itself.
+
+When the record runs ahead of the clone, the guide now follows the clone and says nothing about the record. The base used to say "the clone wins and you say so plainly", with an example sentence to say it. In the same measure, lesson 3's closing reply spent a third of its 83 words on lessons the record listed as complete.
+
+Tested as an A/B on the measured state (Opus 5.5, Git Basics' orchestrator, supplement and lesson 3 coach, three runs per arm). With base-v37, 3 of 3 runs reopened lesson 3 at its last step and named the record. With this base, 3 of 3 ran lesson 3's check silently, called no page tool, and replied "Lesson 3 is done; Start lesson 4 on the page when you're ready." With a record that runs ahead of an empty folder (lesson 3's check fails), 2 of 2 runs started lesson 3 at step 1 and said nothing about the record.
+
+`scripts/lint-steps.ts` also accepts `view: none` (lwc 0.44.0 draws nothing for it, and it keeps an earlier step's view from carrying on). `docs/LESSON_PAGE.md` (template only) says what it is for.
+
 ## base-v37 (2026-11-05)
 
 What Git Basics learned about the lesson page, moved into the base so every workshop starts from it. Until now the rules lived in Git Basics' own `_walker-supplement.md` and its `scripts/lint-steps.ts`, so a workshop converting to the page had to copy them from a private file.

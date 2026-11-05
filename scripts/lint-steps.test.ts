@@ -46,6 +46,11 @@ describe("lintSteps", () => {
     expect(lint("steps:\n  - view: commits main\n")).not.toEqual([]);
   });
 
+  it("accepts a none view, and refuses one with arguments", () => {
+    expect(lint("steps:\n  - view: commits\n  - view: none\n")).toEqual([]);
+    expect(lint("steps:\n  - view: none src/greet.js\n").join("\n")).toContain("steps[0].view");
+  });
+
   it("rejects a view of an unknown kind", () => {
     expect(lint("steps:\n  - view: diff src/greet.js\n").join("\n")).toContain("steps[0].view");
   });

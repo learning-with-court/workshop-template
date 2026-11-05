@@ -43,6 +43,7 @@ The **intro** is the screen the page shows before lesson 1: the workshop's `intr
 7. **The README is the title, a `**Goal:**` line and `## Walkthrough`, and nothing else.** No Key concepts, What you'll learn, Try this, Validation checklist or Common pitfalls: a learner reads what they need as a sentence at the step where it matters, and pitfalls the guide needs go in `coach.md`. This replaces the README sections `docs/WORKSHOP_SPEC.md` §2 lists, for a lesson written for the page.
 8. **No "Run verify" step.** The lesson ends on its last real step. Pressing Next there brings the recap and runs the lesson check.
 9. **Name each check in plain words.** The recap shows each check's name, so write it as a sentence a learner can read: "The function returns the greeting, letter for letter", never a setting name, a command or a timing. In a vitest test, that is the `it(...)` name.
+10. **Name the other options when the lesson picks one.** Where a step uses one of several ways to do something (a squash merge, an ssh remote, an ed25519 key), its result's `means` names the others in one line and says why the workshop picked this one, because a learner who only ever sees one way can't tell a choice from a rule, even in a basics workshop.
 
 ## `lesson.yaml`: `steps:`
 

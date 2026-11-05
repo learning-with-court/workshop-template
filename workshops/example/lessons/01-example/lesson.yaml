@@ -1,6 +1,6 @@
 id: example
-title: "Example Lesson"
-blurb: "Write a trivial exported function — proving the compose delivery model."
+title: "Your first function"
+blurb: "Read a test, have Claude write the one function it asks for, and watch it run."
 prerequisites: []
 targetFiles:
   - src/example.ts
@@ -9,7 +9,8 @@ verify:
   description: |
     Runs the behavioral vitest test for example.ts. The test imports `example` from
     ./example.ts and asserts example() returns the expected string. A passing run
-    prints "Tests  1 passed"; a missing export or wrong return value prints a failure.
+    prints "Tests  2 passed"; a missing export or wrong return value prints a failure.
+    Each check is named in plain words, since the lesson's recap shows the names.
   mustInclude:
     - "Tests "
   mustNotInclude:
@@ -24,6 +25,24 @@ try:
   export: example          # the named export to call
   fixture: fixtures/sample.json   # relative to .workshop/<ws>/lesson_example/
   fixtureAs: json          # "json" (parsed object, default) | "text" (raw string)
+# One entry per README Walkthrough item, in order: what the lesson page shows
+# beside the step, and, for a choose step, the buttons and the prompt each sends.
+# A view (`file <path>`, `commits`, or `move <from> <to>`) is drawn from the
+# practice repo named in .lwc/target-repo, never from this clone, so this
+# lesson, whose work lands in this clone's src/, gives every step `{}`.
+# A workshop with a practice repo writes, for example, `- view: file src/greet.js`.
+# `pnpm lint-manifest` checks the list against the README (scripts/lint-steps.ts).
+steps:
+  - {}                               # 1 read the test
+  - choices:                         # 2 choose what the greeting says
+      - label: "Hello from example!"
+        prompt: "I think the greeting must be \"Hello from example!\" with the exclamation mark. Am I right?"
+      - label: "Hello from example"
+        prompt: "I think the greeting must be \"Hello from example\" with no exclamation mark. Am I right?"
+      - label: "Any greeting will do"
+        prompt: "I think any greeting will do, as long as it says hello. Am I right?"
+  - {}                               # 3 write the function
+  - {}                               # 4 watch it run
 onPass:
   feedback: |
     You've built and verified a typed exported function. The compose model

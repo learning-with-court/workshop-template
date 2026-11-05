@@ -7,7 +7,8 @@ pre-commit:
     lint-manifest:
       # Only fires when a manifest, lesson dir, or lint script changes.
       # Unified compose model: workshop.yaml + lesson.yaml live under workshops/<ws>/.
-      glob: "{workshop.yaml,workshops/**/workshop.yaml,workshops/**/lesson.yaml,workshop/**/lesson.yaml,workshop/**/package.json,scripts/lint-manifest.ts}"
+      # It also runs scripts/lint-steps.ts: lesson steps against their README, and terms.yaml beside intro.md.
+      glob: "{workshop.yaml,workshops/**/workshop.yaml,workshops/**/lesson.yaml,workshops/**/README.md,workshops/**/terms.yaml,workshops/**/intro.md,workshop/**/lesson.yaml,workshop/**/package.json,scripts/lint-manifest.ts,scripts/lint-steps.ts}"
       run: pnpm lint-manifest
 
     typecheck:

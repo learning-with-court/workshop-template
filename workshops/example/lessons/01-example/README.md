@@ -1,23 +1,49 @@
-# Example Lesson
+# Your first function
 
-Write a function that returns a greeting string.
+**Goal:** Read the test this lesson ships, have Claude write the one function it asks for, and watch that function run.
 
-## What you'll build
+## Walkthrough
 
-A TypeScript module at `src/example.ts` that exports a single function:
+1. **Read the test**
 
-```ts
-export function example(): string
-```
+   This lesson comes with a test: a small program that checks your code does what it should. Read it first, so you know what you're making before anything is written.
 
-The function returns `"Hello from example!"` — nothing more, nothing less.
+   ```
+   Show me this lesson's test and tell me in plain words what it checks.
+   ```
 
-## Verification
+   **Claude runs:** `cat src/example.test.ts`
 
-Run the shipped test to check your work:
+   The test looks for one thing in `src/example.ts` and checks what it hands back.
 
-```
-pnpm exec vitest run src/example.test.ts
-```
+2. **Choose what the greeting says**
 
-A passing run prints `Tests  1 passed`. If the export is missing or the return value is wrong, the test tells you exactly what it expected vs. what it got.
+   The test compares the greeting letter for letter, so close isn't enough. Pick the text you think it wants.
+
+   ```
+   I think the greeting must be "Hello from example!" with the exclamation mark. Am I right?
+   ```
+
+   **Claude runs:** nothing; it checks your pick against the test.
+
+3. **Write the function**
+
+   A function is a named piece of code that does one job. Ask Claude for one that returns the greeting, and to export it, so the test in another file can use it.
+
+   ```
+   Write src/example.ts with one exported function, example(), that returns "Hello from example!".
+   ```
+
+   **Claude runs:** no command; it writes `src/example.ts`.
+
+4. **Watch it run**
+
+   The test checks your function for you. Now see it work on its own, the way someone using it would.
+
+   ```
+   Run my function once and show me what it returns.
+   ```
+
+   **Claude runs:** `pnpm try`
+
+   It prints the greeting your function returned.

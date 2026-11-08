@@ -96,3 +96,54 @@ describe("lint-manifest CLI runs the steps lint", () => {
     expect(r.out).toContain("steps[0].view");
   }, 30000);
 });
+
+// A one-lesson workshop (compose layout) whose workshop.yaml carries `prereqs`.
+async function lintPrereqs(prereqs: string): Promise<string[]> {
+  const repo = mkdtempSync(path.join(tmpdir(), "lint-prereqs-"));
+  const d = path.join(repo, "lessons", "01-w1a");
+  mkdirSync(d, { recursive: true });
+  writeFileSync(path.join(repo, "workshop.yaml"),
+    `id: w1\ntitle: "w1"\nstatus: available\nrepo: x/y\ntagline: "t"\nsummary: "s"\n` +
+    `difficulty: beginner\ntags:\n  - t\ninstall: "i"\nyouWillBuild:\n  - "b"\n` +
+    `prerequisites:\n${prereqs}phases:\n  - id: A\n    title: A\n    lessons:\n      - w1a\n`);
+  writeFileSync(path.join(repo, "landing.md"), `# w1\n`);
+  writeFileSync(path.join(d, "lesson.yaml"),
+    `id: w1a\ntitle: "w1a"\nblurb: "b"\nprerequisites: []\ntargetFiles:\n  - src/x.ts\n` +
+    `verifyCommand: "true"\nverify:\n  description: "d"\n  mustInclude:\n    - "x"\n` +
+    `onPass:\n  feedback: "f"\n`);
+  writeFileSync(path.join(d, "README.md"), `# w1a\n`);
+  try {
+    return (await lintManifest({ repoRoot: repo })).errors;
+  } finally {
+    rmSync(repo, { recursive: true, force: true });
+  }
+}
+
+describe("lintManifest prerequisites", () => {
+  it("reports an unknown kind, naming the item's term", async () => {
+    const errors = await lintPrereqs(`  - term: "Docker"\n    kind: docker\n    desc: "d"\n`);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("Docker");
+    expect(errors[0]).toContain("docker");
+  });
+
+  it("reports kind node without a version", async () => {
+    const errors = await lintPrereqs(`  - term: "Node"\n    kind: node\n    desc: "d"\n`);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("Node");
+    expect(errors[0]).toContain("version");
+  });
+
+  it("reports a version on a kind other than node", async () => {
+    const errors = await lintPrereqs(`  - term: "gh"\n    kind: gh\n    version: 2\n    desc: "d"\n`);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("version");
+  });
+
+  it("passes items with no kind, and node with a version", async () => {
+    const errors = await lintPrereqs(
+      `  - term: "TypeScript"\n    desc: "d"\n  - term: "Node 22"\n    kind: node\n    version: 22\n    desc: "d"\n`,
+    );
+    expect(errors).toEqual([]);
+  });
+});

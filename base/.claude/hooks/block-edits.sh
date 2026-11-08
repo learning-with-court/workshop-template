@@ -36,6 +36,11 @@ TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
 FILEPATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
+# Repo root. Claude Code sets CLAUDE_PROJECT_DIR to the folder the session
+# started in; the event's cwd moves when the learner `cd`s into a subfolder, so
+# it is only the fallback (with the hook's PWD) when the variable is unset.
+ROOT="${CLAUDE_PROJECT_DIR:-${CWD:-$PWD}}"
+
 block_with_reason() {
   cat <<JSON
 {
@@ -49,10 +54,10 @@ JSON
   exit 0
 }
 
-# Relative path (strip cwd/pwd prefix) for glob matching.
+# Relative path (strip the repo root, else pwd, prefix) for glob matching.
 rel="$FILEPATH"
-if [[ -n "$CWD" && "$FILEPATH" == "$CWD/"* ]]; then
-  rel="${FILEPATH#$CWD/}"
+if [[ "$FILEPATH" == "$ROOT/"* ]]; then
+  rel="${FILEPATH#$ROOT/}"
 elif [[ "$FILEPATH" == "$PWD/"* ]]; then
   rel="${FILEPATH#$PWD/}"
 fi
@@ -69,7 +74,7 @@ fi
 # Marker bypass — applies to the OTHER protected paths only (test files already
 # handled above and cannot be bypassed). Operator/walker affordance, not surfaced
 # to learners.
-if [[ -n "$CWD" && -f "$CWD/.workshop-autopilot-active" ]]; then
+if [[ -f "$ROOT/.workshop-autopilot-active" ]]; then
   exit 0
 fi
 if [[ -f "$PWD/.workshop-autopilot-active" ]]; then
@@ -83,8 +88,6 @@ fi
 # lesson's `.claude/skills/review-style-guide.md` under `.claude/skills/*.md` — is
 # writable, while the coaching skills, which are NOT targetFiles, stay protected).
 if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" || "$TOOL" == "MultiEdit" ]]; then
-  ROOT="${CWD:-$PWD}"
-
   # Collect candidate lesson.yaml files across both served and authoring layouts:
   #   served:    .workshop/<id>/lesson_<slug>/lesson.yaml
   #   authoring: workshops/<id>/lessons/<NN>-<slug>/lesson.yaml
@@ -128,9 +131,6 @@ fi
 
 # Tier 3 — protectedPaths denial.
 if [[ "$TOOL" == "Edit" || "$TOOL" == "Write" || "$TOOL" == "MultiEdit" ]]; then
-  # Repo root: prefer the tool-reported cwd, fall back to the hook's PWD.
-  ROOT="${CWD:-$PWD}"
-
   # Collect candidate workshop.yaml files: repo root (single-workshop) plus every
   # .workshop/<id>/workshop.yaml (monorepo). A learner usually has exactly one.
   WORKSHOP_YAMLS=()

@@ -8,6 +8,12 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v40 (2026-11-08)
+
+`uv` is a prerequisite kind. `scripts/prerequisite.schema.json` is platform's generated schema again (platform#347), so `kind: uv` passes lint-manifest; like `gh` it takes no version. lwc installs uv when it's missing (Homebrew on macOS, winget on Windows, uv's own installer on Linux) from the lwc dev release that carries lwc-cli#107. Members whose workshops don't list uv need nothing; a workshop that lists it syncs this base first.
+
+Template only, not synced: the example `workshop.yaml`'s comment names uv.
+
 ## base-v39 (2026-11-07)
 
 Prerequisites carry a `kind`, and the hooks keep working after a `cd`.

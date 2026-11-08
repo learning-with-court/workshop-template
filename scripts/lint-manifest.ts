@@ -9,8 +9,10 @@ import { lintSteps, lintWorkshopTerms } from "./lint-steps.js";
 // Vendored schemas — keep in sync with
 // platform/packages/server/src/manifest/schema.ts.
 // Cross-repo type sharing isn't worth a published package yet.
+// Prerequisites are the exception: they're checked against
+// scripts/prerequisite.schema.json, a byte copy of the file platform generates
+// (refresh with `pnpm sync:prereq-schema`), so the kinds live in one place.
 
-const Prereq = z.object({ term: z.string(), desc: z.string() });
 const Phase = z.object({
   id: z.string(),
   title: z.string(),
@@ -32,7 +34,7 @@ const Workshop = z.object({
   tags: z.array(z.string()),
   install: z.string(),
   youWillBuild: z.array(z.string()),
-  prerequisites: z.array(Prereq),
+  prerequisites: z.array(z.unknown()),
   phases: z.array(Phase),
   series: SeriesBlock.optional(),
   /** Optional prefix for walker skill filenames. Default: "lesson". E.g. "tools-mcp-lesson" → .claude/skills/tools-mcp-lesson-01.md */
@@ -90,6 +92,82 @@ export interface LintResult {
   errors: string[];
 }
 
+// The subset of JSON Schema that prerequisite.schema.json uses.
+interface JsonSchema {
+  type?: string;
+  minLength?: number;
+  exclusiveMinimum?: number;
+  enum?: unknown[];
+  const?: unknown;
+  properties?: Record<string, JsonSchema>;
+  required?: string[];
+  not?: JsonSchema;
+  if?: JsonSchema;
+  then?: JsonSchema;
+  else?: JsonSchema;
+}
+
+const PREREQ_SCHEMA_PATH = new URL("./prerequisite.schema.json", import.meta.url);
+
+function loadPrereqSchema(): JsonSchema {
+  const file = JSON.parse(fs.readFileSync(PREREQ_SCHEMA_PATH, "utf8")) as {
+    definitions: { Prerequisite: JsonSchema };
+  };
+  return file.definitions.Prerequisite;
+}
+
+/** Problems with `value` against `schema`, each prefixed with the property it concerns. */
+function checkJsonSchema(schema: JsonSchema, value: unknown, at = ""): string[] {
+  const where = at ? `${at}: ` : "";
+  if (schema.type === "object") {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) return [`${where}must be an object`];
+  }
+  if (schema.type === "string") {
+    if (typeof value !== "string") return [`${where}must be a string`];
+    if (schema.minLength !== undefined && value.length < schema.minLength) return [`${where}must not be empty`];
+  }
+  if (schema.type === "integer" && !Number.isInteger(value)) return [`${where}must be a whole number`];
+  if (schema.exclusiveMinimum !== undefined && typeof value === "number" && value <= schema.exclusiveMinimum) {
+    return [`${where}must be greater than ${schema.exclusiveMinimum}`];
+  }
+  if (schema.enum && !schema.enum.includes(value)) {
+    return [`${where}"${String(value)}" is not one of ${schema.enum.join(", ")}`];
+  }
+  if ("const" in schema && value !== schema.const) return [`${where}must be ${JSON.stringify(schema.const)}`];
+  if (typeof value !== "object" || value === null) return [];
+  const obj = value as Record<string, unknown>;
+  const errors: string[] = [];
+  for (const key of schema.required ?? []) {
+    if (!(key in obj)) errors.push(`${key}: is required`);
+  }
+  for (const [key, sub] of Object.entries(schema.properties ?? {})) {
+    if (key in obj) errors.push(...checkJsonSchema(sub, obj[key], key));
+  }
+  if (schema.not && checkJsonSchema(schema.not, value).length === 0) {
+    const keys = schema.not.required ?? [];
+    errors.push(keys.length ? `${keys.join(", ")}: is not allowed here` : `${where}is not allowed`);
+  }
+  if (schema.if) {
+    const branch = checkJsonSchema(schema.if, value).length === 0 ? schema.then : schema.else;
+    if (branch) errors.push(...checkJsonSchema(branch, value));
+  }
+  return errors;
+}
+
+/** Each prerequisite checked against the vendored prerequisite.schema.json. */
+export function lintPrerequisites(items: unknown[]): string[] {
+  const schema = loadPrereqSchema();
+  const errors: string[] = [];
+  items.forEach((item, i) => {
+    const term = (item as { term?: unknown } | null)?.term;
+    const name = typeof term === "string" && term ? `"${term}"` : `#${i + 1}`;
+    for (const e of checkJsonSchema(schema, item)) {
+      errors.push(`workshop.yaml: prerequisite ${name}: ${e}`);
+    }
+  });
+  return errors;
+}
+
 export async function lintManifest(opts: {
   repoRoot: string;
   /** Optional sub-path for monorepo workshops. E.g. ".workshop/claude-code" */
@@ -122,6 +200,7 @@ export async function lintManifest(opts: {
     return { errors };
   }
   const workshop = wsParse.data;
+  errors.push(...lintPrerequisites(workshop.prerequisites));
 
   // 2. landing.md exists (in the workshopRoot for monorepo workshops)
   if (!fs.existsSync(path.join(wsDir, "landing.md"))) {

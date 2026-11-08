@@ -1,0 +1,60 @@
+{
+  "$ref": "#/definitions/Prerequisite",
+  "definitions": {
+    "Prerequisite": {
+      "type": "object",
+      "properties": {
+        "term": {
+          "type": "string",
+          "minLength": 1
+        },
+        "desc": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "claude-code",
+            "git",
+            "node",
+            "gh",
+            "need"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "term",
+        "desc"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "node"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "version"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "version"
+          ]
+        }
+      }
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

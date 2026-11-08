@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-edits.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-edits.sh",
             "timeout": 5
           }
         ]
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-edits.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-edits.sh",
             "timeout": 5
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/block-edits.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-edits.sh",
             "timeout": 5
           }
         ]
@@ -40,7 +40,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/live-assist.sh UserPromptSubmit",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/live-assist.sh UserPromptSubmit",
             "timeout": 5
           }
         ]
@@ -51,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/live-assist.sh Stop",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/live-assist.sh Stop",
             "timeout": 5
           }
         ]

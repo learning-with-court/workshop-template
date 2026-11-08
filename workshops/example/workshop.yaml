@@ -15,8 +15,8 @@ install: "set up the example workshop"
 youWillBuild:
   - "A TypeScript module that exports a typed function."
   - "Verified passing tests using the pre-shipped vitest suite."
-# kind: claude-code, git, node (with version: <major>) or gh is installed by
-# lwc if missing and listed under "Done for you". kind: need (or no kind) is
+# kind: claude-code, git, node (with version: <major>), gh or uv is installed
+# by lwc if missing and listed under "Done for you". kind: need (or no kind) is
 # what the learner brings, listed under "You'll need". The kinds come from
 # scripts/prerequisite.schema.json (pnpm sync:prereq-schema).
 prerequisites:

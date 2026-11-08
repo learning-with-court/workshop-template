@@ -140,6 +140,10 @@ describe("lintManifest prerequisites", () => {
     expect(errors[0]).toContain("version");
   });
 
+  it("passes kind uv, which takes no version", async () => {
+    expect(await lintPrereqs(`  - term: "uv"\n    kind: uv\n    desc: "d"\n`)).toEqual([]);
+  });
+
   it("passes items with no kind, and node with a version", async () => {
     const errors = await lintPrereqs(
       `  - term: "TypeScript"\n    desc: "d"\n  - term: "Node 22"\n    kind: node\n    version: 22\n    desc: "d"\n`,

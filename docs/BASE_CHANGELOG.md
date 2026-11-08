@@ -8,6 +8,16 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v39 (2026-11-07)
+
+Prerequisites carry a `kind`, and the hooks keep working after a `cd`.
+
+`scripts/lint-manifest.ts` no longer keeps its own zod copy of a prerequisite. It checks each item of `workshop.yaml`'s `prerequisites:` against `scripts/prerequisite.schema.json`, a byte copy of the JSON Schema that platform generates from `PrerequisiteSchema` (`packages/server/schema/prerequisite.schema.json`). An item may carry `kind`: `claude-code`, `git`, `node` or `gh` (lwc installs them if missing, and the workshop page lists them under "Done for you") or `need` (what the learner brings, listed under "You'll need"; an item with no kind is a need). `node` requires `version: <major>`, and no other kind takes one. An unknown kind or a misplaced version is a lint error naming the item's term. Existing lists with no kinds pass as before. `scripts/sync-prereq-schema.ts` refreshes the copy from platform's dev branch with `gh api`. Members add `"sync:prereq-schema": "tsx scripts/sync-prereq-schema.ts"` to their own `package.json`, which isn't synced.
+
+Every hook command in `base/.claude/settings.json` now runs as `"$CLAUDE_PROJECT_DIR"/.claude/hooks/...`, and `block-edits.sh` takes the repo root from `$CLAUDE_PROJECT_DIR` before the event's `cwd`. Claude Code runs hook commands from the session's current folder, so after the learner `cd`'d into a subfolder the relative `.claude/hooks/...` path printed "No such file or directory" on every tool call and the edit guard was off. `scripts/hooks-from-subdir.test.ts` (template only) runs every command from a subfolder and checks that protected edits are still denied.
+
+Template only, not synced: the example `workshop.yaml` shows the kinds.
+
 ## base-v38 (2026-11-05)
 
 A lesson whose check passed and was recorded stays finished when the learner comes back. Measuring Git Basics on lwc 0.44.0, the learner finished lesson 3 (12 of 12, recorded, the page on the recap with Start lesson 4), stopped lwc and ran `lwc start` again. On `continue the workshop` the guide read the practice folder, saw one pushed commit, and took it for lesson 3's last step, because that step is a look at GitHub that leaves nothing in the folder. It called `page_set_lesson` for lesson 3, marked eight steps done, asked for the Verified pick again, and told the learner "The progress record says this lesson is finished and you're further along, but your practice folder says otherwise". That sentence is the example the base gave for when the clone and the record disagree.

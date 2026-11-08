@@ -1,6 +1,6 @@
 {
   "surface": "code",
-  "version": "base-v38",
+  "version": "base-v39",
   "verbatim": [
     "scripts/compose.ts",
     "scripts/new-lesson.ts",
@@ -8,6 +8,8 @@
     "scripts/validate-compose.ts",
     "scripts/lint-manifest.ts",
     "scripts/lint-steps.ts",
+    "scripts/prerequisite.schema.json",
+    "scripts/sync-prereq-schema.ts",
     "scripts/validate-base.mjs",
     "scripts/setup-shared.ts",
     "scripts/tsconfig.json",

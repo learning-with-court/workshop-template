@@ -123,7 +123,8 @@ pnpm typecheck            # every workspace package
 pnpm test:scripts         # tests the manifest linter itself
 ```
 
-The `manifest-lint` GitHub Action runs the same checks on every push.
+In CI, the `manifest-lint` action runs `lint-manifest`, and the `ci` action runs
+`test:scripts` and `typecheck`.
 Lefthook fires `lint-manifest` on pre-commit when manifests or scripts
 change, and `typecheck` on every commit.
 

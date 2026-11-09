@@ -8,6 +8,10 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v41 (2026-11-08)
+
+The base workflows pick their runner from the organization variable `LWC_RUNNER`. `ci.yml`, `manifest-lint.yml`, `validate-base.yml` and `compose.yml` now say `runs-on: ${{ vars.LWC_RUNNER || 'ubuntu-latest' }}`. The org sets `LWC_RUNNER = lwc-small` for private repositories only, so private workshops run on the shared runner set; workshop-template, public, has no variable and stays on GitHub-hosted runners. A repo without the variable runs exactly as before. Members need nothing beyond the sync; their own non-base workflows change `runs-on` themselves. The notebook base's `validate-notebook-base.yml` makes the same change in notebook-base-v2.
+
 ## base-v40 (2026-11-08)
 
 `uv` is a prerequisite kind. `scripts/prerequisite.schema.json` is platform's generated schema again (platform#347), so `kind: uv` passes lint-manifest; like `gh` it takes no version. lwc installs uv when it's missing (Homebrew on macOS, winget on Windows, uv's own installer on Linux) from the lwc dev release that carries lwc-cli#107. Members whose workshops don't list uv need nothing; a workshop that lists it syncs this base first.

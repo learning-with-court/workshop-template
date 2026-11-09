@@ -1,6 +1,6 @@
 {
   "surface": "code-notebook",
-  "version": "notebook-base-v1",
+  "version": "notebook-base-v2",
   "sourceRoot": "notebook-base",
   "verbatim": [
     "base/jupytext.toml",

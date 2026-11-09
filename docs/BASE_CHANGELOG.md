@@ -8,6 +8,12 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v43 (2026-11-09)
+
+`manifest-lint.yml` no longer runs `pnpm test:scripts`; it runs `pnpm lint-manifest` only. `ci.yml` already runs `test:scripts` on the same events (and with Python 3.12 since base-v42), so the second run repeated the same tests, and without setup-python it failed on the shared runners wherever a test needs Python 3.11+ (workshop-building-with-llm-apis' `tomllib`). The job keeps its name, `lint`, so branch protection that requires it is unaffected. Members need nothing beyond the sync.
+
+Template only, not synced: the README's "Verify locally" note says which action runs which check.
+
 ## base-v42 (2026-11-09)
 
 `ci.yml` sets up Python 3.12 with `actions/setup-python` before installing and running the tests. On the shared runners plain `python3` is Amazon Linux's system Python, older than 3.11, so a workshop test that imports `tomllib` (workshop-building-with-llm-apis' `base/tests/llm_checks.py`) failed there; setup-python finds the 3.12 baked into the runner image, and on GitHub-hosted runners it picks 3.12 from the hosted toolcache. Members need nothing beyond the sync.

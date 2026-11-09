@@ -18,4 +18,4 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint-manifest
-      - run: pnpm test:scripts
+      # test:scripts runs in ci.yml (same events, with Python 3.12); not repeated here.

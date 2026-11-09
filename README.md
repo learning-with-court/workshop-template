@@ -9,7 +9,7 @@ a new workshop.
 Either click **Use this template** at the top of the GitHub page, or:
 
 ```bash
-gh repo create learning-with-court/<your-workshop-id> \
+gh repo create learning-with-court/workshop-<your-workshop-id> \
   --template learning-with-court/workshop-template \
   --private --clone
 
@@ -152,15 +152,17 @@ Once your workshop manifest is filled in and lessons are real:
    ```json
    {
      "id": "<your-workshop-id>",
-     "repo": "learning-with-court/<your-workshop-id>",
-     "ref": "main",
-     "envs": ["dev"]
+     "repo": "learning-with-court/workshop-<your-workshop-id>",
+     "ref": "<short>/<ws>/<first-lesson>",
+     "workshopRoot": ".workshop/<ws>",
+     "envs": ["dev"],
+     "delivery": "compose"
    }
    ```
    Start dev-only. Flip to `["dev", "prod"]` when ready to ship.
-3. Open a PR on the platform repo. CI deploys a `LwcWorkshop-<id>-Dev`
-   stack with its own subdomain. The catalog regenerates from the manifest
-   automatically.
+3. Open a PR on the platform repo. CI bundles the entry into the existing
+   `LwcCatalog-Dev` Lambda; no stack or subdomain is created. The catalog
+   regenerates from the manifest automatically.
 
 Reference implementation:
 [`learning-with-court/workshop-mcp`](https://github.com/learning-with-court/workshop-mcp).

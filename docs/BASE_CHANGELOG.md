@@ -8,6 +8,10 @@ workshops by `scripts/sync-base.ts` (workspace) and pinned per-member in
 > `git log base-v12..base-v16 -- base/ base.manifest` if you need them; they
 > are deliberately not backfilled here rather than guessed at.
 
+## base-v42 (2026-11-09)
+
+`ci.yml` sets up Python 3.12 with `actions/setup-python` before installing and running the tests. On the shared runners plain `python3` is Amazon Linux's system Python, older than 3.11, so a workshop test that imports `tomllib` (workshop-building-with-llm-apis' `base/tests/llm_checks.py`) failed there; setup-python finds the 3.12 baked into the runner image, and on GitHub-hosted runners it picks 3.12 from the hosted toolcache. Members need nothing beyond the sync.
+
 ## base-v41 (2026-11-08)
 
 The base workflows pick their runner from the organization variable `LWC_RUNNER`. `ci.yml`, `manifest-lint.yml`, `validate-base.yml` and `compose.yml` now say `runs-on: ${{ vars.LWC_RUNNER || 'ubuntu-latest' }}`. The org sets `LWC_RUNNER = lwc-small` for private repositories only, so private workshops run on the shared runner set; workshop-template, public, has no variable and stays on GitHub-hosted runners. A repo without the variable runs exactly as before. Members need nothing beyond the sync; their own non-base workflows change `runs-on` themselves. The notebook base's `validate-notebook-base.yml` makes the same change in notebook-base-v2.

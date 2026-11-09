@@ -18,6 +18,10 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
+      # On the shared runners plain python3 is Amazon Linux's older system Python; setup-python finds the 3.12 baked into the runner image.
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:scripts
       - run: pnpm typecheck
